@@ -1,0 +1,141 @@
+
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{lipsum}
+% Set margins for the first page
+\newgeometry{top=0.5in, bottom=1in, left=1in, right=1in}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt}
+\rfoot{Page \thepage}
+\usepackage{fontawesome}
+\setlength{\textheight}{9.5in}
+\setlength{\footskip}{30pt} 
+\pagestyle{fancy}
+\raggedright
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\setlength{\hoffset}{-2pt}
+\setlength{\footskip}{30pt}
+\def\bull{\vrule height 0.8ex width .7ex depth -.1ex }
+
+\newcommand{\contact}[3]{
+  \vspace*{5pt}
+  \begin{center}
+    {\LARGE \scshape {#1}}\\
+    \vspace{3pt}
+    #2 
+    \vspace{2pt}
+    #3
+  \end{center}
+  \vspace*{-8pt}
+}
+\newcommand{\school}[4]{
+  \textbf{#1} \labelitemi #2 \hfill #3 \\ #4 \vspace*{5pt}
+}
+\newcommand{\employer}[4]{{
+  \vspace*{2pt}%
+  \textbf{#1} #2 \hfill #3\\ #4 \vspace*{2pt}}
+}
+\newcommand{\project}[4]{{
+  \vspace*{2pt}% 
+  \textbf{#1} #2 \hfill #3\\ #4 \vspace*{2pt}}
+}
+\newcommand{\lineunder}{
+  \vspace*{-8pt} \\ \hspace*{-18pt} 
+  \hrulefill \\
+}
+\newcommand{\header}[1]{{
+  \hspace*{-15pt}\vspace*{6pt} \textsc{#1}} \vspace*{-6pt} 
+  \lineunder
+}
+\newcommand{\content}{
+  \vspace*{2pt}%
+}
+\renewcommand{\labelitemi}{
+  $\vcenter{\hbox{\tiny$\bullet$}}$\hspace*{3pt}
+}
+\renewcommand{\labelitemii}{
+  $\vcenter{\hbox{\tiny$\bullet$}}$\hspace*{-3pt}
+}
+\newenvironment{bullet-list-major}{
+  \begin{list}{\labelitemii}{\setlength\leftmargin{3pt} 
+  \topsep 0pt \itemsep -2pt}}{\vspace*{4pt}\end{list}
+}
+\newenvironment{bullet-list-minor}{
+  \begin{list}{\labelitemii}{\setlength\leftmargin{15pt} 
+  \topsep 0pt \itemsep -2pt}}{\vspace*{4pt}\end{list}
+}
+\begin{document}
+\small
+\smallskip
+\vspace*{-44pt}
+\begin{center}
+  {\LARGE \textbf{Tarun Sai Janapati}} \\
+  \faPhone\ +1 551 755 1991 \quad
+  \faEnvelope\ \href{mailto:tarunjanapati7@gmail.com}{tarunjanapati7@gmail.com} \quad
+  
+  
+  
+\end{center}
+
+  \header{Summary}
+  \textit{Agentic AI software developer proficient in full-stack development using React, TypeScript, Node.js, and Next.js. Expertise in integrating GROQ LLMs and Firebase Authentication. Experienced in building AI-powered applications and machine learning models using Python and TensorFlow. Strong analytical skills demonstrated through data analysis projects and academic achievements. Proven ability to enhance efficiency and user experience through innovative solutions.}
+
+
+  \header{Education}
+  
+      \school{Saint Louis University}{Master's in Analytics}{
+        Graduation: 
+      }{\textit{Master's in Analytics \labelitemi GPA: 3.8/4.0}}
+    
+
+
+  \header{Experience}
+  
+      \employer{Agentic AI Developer}{--Metis Analytics}{
+        Feb 2001 -- 
+      }{st louis}
+      
+        \begin{bullet-list-minor}
+          \item Built agentic AI systems leveraging Next.js and Firebase Authentication for secure user management.
+\item Integrated GROQ Large Language Models (LLMs) into web applications to enhance language understanding and generative capabilities.
+\item Utilized Tailwind CSS, TypeScript, and React to develop responsive and visually appealing user interfaces.
+\item Collaborated with a team of engineers to design, implement, and maintain complex AI systems that meet business requirements.
+        \end{bullet-list-minor}
+      
+    
+
+
+  \header{Skills}
+  
+    \begin{bullet-list-major}
+      \item \textbf{Web development:} HTML, CSS, JavaScript
+    \end{bullet-list-major}
+  
+
+    \begin{bullet-list-major}
+      \item \textbf{Data Science:} NLP, Pytorch
+    \end{bullet-list-major}
+  
+
+
+  \header{Projects}
+  
+      \project{Boron Atom - AI Powered Resume builder.}{Next JS,}{
+        Feb 2024 -- 
+      }{
+        \begin{bullet-list-minor}
+          \item Engineered a full-stack AI-powered resume builder using React, TypeScript, Node JS, Express, and MongoDB, streamlining the resume-creation process and reducing the time by 5x, enabling users to craft professional resumes effortlessly.
+Integrated Google's AI Gemini to automate the generation of resume summaries, descriptions, and cover letters based on job descriptions enhancing efficiency and saving users valuable time, empowering them to showcase their skills and experiences with greater clarity.
+Designed and deployed a user-centric interface utilizing Vercel, ensuring an intuitive and seamless navigation experience for users of varying technical backgrounds, making resume building accessible to all. (boronatom.com)
+          \item GitHub: \url{https://github.com/TJ-74}
+          \item Project Link: \url{boronatom.com}
+        \end{bullet-list-minor}
+      }
+    
+
+\end{document}
