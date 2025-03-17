@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { auth } from '@/app/lib/firebase';
-
-// Create a temporary directory for storing LaTeX files
-const TEMP_DIR = path.join(process.cwd(), 'tmp');
-
-// Ensure the temp directory exists
-if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the current user from the request
-    // In a real implementation, you would verify the user's authentication token
-    // For now, we'll assume the user is authenticated if they can access this endpoint
-    
     // Parse the request body
     const { latexCode, userId } = await request.json();
     
@@ -27,29 +12,26 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Generate a unique filename based on the user ID or a timestamp
-    const filename = userId 
-      ? `user_${userId}_Resume.tex`
-      : `resume_${Date.now()}.tex`;
+    // Generate a unique identifier for the LaTeX content
+    const uniqueId = userId || Date.now().toString();
     
-    const filePath = path.join(TEMP_DIR, filename);
+    // Instead of storing the file, we'll encode the LaTeX content in a URL
+    // that our other endpoint can use to serve the content directly
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || request.nextUrl.origin;
     
-    // Write the LaTeX code to a file
-    fs.writeFileSync(filePath, latexCode);
+    // Create a URL to our latex-content endpoint with the content ID
+    const fileUrl = `${baseUrl}/api/latex-content/${uniqueId}`;
     
-    // Return the URL to the LaTeX file
-    // In a production environment, this would be a fully qualified URL
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || `${request.nextUrl.origin}/api`;
-    const fileUrl = `${baseUrl}/latex/${filename}`;
-    
+    // Store the LaTeX content in the response for the client to cache
     return NextResponse.json({
       success: true,
       fileUrl,
+      latexCode, // Include the LaTeX code in the response
     });
   } catch (error) {
-    console.error('Error storing LaTeX code:', error);
+    console.error('Error processing LaTeX code:', error);
     return NextResponse.json(
-      { error: 'Failed to store LaTeX code' },
+      { error: 'Failed to process LaTeX code' },
       { status: 500 }
     );
   }

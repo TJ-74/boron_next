@@ -275,29 +275,12 @@ export default function Profile() {
       // Create a LaTeX resume template with the user's data
       const latexContent = generateLatexResume(profile);
       
-      // Get the base API URL
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin + '/api';
+      // For Vercel deployments, we'll use a direct approach without server storage
+      // Create a data URI with the LaTeX content
+      const dataUri = `data:application/x-tex;base64,${btoa(unescape(encodeURIComponent(latexContent)))}`;
       
-      // Store the LaTeX code on your server
-      const response = await fetch(`${apiUrl}/store-latex`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          latexCode: latexContent,
-          userId: user?.uid // Pass the user ID to identify the file
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success || !data.fileUrl) {
-        throw new Error('Failed to store LaTeX file');
-      }
-      
-      // Use the returned file URL for Overleaf
-      const encodedUri = encodeURIComponent(data.fileUrl);
+      // Use the data URI for Overleaf
+      const encodedUri = encodeURIComponent(dataUri);
       const overleafUrl = `https://www.overleaf.com/docs?snip_uri=${encodedUri}`;
       
       // Open the Overleaf link in a new window
