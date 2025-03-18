@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, ExternalLink, Github } from "lucide-react";
+import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, ExternalLink, Github, Sparkles } from "lucide-react";
+import { generateDescription, GenerationPrompt } from '@/app/services/groqService';
 
 interface Project {
   id: string;
@@ -32,6 +33,7 @@ export default function ProjectsSection({
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [newProject, setNewProject] = useState<Omit<Project, 'id'>>({
     title: '',
@@ -153,6 +155,67 @@ export default function ProjectsSection({
     }
   };
 
+  const generateAIDescription = async (isEditing: boolean) => {
+    const project = isEditing ? editingProject : newProject;
+    if (!project?.title || !project?.technologies) {
+      alert("Please fill in at least the Project Title and Technologies fields first");
+      return;
+    }
+
+    let mode: 'replace' | 'enhance' = 'replace';
+    
+    // If there's an existing description, give the option to enhance instead of replace
+    if (project.description && project.description.trim() !== '') {
+      const userChoice = confirm(
+        "Do you want to enhance the existing description (OK) or completely replace it (Cancel)?"
+      );
+      
+      if (userChoice) {
+        mode = 'enhance';
+      } else {
+        // User wants to replace, confirm this action
+        if (!confirm("This will completely replace your existing description. Continue?")) {
+          return;
+        }
+      }
+    }
+
+    setIsGeneratingDescription(true);
+    try {
+      // Create the prompt for Groq API
+      const prompt: GenerationPrompt = {
+        type: 'project',
+        title: project.title,
+        technologies: project.technologies,
+        additionalContext: project.startDate ? 
+          `Project timeframe: ${project.startDate} to ${project.endDate || 'present'}` : '',
+        mode,
+        // Only include current description if enhancing
+        ...(mode === 'enhance' && { currentDescription: project.description })
+      };
+      
+      // Call the Groq API service
+      const generatedDescription = await generateDescription(prompt);
+      
+      if (isEditing && editingProject) {
+        setEditingProject({
+          ...editingProject,
+          description: generatedDescription
+        });
+      } else {
+        setNewProject({
+          ...newProject,
+          description: generatedDescription
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate description:', error);
+      alert('Failed to generate description. Please try again.');
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -189,18 +252,31 @@ export default function ProjectsSection({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Description*
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-300">
+                  Description*
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateAIDescription(false)}
+                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs"
+                  disabled={isLoading || isGeneratingDescription || !newProject.title || !newProject.technologies}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
+                </Button>
+              </div>
               <textarea
                 name="description"
                 value={newProject.description}
                 onChange={handleInputChange}
                 rows={3}
                 className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="Describe your project and your role in it"
-                disabled={isLoading}
+                placeholder="Describe your project with bullet points (one per line)"
+                disabled={isLoading || isGeneratingDescription}
               />
+              <p className="text-xs text-gray-400 mt-1">Use a new line for each bullet point</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -333,18 +409,31 @@ export default function ProjectsSection({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Description*
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-300">
+                  Description*
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateAIDescription(true)}
+                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs"
+                  disabled={isLoading || isGeneratingDescription || !editingProject.title || !editingProject.technologies}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
+                </Button>
+              </div>
               <textarea
                 name="description"
                 value={editingProject.description}
                 onChange={handleEditInputChange}
                 rows={3}
                 className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="Describe your project and your role in it"
-                disabled={isLoading}
+                placeholder="Describe your project with bullet points (one per line)"
+                disabled={isLoading || isGeneratingDescription}
               />
+              <p className="text-xs text-gray-400 mt-1">Use a new line for each bullet point</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -514,7 +603,16 @@ export default function ProjectsSection({
                     )}
                   </div>
                   
-                  <p className="mt-3 text-gray-300">{project.description}</p>
+                  <div className="mt-3 space-y-1">
+                    {project.description.split('\n').map((line, i) => (
+                      line.trim() ? (
+                        <div key={i} className="flex items-start text-gray-300">
+                          <span className="mr-2 mt-1.5 text-blue-400">•</span>
+                          <p>{line.trim()}</p>
+                        </div>
+                      ) : null
+                    ))}
+                  </div>
                   
                   <div className="mt-4">
                     <div className="text-sm font-medium text-gray-400 mb-2">Technologies:</div>

@@ -159,11 +159,13 @@ export default function Profile() {
   }, [router, user, authLoading]);
 
   // Function to save profile to MongoDB
-  const saveProfileToMongoDB = async (profileData: UserProfile) => {
+  const saveProfileToMongoDB = async (profileData: UserProfile, deferSave: boolean = false) => {
     if (!user?.uid) return;
     
     try {
-      setSaveStatus('saving');
+      if (!deferSave) {
+        setSaveStatus('saving');
+      }
       
       // Create a summary object with all profile data to store in MongoDB
       const profileSummary: UserProfileSummary = {
@@ -185,20 +187,26 @@ export default function Profile() {
       };
       
       await saveUserProfileSummary(profileSummary);
-      setSaveStatus('success');
       
-      // Reset status after 3 seconds
-      setTimeout(() => {
-        setSaveStatus('idle');
-      }, 3000);
+      if (!deferSave) {
+        setSaveStatus('success');
+        
+        // Reset status after 3 seconds
+        setTimeout(() => {
+          setSaveStatus('idle');
+        }, 3000);
+      }
     } catch (error) {
       console.error('Failed to save profile to MongoDB:', error);
-      setSaveStatus('error');
       
-      // Reset status after 3 seconds
-      setTimeout(() => {
-        setSaveStatus('idle');
-      }, 3000);
+      if (!deferSave) {
+        setSaveStatus('error');
+        
+        // Reset status after 3 seconds
+        setTimeout(() => {
+          setSaveStatus('idle');
+        }, 3000);
+      }
     }
   };
 
@@ -269,26 +277,34 @@ export default function Profile() {
     // This function generates a LaTeX document based on the user's profile
     // and opens it in Overleaf
     
-    if (!profile) return;
+    if (!profile || !user?.uid) return;
     
     try {
-      // Create a LaTeX resume template with the user's data
-      const latexContent = generateLatexResume(profile);
+      // Use the server API endpoint that generates the LaTeX with path parameters
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}`;
       
-      // For Vercel deployments, we'll use a direct approach without server storage
-      // Create a data URI with the LaTeX content
-      const dataUri = `data:application/x-tex;base64,${btoa(unescape(encodeURIComponent(latexContent)))}`;
-      
-      // Use the data URI for Overleaf
-      const encodedUri = encodeURIComponent(dataUri);
+      // Create a data URI with the API URL
+      const encodedUri = encodeURIComponent(apiUrl);
       const overleafUrl = `https://www.overleaf.com/docs?snip_uri=${encodedUri}`;
       
       // Open the Overleaf link in a new window
       window.open(overleafUrl, '_blank');
       
-      console.log('Generated LaTeX resume and opened in Overleaf');
+      console.log('Opening LaTeX resume in Overleaf');
     } catch (error) {
       console.error('Error generating LaTeX resume:', error);
+    }
+  };
+  
+  const handleViewRawLatex = async () => {
+    if (!profile || !user?.uid) return;
+    
+    try {
+      // Directly open the LaTeX API URL in a new tab using path parameters
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}`;
+      window.open(apiUrl, '_blank');
+    } catch (error) {
+      console.error('Error opening LaTeX:', error);
     }
   };
   
@@ -360,13 +376,20 @@ export default function Profile() {
     const startDateStr = formatDateForLatex(experience.startDate);
     const endDateStr = formatDateForLatex(experience.endDate);
     
+    // Process description to create bullet points from each line
+    const descriptionBulletPoints = experience.description
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .map(line => `\\item ${convertToLatex(line.trim())}`)
+      .join('\n');
+    
     return `
       \\employer{${convertToLatex(experience.position)}}{--${convertToLatex(experience.company)}}{
         ${startDateStr} -- ${endDateStr}
       }{${convertToLatex(experience.location)}}
       ${experience.description ? `
         \\begin{bullet-list-minor}
-          ${experience.description.split('\n').map(line => `\\item ${convertToLatex(line.trim())}`).join('\n')}
+          ${descriptionBulletPoints}
         \\end{bullet-list-minor}
       ` : ''}
     `;
@@ -380,14 +403,21 @@ export default function Profile() {
     const startDateStr = formatDateForLatex(project.startDate);
     const endDateStr = formatDateForLatex(project.endDate);
     
+    // Process description to create bullet points from each line
+    const descriptionBulletPoints = project.description
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .map(line => `\\item ${convertToLatex(line.trim())}`)
+      .join('\n');
+    
     return `
       \\project{${convertToLatex(project.title)}}{${convertToLatex(project.technologies)}}{
         ${startDateStr} -- ${endDateStr}
       }{
         \\begin{bullet-list-minor}
-          \\item ${convertToLatex(project.description)}
-          ${project.githubUrl ? `\\item GitHub: \\url{${project.githubUrl}}` : ''}
-          ${project.projectUrl ? `\\item Project Link: \\url{${project.projectUrl}}` : ''}
+          ${descriptionBulletPoints}
+          ${project.githubUrl ? `\\item \\textbf{GitHub:} \\href{${project.githubUrl}}{${project.githubUrl}}` : ''}
+          ${project.projectUrl ? `\\item \\textbf{Project Link:} \\href{${project.projectUrl}}{${project.projectUrl}}` : ''}
         \\end{bullet-list-minor}
       }
     `;
@@ -634,25 +664,32 @@ ${projectSection}
   };
 
   // Skills CRUD handlers
-  const handleAddSkill = async (skill: Omit<Skill, 'id'>) => {
-    return new Promise<void>((resolve) => {
-      setTimeout(async () => {
-        const newSkill = { ...skill, id: uuidv4() };
-        const updatedProfile = profile ? {
-          ...profile,
-          skills: [...profile.skills, newSkill]
-        } : null;
-        
-        setProfile(updatedProfile);
-        
-        // Save to MongoDB
-        if (updatedProfile) {
-          await saveProfileToMongoDB(updatedProfile);
-        }
-        
-        resolve();
-      }, 1000);
-    });
+  const handleAddSkill = async (skill: Omit<Skill, 'id'>, isBatchOperation: boolean = false) => {
+    try {
+      const newSkill = { ...skill, id: uuidv4() };
+      
+      if (!profile) {
+        console.error("Cannot add skill: Profile not loaded");
+        return Promise.reject(new Error("Profile not loaded"));
+      }
+      
+      // Create updated profile with new skill
+      const updatedProfile = {
+        ...profile,
+        skills: [...profile.skills, newSkill]
+      };
+      
+      // Update local state immediately
+      setProfile(updatedProfile);
+      
+      // Save to MongoDB (defer save if it's part of a batch)
+      await saveProfileToMongoDB(updatedProfile, isBatchOperation);
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error adding skill:", error);
+      return Promise.reject(error);
+    }
   };
 
   const handleUpdateSkill = async (skill: Skill) => {
@@ -761,6 +798,68 @@ ${projectSection}
     });
   };
 
+  // Create properly formatted data for AboutSection
+  const formattedExperiences = profile?.experiences.map(exp => ({
+    position: exp.position,
+    company: exp.company,
+    description: exp.description
+  })) || [];
+
+  // Extract skill names from the profile's skills structure
+  const formattedSkills = profile?.skills ? 
+    profile.skills.map(skill => skill.name) : 
+    [];
+
+  const formattedEducation = profile?.education.map(edu => ({
+    school: edu.school,
+    degree: edu.degree
+  })) || [];
+
+  // Add a method to handle batched skills
+  const handleAddSkillsBatch = async (skills: Array<Omit<Skill, 'id'>>) => {
+    if (!profile || skills.length === 0) {
+      return Promise.resolve();
+    }
+    
+    setSaveStatus('saving');
+    try {
+      let updatedProfile = { ...profile };
+      
+      // Process skills one by one, updating the profile object each time
+      for (let i = 0; i < skills.length; i++) {
+        const skill = skills[i];
+        const newSkill = { ...skill, id: uuidv4() };
+        
+        // Add to existing skills
+        updatedProfile = {
+          ...updatedProfile,
+          skills: [...updatedProfile.skills, newSkill]
+        };
+        
+        // Update local state immediately after each addition
+        setProfile(updatedProfile);
+      }
+      
+      // Save final state to MongoDB
+      await saveProfileToMongoDB(updatedProfile);
+      setSaveStatus('success');
+      
+      // Reset status after delay
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 3000);
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error adding skills batch:", error);
+      setSaveStatus('error');
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 3000);
+      return Promise.reject(error);
+    }
+  };
+
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
@@ -826,6 +925,7 @@ ${projectSection}
           onUploadImage={handleUploadImage}
           onUploadResume={handleUploadResume}
           onPreviewInOverleaf={handlePreviewInOverleaf}
+          onViewRawLatex={handleViewRawLatex}
         />
         
         {/* Tabs Navigation */}
@@ -889,6 +989,9 @@ ${projectSection}
             <AboutSection 
               initialAbout={profile.about}
               onSave={handleUpdateAbout}
+              experiences={formattedExperiences}
+              skills={formattedSkills}
+              education={formattedEducation}
             />
           )}
           
@@ -919,6 +1022,13 @@ ${projectSection}
               onAdd={handleAddSkill}
               onUpdate={handleUpdateSkill}
               onDelete={handleDeleteSkill}
+              onAddBatch={handleAddSkillsBatch}
+              experiences={formattedExperiences}
+              projects={profile.projects.map(proj => ({
+                title: proj.title,
+                technologies: proj.technologies,
+                description: proj.description
+              }))}
             />
           )}
           

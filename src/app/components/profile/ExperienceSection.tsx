@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Briefcase, Save, X, Trash2 } from "lucide-react";
+import { PenSquare, Plus, Briefcase, Save, X, Trash2, Sparkles } from "lucide-react";
+import { generateDescription, GenerationPrompt } from '@/app/services/groqService';
 
 interface Experience {
   id: string;
@@ -31,6 +32,7 @@ export default function ExperienceSection({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   
   const [newExperience, setNewExperience] = useState<Omit<Experience, 'id'>>({
     company: '',
@@ -135,6 +137,67 @@ export default function ExperienceSection({
     }
   };
 
+  const generateAIDescription = async (isEditing: boolean) => {
+    const experience = isEditing ? editExperience : newExperience;
+    if (!experience?.position || !experience?.company) {
+      alert("Please fill in at least the Position and Company fields first");
+      return;
+    }
+
+    let mode: 'replace' | 'enhance' = 'replace';
+    
+    // If there's an existing description, give the option to enhance instead of replace
+    if (experience.description && experience.description.trim() !== '') {
+      const userChoice = confirm(
+        "Do you want to enhance the existing description (OK) or completely replace it (Cancel)?"
+      );
+      
+      if (userChoice) {
+        mode = 'enhance';
+      } else {
+        // User wants to replace, confirm this action
+        if (!confirm("This will completely replace your existing description. Continue?")) {
+          return;
+        }
+      }
+    }
+
+    setIsGeneratingDescription(true);
+    try {
+      // Create the prompt for Groq API
+      const prompt: GenerationPrompt = {
+        type: 'experience',
+        position: experience.position,
+        company: experience.company,
+        additionalContext: experience.location ? 
+          `Job location: ${experience.location}. Timeframe: ${experience.startDate} to ${experience.endDate || 'present'}` : '',
+        mode,
+        // Only include current description if enhancing
+        ...(mode === 'enhance' && { currentDescription: experience.description })
+      };
+      
+      // Call the Groq API service
+      const generatedDescription = await generateDescription(prompt);
+      
+      if (isEditing && editExperience) {
+        setEditExperience({
+          ...editExperience,
+          description: generatedDescription
+        });
+      } else {
+        setNewExperience({
+          ...newExperience,
+          description: generatedDescription
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate description:', error);
+      alert('Failed to generate description. Please try again.');
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -224,16 +287,29 @@ export default function ExperienceSection({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Description
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-300">
+                  Description
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateAIDescription(false)}
+                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs"
+                  disabled={isLoading || isGeneratingDescription || !newExperience.position || !newExperience.company}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
+                </Button>
+              </div>
               <textarea
                 value={newExperience.description}
                 onChange={(e) => setNewExperience({...newExperience, description: e.target.value})}
                 className="w-full h-24 px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="Describe your responsibilities and achievements..."
-                disabled={isLoading}
+                placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
+                disabled={isLoading || isGeneratingDescription}
               />
+              <p className="text-xs text-gray-400 mt-1">Use a new line for each bullet point</p>
             </div>
             <div className="flex items-center">
               <input
@@ -350,15 +426,29 @@ export default function ExperienceSection({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Description
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-300">
+                        Description
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateAIDescription(true)}
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs"
+                        disabled={isLoading || isGeneratingDescription || !editExperience.position || !editExperience.company}
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
+                      </Button>
+                    </div>
                     <textarea
                       value={editExperience.description}
                       onChange={(e) => setEditExperience({...editExperience, description: e.target.value})}
                       className="w-full h-24 px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                      disabled={isLoading}
+                      placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
+                      disabled={isLoading || isGeneratingDescription}
                     />
+                    <p className="text-xs text-gray-400 mt-1">Use a new line for each bullet point</p>
                   </div>
                   <div className="flex items-center">
                     <input
@@ -446,8 +536,15 @@ export default function ExperienceSection({
                     </div>
                   </div>
                   
-                  <div className="mt-4 text-gray-300 whitespace-pre-line">
-                    {experience.description}
+                  <div className="mt-4 space-y-1">
+                    {experience.description.split('\n').map((line, i) => (
+                      line.trim() ? (
+                        <div key={i} className="flex items-start text-gray-300">
+                          <span className="mr-2 mt-1.5 text-blue-400">•</span>
+                          <p>{line.trim()}</p>
+                        </div>
+                      ) : null
+                    ))}
                   </div>
                 </div>
               </div>

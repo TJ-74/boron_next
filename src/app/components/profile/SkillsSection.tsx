@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit } from "lucide-react";
+import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, Sparkles } from "lucide-react";
+import { generateSkills, SkillsGenerationPrompt } from '@/app/services/skillsService';
 
 interface Skill {
   id: string;
@@ -13,22 +14,40 @@ interface Skill {
 
 interface SkillsSectionProps {
   skills: Skill[];
-  onAdd: (skill: Omit<Skill, 'id'>) => Promise<void>;
+  onAdd: (skill: Omit<Skill, 'id'>, isBatchOperation?: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onUpdate?: (skill: Skill) => Promise<void>;
+  experiences?: Array<{
+    position: string;
+    company: string;
+    description?: string;
+  }>;
+  projects?: Array<{
+    title: string;
+    technologies: string;
+    description?: string;
+  }>;
+  onAddBatch?: (skills: Array<Omit<Skill, 'id'>>) => Promise<void>;
 }
 
 export default function SkillsSection({ 
   skills, 
   onAdd, 
   onDelete,
-  onUpdate 
+  onUpdate,
+  experiences = [],
+  projects = [],
+  onAddBatch
 }: SkillsSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newSkill, setNewSkill] = useState('');
   const [newDomain, setNewDomain] = useState('');
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
+  const [generatedSkills, setGeneratedSkills] = useState<Array<{name: string, domain: string}>>([]);
+  const [selectedSkills, setSelectedSkills] = useState<{[key: string]: boolean}>({});
+  const [savingProgress, setSavingProgress] = useState<string>('');
 
   const handleAdd = async () => {
     if (!newSkill.trim() || !newDomain.trim()) return;
@@ -104,10 +123,119 @@ export default function SkillsSection({
     setIsAdding(false);
     setNewSkill('');
     setNewDomain('');
+    setGeneratedSkills([]);
+    setSelectedSkills({});
   };
 
   const cancelEditing = () => {
     setEditingSkill(null);
+  };
+
+  const toggleSkillSelection = (index: number) => {
+    setSelectedSkills(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  const addSelectedSkills = async () => {
+    const skillsToAdd = generatedSkills.filter((_, index) => selectedSkills[index]);
+    
+    if (skillsToAdd.length === 0) {
+      alert('Please select at least one skill to add.');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      // If we have a batch add function provided by parent, use it
+      if (onAddBatch && skillsToAdd.length > 1) {
+        await onAddBatch(skillsToAdd.map(skill => ({
+          name: skill.name,
+          domain: skill.domain,
+          includeInResume: true
+        })));
+      } else {
+        // Otherwise add skills one by one
+        for (let i = 0; i < skillsToAdd.length; i++) {
+          const skill = skillsToAdd[i];
+          setSavingProgress(`Adding ${i+1}/${skillsToAdd.length}: ${skill.name}`);
+          console.log(`Adding skill ${i+1}/${skillsToAdd.length}: ${skill.name} (${skill.domain})`);
+          
+          // If not the last skill, pass isBatchOperation flag
+          const isLastSkill = i === skillsToAdd.length - 1;
+          
+          // Wait for each skill to be added
+          await onAdd({
+            name: skill.name,
+            domain: skill.domain,
+            includeInResume: true
+          }, !isLastSkill); // Defer DB save for all except the last one
+          
+          // Small delay between operations to ensure state updates properly
+          if (i < skillsToAdd.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+      }
+      
+      // Clear selection
+      setGeneratedSkills([]);
+      setSelectedSkills({});
+      setSavingProgress('');
+      
+      // Close the adding form
+      setIsAdding(false);
+    } catch (error) {
+      console.error('Failed to add skills:', error);
+      alert(`Error adding skills: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setSavingProgress('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateSkills = async () => {
+    setIsGeneratingSkills(true);
+    try {
+      // Determine mode based on existing skills
+      const mode = skills.length > 0 ? 'suggest' : 'add';
+      
+      // Prepare the prompt
+      const prompt: SkillsGenerationPrompt = {
+        experiences,
+        projects,
+        currentSkills: skills.map(s => ({ name: s.name, domain: s.domain })),
+        mode
+      };
+      
+      // Call the skills generation service
+      const generatedSkillsList = await generateSkills(prompt);
+      
+      // Filter out skills that already exist in the user's profile
+      const existingSkillNames = new Set(skills.map(s => s.name.toLowerCase()));
+      const filteredSkills = generatedSkillsList.filter(
+        s => !existingSkillNames.has(s.name.toLowerCase())
+      );
+      
+      // Update state with generated skills
+      setGeneratedSkills(filteredSkills);
+      
+      // Initialize all skills as selected
+      const initialSelection: {[key: string]: boolean} = {};
+      filteredSkills.forEach((_, index) => {
+        initialSelection[index] = true;
+      });
+      setSelectedSkills(initialSelection);
+      
+      // Open the adding form if not already open
+      setIsAdding(true);
+    } catch (error) {
+      console.error('Failed to generate skills:', error);
+      alert('Failed to generate skills. Please try again.');
+    } finally {
+      setIsGeneratingSkills(false);
+    }
   };
 
   // Group skills by domain
@@ -124,72 +252,156 @@ export default function SkillsSection({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-200">Skills</h2>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setIsAdding(true)}
-          disabled={isAdding || isLoading || !!editingSkill}
-          className="text-gray-300 border-gray-700 hover:bg-gray-800"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Skill
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleGenerateSkills}
+            disabled={isAdding || isLoading || !!editingSkill || isGeneratingSkills}
+            className="text-blue-400 border-blue-600/30 hover:bg-blue-900/20"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isGeneratingSkills ? 'Generating...' : 'Generate Skills with AI'}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsAdding(true)}
+            disabled={isAdding || isLoading || !!editingSkill || isGeneratingSkills}
+            className="text-gray-300 border-gray-700 hover:bg-gray-800"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Skill
+          </Button>
+        </div>
       </div>
 
       {/* Add Skill Form */}
       {isAdding && (
         <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">Add New Skill</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Domain
-              </label>
-              <input
-                type="text"
-                value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="e.g., Web Development, Data Science"
-                disabled={isLoading}
-              />
+          <h3 className="text-lg font-medium text-white mb-4">
+            {generatedSkills.length > 0 ? 'Select Skills to Add' : 'Add New Skill'}
+          </h3>
+          
+          {/* AI Generated Skills */}
+          {generatedSkills.length > 0 ? (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-300">
+                  Select the skills you want to add to your profile:
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const allSelected = Object.values(selectedSkills).every(Boolean);
+                      const newSelection: {[key: string]: boolean} = {};
+                      generatedSkills.forEach((_, index) => {
+                        newSelection[index] = !allSelected;
+                      });
+                      setSelectedSkills(newSelection);
+                    }}
+                    className="text-xs text-blue-400 hover:text-blue-300"
+                  >
+                    {Object.values(selectedSkills).every(Boolean) ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="max-h-60 overflow-y-auto border border-gray-700 rounded-lg p-2">
+                {generatedSkills.map((skill, index) => (
+                  <div key={index} className="flex items-center py-2 border-b border-gray-700 last:border-b-0">
+                    <input
+                      type="checkbox"
+                      id={`skill-${index}`}
+                      checked={selectedSkills[index] || false}
+                      onChange={() => toggleSkillSelection(index)}
+                      className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                    />
+                    <label htmlFor={`skill-${index}`} className="ml-2 flex-1">
+                      <span className="text-white font-medium">{skill.name}</span>
+                      <span className="text-gray-400 text-sm ml-2">({skill.domain})</span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={cancelAdding}
+                  className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                  disabled={isLoading}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={addSelectedSkills}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading || Object.values(selectedSkills).filter(Boolean).length === 0}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isLoading 
+                    ? (savingProgress || 'Adding...') 
+                    : `Add Selected Skills (${Object.values(selectedSkills).filter(Boolean).length})`}
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Skill Name
-              </label>
-              <input
-                type="text"
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="e.g., JavaScript, Python"
-                disabled={isLoading}
-              />
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Domain
+                </label>
+                <input
+                  type="text"
+                  value={newDomain}
+                  onChange={(e) => setNewDomain(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                  placeholder="e.g., Web Development, Data Science"
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Skill Name
+                </label>
+                <input
+                  type="text"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                  placeholder="e.g., JavaScript, Python"
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={cancelAdding}
+                  className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                  disabled={isLoading}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={handleAdd}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading || !newSkill.trim() || !newDomain.trim()}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isLoading ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={cancelAdding}
-                className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
-                disabled={isLoading}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={handleAdd}
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={isLoading || !newSkill.trim() || !newDomain.trim()}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -267,7 +479,7 @@ export default function SkillsSection({
       <div className="space-y-6 mt-6">
         {skills.length === 0 ? (
           <div className="text-center w-full py-8 text-gray-400">
-            No skills added yet. Click the "Add Skill" button to add your skills.
+            No skills added yet. Click the "Add Skill" button to add your skills or use "Generate Skills with AI" to automatically create skills based on your profile.
           </div>
         ) : (
           Object.entries(groupedSkills).map(([domain, domainSkills]) => (

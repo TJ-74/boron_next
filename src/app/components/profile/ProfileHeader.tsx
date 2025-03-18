@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Upload, Loader2, ExternalLink } from "lucide-react";
+import { PenSquare, Upload, Loader2, ExternalLink, FileText } from "lucide-react";
 
 interface ProfileInfo {
   name: string;
@@ -23,6 +23,7 @@ interface ProfileHeaderProps {
   onUploadImage: (file: File) => Promise<void>;
   onUploadResume: (file: File) => Promise<void>;
   onPreviewInOverleaf: () => Promise<void>;
+  onViewRawLatex?: () => Promise<void>;
 }
 
 export default function ProfileHeader({ 
@@ -30,7 +31,8 @@ export default function ProfileHeader({
   onUpdateProfile, 
   onUploadImage, 
   onUploadResume,
-  onPreviewInOverleaf
+  onPreviewInOverleaf,
+  onViewRawLatex
 }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,6 +112,16 @@ export default function ProfileHeader({
       await onPreviewInOverleaf();
     } catch (error) {
       console.error('Failed to preview in Overleaf:', error);
+    }
+  };
+
+  const handleViewRawLatexClick = async () => {
+    try {
+      if (onViewRawLatex) {
+        await onViewRawLatex();
+      }
+    } catch (error) {
+      console.error('Failed to view raw LaTeX:', error);
     }
   };
 
@@ -249,6 +261,18 @@ export default function ProfileHeader({
               <ExternalLink className="h-4 w-4" />
               Preview in Overleaf
             </Button>
+            
+            {onViewRawLatex && (
+              <Button
+                variant="outline"
+                size="default"
+                onClick={handleViewRawLatexClick}
+                className="flex items-center gap-2 border-blue-600 text-blue-500 hover:bg-blue-900/20 hover:text-blue-400"
+              >
+                <FileText className="h-4 w-4" />
+                View LaTeX Code
+              </Button>
+            )}
           </div>
         </div>
       ) : (
