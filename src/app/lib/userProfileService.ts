@@ -59,6 +59,15 @@ export interface Project {
 
 export async function saveUserProfileSummary(profileData: UserProfileSummary): Promise<void> {
   try {
+    console.log("API: saveUserProfileSummary called with profile data:", {
+      ...profileData,
+      // Abbreviate large arrays to keep log readable
+      experiences: profileData.experiences ? `[${profileData.experiences.length} items]` : '[]',
+      education: profileData.education ? `[${profileData.education.length} items]` : '[]',
+      skills: profileData.skills ? `[${profileData.skills.length} items]` : '[]',
+      projects: profileData.projects ? `[${profileData.projects.length} items]` : '[]'
+    });
+    
     const response = await fetch('/api/profile', {
       method: 'POST',
       headers: {
@@ -67,13 +76,154 @@ export async function saveUserProfileSummary(profileData: UserProfileSummary): P
       body: JSON.stringify(profileData),
     });
 
+    console.log("API: Profile save API response status:", response.status);
+
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("API ERROR: Failed to save profile data:", errorData);
       throw new Error(errorData.error || 'Failed to save profile data');
     }
+    
+    console.log("API: Profile data saved successfully");
   } catch (error) {
-    console.error('Error saving user profile summary:', error);
+    console.error('API ERROR: Error saving user profile summary:', error);
     throw new Error('Failed to save profile data');
+  }
+}
+
+// New function to add a single experience
+export async function addExperienceItem(uid: string, experience: Experience): Promise<UserProfileSummary | null> {
+  try {
+    console.log("API: addExperienceItem called with:", experience);
+    
+    const response = await fetch('/api/profile?arrayUpdate=true&arrayType=experience', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        uid,
+        experiences: [experience]
+      }),
+    });
+
+    console.log("API: Experience item save response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API ERROR: Failed to save experience item:", errorData);
+      throw new Error(errorData.error || 'Failed to save experience item');
+    }
+    
+    console.log("API: Experience item saved successfully");
+    
+    // Fetch updated profile
+    return await getUserProfileSummary(uid);
+  } catch (error) {
+    console.error('API ERROR: Error saving experience item:', error);
+    throw new Error('Failed to save experience item');
+  }
+}
+
+// New function to add a single education item
+export async function addEducationItem(uid: string, education: Education): Promise<UserProfileSummary | null> {
+  try {
+    console.log("API: addEducationItem called with:", education);
+    
+    const response = await fetch('/api/profile?arrayUpdate=true&arrayType=education', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        uid,
+        education: [education]
+      }),
+    });
+
+    console.log("API: Education item save response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API ERROR: Failed to save education item:", errorData);
+      throw new Error(errorData.error || 'Failed to save education item');
+    }
+    
+    console.log("API: Education item saved successfully");
+    
+    // Fetch updated profile
+    return await getUserProfileSummary(uid);
+  } catch (error) {
+    console.error('API ERROR: Error saving education item:', error);
+    throw new Error('Failed to save education item');
+  }
+}
+
+// New function to add a single skill item
+export async function addSkillItem(uid: string, skill: Skill): Promise<UserProfileSummary | null> {
+  try {
+    console.log("API: addSkillItem called with:", skill);
+    
+    const response = await fetch('/api/profile?arrayUpdate=true&arrayType=skill', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        uid,
+        skills: [skill]
+      }),
+    });
+
+    console.log("API: Skill item save response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API ERROR: Failed to save skill item:", errorData);
+      throw new Error(errorData.error || 'Failed to save skill item');
+    }
+    
+    console.log("API: Skill item saved successfully");
+    
+    // Fetch updated profile
+    return await getUserProfileSummary(uid);
+  } catch (error) {
+    console.error('API ERROR: Error saving skill item:', error);
+    throw new Error('Failed to save skill item');
+  }
+}
+
+// New function to add a single project item
+export async function addProjectItem(uid: string, project: Project): Promise<UserProfileSummary | null> {
+  try {
+    console.log("API: addProjectItem called with:", project);
+    
+    const response = await fetch('/api/profile?arrayUpdate=true&arrayType=project', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        uid,
+        projects: [project]
+      }),
+    });
+
+    console.log("API: Project item save response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API ERROR: Failed to save project item:", errorData);
+      throw new Error(errorData.error || 'Failed to save project item');
+    }
+    
+    console.log("API: Project item saved successfully");
+    
+    // Fetch updated profile
+    return await getUserProfileSummary(uid);
+  } catch (error) {
+    console.error('API ERROR: Error saving project item:', error);
+    throw new Error('Failed to save project item');
   }
 }
 

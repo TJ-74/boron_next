@@ -93,6 +93,7 @@ async function parseWithGroq(text: string): Promise<any> {
     - linkedinUrl: LinkedIn profile URL
     - githubUrl: GitHub profile URL
     - portfolioUrl: Personal website or portfolio URL
+    - about: A short paragraph about the person's professional summary, career objectives or background
     - education: Array of education entries with
       - degree: Degree obtained
       - school: School/university name
@@ -128,7 +129,18 @@ async function parseWithGroq(text: string): Promise<any> {
   const parsedContent = completion.choices[0]?.message?.content;
   
   // Process and return the parsed content
-  return sanitizeJsonResponse(parsedContent);
+  const sanitizedResult = sanitizeJsonResponse(parsedContent);
+  
+  // Add empty arrays for missing sections to ensure consistent structure
+  if (!sanitizedResult.education) sanitizedResult.education = [];
+  if (!sanitizedResult.experience) sanitizedResult.experience = [];
+  if (!sanitizedResult.skills) sanitizedResult.skills = [];
+  if (!sanitizedResult.projects) sanitizedResult.projects = [];
+  
+  // Ensure about has a default value if missing
+  if (!sanitizedResult.about) sanitizedResult.about = '';
+  
+  return sanitizedResult;
 }
 
 /**
@@ -207,6 +219,11 @@ function sanitizeJsonResponse(content: string | null | undefined): any {
         phone: extractField('phone'),
         location: extractField('location'),
         title: extractField('title'),
+        about: extractField('about') || extractField('summary'),
+        education: [],
+        experience: [],
+        skills: [],
+        projects: []
       };
     } catch (finalError) {
       console.error('All parsing attempts failed:', finalError);

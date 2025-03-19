@@ -12,12 +12,12 @@ ABOUT: ${profile.about || 'Not specified'}
 
 EDUCATION: ${profile.education.length} entries
 ${profile.education.map((edu, i) => 
-  `${i+1}. ${edu.degree} from ${edu.school} (${edu.startDate} - ${edu.endDate}) GPA: ${edu.cgpa}`
+  `${i+1}. ${edu.degree} from ${edu.school} (Start Date:${edu.startDate}) (End Date: ${edu.endDate}) (GPA: ${edu.cgpa})`
 ).join('\n')}
 
 EXPERIENCE: ${profile.experiences.length} entries
 ${profile.experiences.map((exp, i) => 
-  `${i+1}. ${exp.position} at ${exp.company} (${exp.startDate} - ${exp.endDate}) in ${exp.location}`
+  `${i+1}. ${exp.position} at ${exp.company} (Start Date: ${exp.startDate}) (End Date: ${exp.endDate}) (Location: ${exp.location}) (Description: ${exp.description})`
 ).join('\n')}
 
 SKILLS: ${profile.skills.length} entries
@@ -29,7 +29,7 @@ ${Object.entries(profile.skills.reduce((acc: Record<string, string[]>, skill) =>
 
 PROJECTS: ${profile.projects.length} entries
 ${profile.projects.map((proj, i) => 
-  `${i+1}. ${proj.title} (${proj.technologies}) (${proj.startDate} - ${proj.endDate})`
+  `${i+1}. ${proj.title} (${proj.technologies}) Start Date:(${proj.startDate}) End Date: (${proj.endDate}) ${proj.description}`
 ).join('\n')}
 
 When responding to user queries, focus on providing information about their profile.

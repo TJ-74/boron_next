@@ -9,7 +9,15 @@ import logo from "@/app/images/logo-no-background.png";
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
 import { v4 as uuidv4 } from 'uuid';
-import { saveUserProfileSummary, getUserProfileSummary, UserProfileSummary } from '@/app/lib/userProfileService';
+import { 
+  saveUserProfileSummary, 
+  getUserProfileSummary, 
+  addExperienceItem, 
+  addEducationItem, 
+  addSkillItem, 
+  addProjectItem,
+  UserProfileSummary
+} from '@/app/lib/userProfileService';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import type { UserProfile as ProfileType } from '@/app/types/profile';
 
@@ -161,6 +169,16 @@ export default function Profile() {
 
   // Function to save profile to MongoDB
   const saveProfileToMongoDB = async (profileData: UserProfile, deferSave: boolean = false) => {
+    console.log("MONGODB: saveProfileToMongoDB called with profile data:", {
+      ...profileData,
+      // Abbreviate large arrays to keep log readable
+      experiences: `[${profileData.experiences.length} items]`,
+      education: `[${profileData.education.length} items]`,
+      skills: `[${profileData.skills.length} items]`,
+      projects: `[${profileData.projects.length} items]`
+    });
+    console.log("MONGODB: deferSave =", deferSave);
+    
     if (!user?.uid) return;
     
     try {
@@ -187,7 +205,9 @@ export default function Profile() {
         projects: profileData.projects
       };
       
+      console.log("MONGODB: Saving profile to MongoDB API...");
       await saveUserProfileSummary(profileSummary);
+      console.log("MONGODB: Profile saved successfully to MongoDB");
       
       if (!deferSave) {
         setSaveStatus('success');
@@ -198,7 +218,7 @@ export default function Profile() {
         }, 3000);
       }
     } catch (error) {
-      console.error('Failed to save profile to MongoDB:', error);
+      console.error('MONGODB ERROR: Failed to save profile to MongoDB:', error);
       
       if (!deferSave) {
         setSaveStatus('error');
@@ -290,6 +310,7 @@ export default function Profile() {
   };
 
   const handleUpdateAbout = async (about: string) => {
+    console.log("HANDLER: handleUpdateAbout called with:", about);
     return new Promise<void>((resolve) => {
       setTimeout(async () => {
         const updatedProfile = profile ? { ...profile, about } : null;
@@ -297,7 +318,9 @@ export default function Profile() {
         
         // Save to MongoDB
         if (updatedProfile) {
+          console.log("HANDLER: Saving updated about to MongoDB");
           await saveProfileToMongoDB(updatedProfile);
+          console.log("HANDLER: About section saved to MongoDB");
           refreshPdfIfOpen(); // Refresh PDF after about update
         }
         
@@ -583,9 +606,13 @@ ${projectSection}
 
   // Experience CRUD handlers
   const handleAddExperience = async (experience: Omit<Experience, 'id'>) => {
+    console.log("HANDLER: handleAddExperience called with:", JSON.stringify(experience, null, 2));
     return new Promise<void>((resolve) => {
       setTimeout(async () => {
+        // Create new experience object with ID
         const newExperience = { ...experience, id: uuidv4() };
+        
+        // Update local state immediately
         const updatedProfile = profile ? {
           ...profile,
           experiences: [...profile.experiences, newExperience]
@@ -593,13 +620,45 @@ ${projectSection}
         
         setProfile(updatedProfile);
         
-        // Save to MongoDB
-        if (updatedProfile) {
-          await saveProfileToMongoDB(updatedProfile);
-          refreshPdfIfOpen(); // Refresh PDF after adding experience
+        try {
+          // Do the save
+          if (updatedProfile && user?.uid) {
+            console.log("HANDLER: Saving new experience to MongoDB");
+            
+            try {
+              // Use the individual item API if called from resume parser
+              const callerStack = new Error().stack || '';
+              const isFromParser = callerStack.includes('handleApplyParsedData');
+              
+              if (isFromParser) {
+                console.log("HANDLER: Called from resume parser, using direct API");
+                const refreshedProfile = await addExperienceItem(user.uid, newExperience);
+                
+                // Update local state with refreshed data from MongoDB
+                if (refreshedProfile) {
+                  console.log("HANDLER: Updating local state with refreshed profile from MongoDB");
+                  setProfile(prevProfile => {
+                    if (!prevProfile) return null;
+                    return {
+                      ...prevProfile,
+                      experiences: refreshedProfile.experiences || prevProfile.experiences
+                    };
+                  });
+                }
+              } else {
+                console.log("HANDLER: Standard call, saving full profile");
+                await saveProfileToMongoDB(updatedProfile);
+              }
+              
+              console.log("HANDLER: Experience saved to MongoDB");
+              refreshPdfIfOpen(); // Refresh PDF after adding experience
+            } catch (saveError) {
+              console.error("HANDLER: Error saving experience:", saveError);
+            }
+          }
+        } finally {
+          resolve();
         }
-        
-        resolve();
       }, 1000);
     });
   };
@@ -650,9 +709,13 @@ ${projectSection}
 
   // Education CRUD handlers
   const handleAddEducation = async (education: Omit<Education, 'id'>) => {
+    console.log("HANDLER: handleAddEducation called with:", JSON.stringify(education, null, 2));
     return new Promise<void>((resolve) => {
       setTimeout(async () => {
+        // Create new education object with ID
         const newEducation = { ...education, id: uuidv4() };
+        
+        // Update local state immediately
         const updatedProfile = profile ? {
           ...profile,
           education: [...profile.education, newEducation]
@@ -660,13 +723,45 @@ ${projectSection}
         
         setProfile(updatedProfile);
         
-        // Save to MongoDB
-        if (updatedProfile) {
-          await saveProfileToMongoDB(updatedProfile);
-          refreshPdfIfOpen(); // Refresh PDF after adding education
+        try {
+          // Do the save
+          if (updatedProfile && user?.uid) {
+            console.log("HANDLER: Saving new education to MongoDB");
+            
+            try {
+              // Use the individual item API if called from resume parser
+              const callerStack = new Error().stack || '';
+              const isFromParser = callerStack.includes('handleApplyParsedData');
+              
+              if (isFromParser) {
+                console.log("HANDLER: Called from resume parser, using direct API");
+                const refreshedProfile = await addEducationItem(user.uid, newEducation);
+                
+                // Update local state with refreshed data from MongoDB
+                if (refreshedProfile) {
+                  console.log("HANDLER: Updating local state with refreshed profile from MongoDB");
+                  setProfile(prevProfile => {
+                    if (!prevProfile) return null;
+                    return {
+                      ...prevProfile,
+                      education: refreshedProfile.education || prevProfile.education
+                    };
+                  });
+                }
+              } else {
+                console.log("HANDLER: Standard call, saving full profile");
+                await saveProfileToMongoDB(updatedProfile);
+              }
+              
+              console.log("HANDLER: Education saved to MongoDB");
+              refreshPdfIfOpen(); // Refresh PDF after adding education
+            } catch (saveError) {
+              console.error("HANDLER: Error saving education:", saveError);
+            }
+          }
+        } finally {
+          resolve();
         }
-        
-        resolve();
       }, 1000);
     });
   };
@@ -717,7 +812,9 @@ ${projectSection}
 
   // Skills CRUD handlers
   const handleAddSkill = async (skill: Omit<Skill, 'id'>, isBatchOperation: boolean = false) => {
+    console.log("HANDLER: handleAddSkill called with:", JSON.stringify(skill, null, 2), "isBatch:", isBatchOperation);
     try {
+      // Create new skill object with ID
       const newSkill = { ...skill, id: uuidv4() };
       
       if (!profile) {
@@ -734,11 +831,44 @@ ${projectSection}
       // Update local state immediately
       setProfile(updatedProfile);
       
-      // Save to MongoDB (defer save if it's part of a batch)
-      await saveProfileToMongoDB(updatedProfile, isBatchOperation);
-      
-      if (!isBatchOperation) {
-        refreshPdfIfOpen(); // Refresh PDF after adding skill
+      // Save to MongoDB
+      if (user?.uid) {
+        console.log("HANDLER: Saving new skill to MongoDB, deferred:", isBatchOperation);
+        
+        try {
+          // Use the individual item API if called from resume parser
+          const callerStack = new Error().stack || '';
+          const isFromParser = callerStack.includes('handleApplyParsedData');
+          
+          if (isFromParser) {
+            console.log("HANDLER: Called from resume parser, using direct API");
+            const refreshedProfile = await addSkillItem(user.uid, newSkill);
+            
+            // Update local state with refreshed data from MongoDB
+            if (refreshedProfile) {
+              console.log("HANDLER: Updating local state with refreshed profile from MongoDB");
+              setProfile(prevProfile => {
+                if (!prevProfile) return null;
+                return {
+                  ...prevProfile,
+                  skills: refreshedProfile.skills || prevProfile.skills
+                };
+              });
+            }
+          } else {
+            console.log("HANDLER: Standard call, saving full profile");
+            await saveProfileToMongoDB(updatedProfile, isBatchOperation);
+          }
+          
+          console.log("HANDLER: Skill saved to MongoDB");
+          
+          if (!isBatchOperation) {
+            refreshPdfIfOpen(); // Refresh PDF after adding skill
+          }
+        } catch (saveError) {
+          console.error("HANDLER: Error saving skill:", saveError);
+          return Promise.reject(saveError);
+        }
       }
       
       return Promise.resolve();
@@ -794,9 +924,13 @@ ${projectSection}
 
   // Projects CRUD handlers
   const handleAddProject = async (project: Omit<Project, 'id'>) => {
+    console.log("HANDLER: handleAddProject called with:", JSON.stringify(project, null, 2));
     return new Promise<void>((resolve) => {
       setTimeout(async () => {
+        // Create new project object with ID
         const newProject = { ...project, id: uuidv4() };
+        
+        // Update local state immediately
         const updatedProfile = profile ? {
           ...profile,
           projects: [...profile.projects, newProject]
@@ -804,13 +938,45 @@ ${projectSection}
         
         setProfile(updatedProfile);
         
-        // Save to MongoDB
-        if (updatedProfile) {
-          await saveProfileToMongoDB(updatedProfile);
-          refreshPdfIfOpen(); // Refresh PDF after adding project
+        try {
+          // Do the save
+          if (updatedProfile && user?.uid) {
+            console.log("HANDLER: Saving new project to MongoDB");
+            
+            try {
+              // Use the individual item API if called from resume parser
+              const callerStack = new Error().stack || '';
+              const isFromParser = callerStack.includes('handleApplyParsedData');
+              
+              if (isFromParser) {
+                console.log("HANDLER: Called from resume parser, using direct API");
+                const refreshedProfile = await addProjectItem(user.uid, newProject);
+                
+                // Update local state with refreshed data from MongoDB
+                if (refreshedProfile) {
+                  console.log("HANDLER: Updating local state with refreshed profile from MongoDB");
+                  setProfile(prevProfile => {
+                    if (!prevProfile) return null;
+                    return {
+                      ...prevProfile,
+                      projects: refreshedProfile.projects || prevProfile.projects
+                    };
+                  });
+                }
+              } else {
+                console.log("HANDLER: Standard call, saving full profile");
+                await saveProfileToMongoDB(updatedProfile);
+              }
+              
+              console.log("HANDLER: Project saved to MongoDB");
+              refreshPdfIfOpen(); // Refresh PDF after adding project
+            } catch (saveError) {
+              console.error("HANDLER: Error saving project:", saveError);
+            }
+          }
+        } finally {
+          resolve();
         }
-        
-        resolve();
       }, 1000);
     });
   };
@@ -878,6 +1044,7 @@ ${projectSection}
 
   // Add a method to handle batched skills
   const handleAddSkillsBatch = async (skills: Array<Omit<Skill, 'id'>>) => {
+    console.log("HANDLER: handleAddSkillsBatch called with:", JSON.stringify(skills, null, 2));
     if (!profile || skills.length === 0) {
       return Promise.resolve();
     }
@@ -902,7 +1069,9 @@ ${projectSection}
       }
       
       // Save final state to MongoDB
+      console.log("HANDLER: Saving batch of skills to MongoDB");
       await saveProfileToMongoDB(updatedProfile);
+      console.log("HANDLER: Skills batch saved to MongoDB");
       refreshPdfIfOpen(); // Refresh PDF after adding batch of skills
       setSaveStatus('success');
       
@@ -919,6 +1088,41 @@ ${projectSection}
         setSaveStatus('idle');
       }, 3000);
       return Promise.reject(error);
+    }
+  };
+
+  // First, add a refreshProfile function that fetches the latest data
+  const refreshProfile = async () => {
+    try {
+      setLoading(true);
+      if (user?.uid) {
+        console.log("Refreshing profile data from MongoDB...");
+        const refreshedProfile = await getUserProfileSummary(user.uid);
+        
+        if (refreshedProfile) {
+          setProfile({
+            name: refreshedProfile.name,
+            email: refreshedProfile.email,
+            profileImage: refreshedProfile.profileImage || user?.photoURL || '/placeholder-avatar.png',
+            phone: refreshedProfile.phone || '',
+            location: refreshedProfile.location || '',
+            title: refreshedProfile.title || '',
+            linkedinUrl: refreshedProfile.linkedinUrl || '',
+            githubUrl: refreshedProfile.githubUrl || '',
+            portfolioUrl: refreshedProfile.portfolioUrl || '',
+            about: refreshedProfile.about || '',
+            experiences: refreshedProfile.experiences || [],
+            education: refreshedProfile.education || [],
+            skills: refreshedProfile.skills || [],
+            projects: refreshedProfile.projects || []
+          });
+          console.log("Profile data refreshed successfully");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh profile:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -991,6 +1195,13 @@ ${projectSection}
             onPreviewInOverleaf={handlePreviewInOverleaf}
             onViewRawLatex={handleViewRawLatex}
             onViewPdf={handleViewPdf}
+            onUpdateAbout={handleUpdateAbout}
+            onAddExperience={handleAddExperience}
+            onAddEducation={handleAddEducation}
+            onAddSkill={handleAddSkill}
+            onAddProject={handleAddProject}
+            onAddSkillsBatch={handleAddSkillsBatch}
+            onParsingComplete={refreshProfile}
           />
           
           {/* ChatBot toggle button */}

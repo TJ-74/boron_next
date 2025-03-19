@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, Sparkles } from "lucide-react";
+import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, Sparkles, CheckCircle } from "lucide-react";
 import { generateSkills, SkillsGenerationPrompt } from '@/app/services/skillsService';
 
 interface Skill {
@@ -405,76 +405,6 @@ export default function SkillsSection({
         </div>
       )}
 
-      {/* Edit Skill Form */}
-      {editingSkill && (
-        <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">Edit Skill</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Domain
-              </label>
-              <input
-                type="text"
-                value={editingSkill.domain}
-                onChange={(e) => setEditingSkill({...editingSkill, domain: e.target.value})}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="e.g., Web Development, Data Science"
-                disabled={isLoading}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Skill Name
-              </label>
-              <input
-                type="text"
-                value={editingSkill.name}
-                onChange={(e) => setEditingSkill({...editingSkill, name: e.target.value})}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="e.g., JavaScript, Python"
-                disabled={isLoading}
-              />
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="includeInResume"
-                checked={editingSkill.includeInResume !== false}
-                onChange={(e) => setEditingSkill({...editingSkill, includeInResume: e.target.checked})}
-                className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
-                disabled={isLoading}
-              />
-              <label htmlFor="includeInResume" className="ml-2 block text-sm text-gray-300">
-                Include in Resume
-              </label>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={cancelEditing}
-                className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
-                disabled={isLoading}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={handleUpdate}
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={isLoading || !editingSkill.name.trim() || !editingSkill.domain.trim()}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Skills List */}
       <div className="space-y-6 mt-6">
         {skills.length === 0 ? (
@@ -492,42 +422,102 @@ export default function SkillsSection({
                 {domainSkills.map((skill) => (
                   <div 
                     key={skill.id} 
-                    className={`bg-gray-800/70 text-gray-200 px-4 py-2 rounded-full flex items-center gap-2 border border-gray-700 hover:border-blue-500 transition-colors group ${skill.includeInResume === false ? 'opacity-60' : ''}`}
                   >
-                    <Code className="h-4 w-4 text-blue-400" />
-                    <span>{skill.name}</span>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {onUpdate && (
-                        <>
-                          <button
-                            onClick={() => handleEdit(skill)}
-                            className="text-gray-400 hover:text-blue-400"
+                    {editingSkill && editingSkill.id === skill.id ? (
+                      // Edit form in place for this skill
+                      <div className="bg-gray-800/70 px-4 py-3 rounded-lg border border-blue-500 flex flex-col gap-2">
+                        <h4 className="text-sm font-medium text-white">Edit Skill</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={editingSkill.domain}
+                            onChange={(e) => setEditingSkill({...editingSkill, domain: e.target.value})}
+                            className="px-2 py-1 bg-gray-700/70 border border-gray-600 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                            placeholder="Domain"
                             disabled={isLoading}
-                            title="Edit"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleIncludeInResume(skill)}
-                            className={`${skill.includeInResume !== false ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-300'}`}
+                          />
+                          <input
+                            type="text"
+                            value={editingSkill.name}
+                            onChange={(e) => setEditingSkill({...editingSkill, name: e.target.value})}
+                            className="px-2 py-1 bg-gray-700/70 border border-gray-600 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                            placeholder="Skill"
                             disabled={isLoading}
-                            title={skill.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`includeSkill-${skill.id}`}
+                            checked={editingSkill.includeInResume !== false}
+                            onChange={(e) => setEditingSkill({...editingSkill, includeInResume: e.target.checked})}
+                            className="h-3 w-3 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                            disabled={isLoading}
+                          />
+                          <label htmlFor={`includeSkill-${skill.id}`} className="ml-2 block text-xs text-gray-300">
+                            Include in Resume
+                          </label>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={cancelEditing}
+                            className="h-7 px-2 text-xs text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                            disabled={isLoading}
                           >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleDelete(skill.id)}
-                        className="text-gray-400 hover:text-red-400"
-                        disabled={isLoading}
-                        title="Delete"
+                            <X className="h-3 w-3 mr-1" />
+                            Cancel
+                          </Button>
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            onClick={handleUpdate}
+                            className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700"
+                            disabled={isLoading || !editingSkill.name.trim() || !editingSkill.domain.trim()}
+                          >
+                            <Save className="h-3 w-3 mr-1" />
+                            {isLoading ? 'Saving...' : 'Save'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Normal skill display
+                      <div 
+                        className={`bg-gray-800/70 text-gray-200 px-4 py-2 rounded-full flex items-center gap-2 border border-gray-700 hover:border-blue-500 transition-colors group ${skill.includeInResume === false ? 'opacity-60' : ''}`}
                       >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
+                        <Code className="h-4 w-4 text-blue-400" />
+                        <span>{skill.name}</span>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {onUpdate && (
+                            <>
+                              <button
+                                onClick={() => handleToggleIncludeInResume(skill)}
+                                className={`p-1 rounded-full ${skill.includeInResume !== false ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-300'} hover:bg-gray-700/50`}
+                                disabled={isLoading}
+                                title={skill.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleEdit(skill)}
+                                className="p-1 rounded-full text-gray-400 hover:text-blue-400 hover:bg-gray-700/50"
+                                disabled={isLoading}
+                              >
+                                <PenSquare className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleDelete(skill.id)}
+                            className="p-1 rounded-full text-gray-400 hover:text-red-400 hover:bg-gray-700/50"
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

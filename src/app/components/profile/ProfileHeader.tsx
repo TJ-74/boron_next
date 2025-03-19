@@ -8,6 +8,8 @@ import ResumeParserModal from './ResumeParserModal';
 import { ProfileInfo } from '@/app/types';
 import ImageCropModal from './ImageCropModal';
 import ImageFallback from '@/app/components/ui/ImageFallback';
+import { addExperienceItem, addEducationItem, addSkillItem, addProjectItem } from '@/app/lib/userProfileService';
+import { Progress } from "@/app/components/ui/progress";
 
 interface ProfileHeaderProps {
   profile: ProfileInfo;
@@ -18,6 +20,13 @@ interface ProfileHeaderProps {
   onPreviewInOverleaf: () => Promise<void>;
   onViewRawLatex?: () => Promise<void>;
   onViewPdf?: () => Promise<void>;
+  onUpdateAbout?: (about: string) => Promise<void>;
+  onAddExperience?: (experience: any) => Promise<void>;
+  onAddEducation?: (education: any) => Promise<void>;
+  onAddSkill?: (skill: any, isBatch?: boolean) => Promise<void>;
+  onAddProject?: (project: any) => Promise<void>;
+  onAddSkillsBatch?: (skills: any[]) => Promise<void>;
+  onParsingComplete?: () => void;
 }
 
 export default function ProfileHeader({ 
@@ -28,7 +37,14 @@ export default function ProfileHeader({
   onUploadResume,
   onPreviewInOverleaf,
   onViewRawLatex,
-  onViewPdf
+  onViewPdf,
+  onUpdateAbout,
+  onAddExperience,
+  onAddEducation,
+  onAddSkill,
+  onAddProject,
+  onAddSkillsBatch,
+  onParsingComplete
 }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +62,9 @@ export default function ProfileHeader({
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [parserError, setParserError] = useState<string | undefined>(undefined);
   const [extractedText, setExtractedText] = useState<string | undefined>(undefined);
+  const [isApplyingResumeData, setIsApplyingResumeData] = useState(false);
+  const [applyProgress, setApplyProgress] = useState<string>('');
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
   
   const [editProfile, setEditProfile] = useState<ProfileInfo>({
     name: profile.name,
@@ -214,19 +233,315 @@ export default function ProfileHeader({
   };
 
   // Handle applying parsed resume data to profile
-  const handleApplyParsedData = async (parsedData: Partial<ProfileInfo>) => {
+  const handleApplyParsedData = async (parsedData: any) => {
     try {
-      await onUpdateProfile(parsedData);
+      setIsApplyingResumeData(true);
+      setProgressPercentage(0);
+      console.log("PARSED DATA RECEIVED:", JSON.stringify(parsedData, null, 2));
+      
+      // Generate a unique parsing session ID to track logs
+      const sessionId = Math.random().toString(36).substring(2, 10);
+      console.log(`[${sessionId}] Starting resume data import session`);
+      
+      // Calculate total items to track progress
+      const totalItems = 2 + // Basic profile and about section
+        (parsedData.education?.length || 0) +
+        (parsedData.experience?.length || 0) +
+        (parsedData.skills?.length || 0) +
+        (parsedData.projects?.length || 0);
+      
+      let completedItems = 0;
+      
+      const updateProgress = (message: string) => {
+        completedItems++;
+        const percentage = Math.min(Math.round((completedItems / totalItems) * 100), 100);
+        setProgressPercentage(percentage);
+        setApplyProgress(message);
+      };
+      
+      // Keep track of how many items we've successfully saved
+      let savedItems = {
+        profile: false,
+        about: false,
+        education: 0,
+        experience: 0,
+        skills: 0,
+        projects: 0
+      };
+      
+      // Step 1: Basic Profile Info
+      if (parsedData.name || parsedData.email || parsedData.phone || parsedData.location || 
+          parsedData.title || parsedData.linkedinUrl || parsedData.githubUrl || parsedData.portfolioUrl) {
+        
+        setApplyProgress(`Updating basic profile information...`);
+        
+        try {
+          console.log(`[${sessionId}] Updating profile basic info`);
+      const profileInfo: Partial<ProfileInfo> = {
+        name: parsedData.name,
+        email: parsedData.email,
+        phone: parsedData.phone,
+        location: parsedData.location,
+        title: parsedData.title,
+        linkedinUrl: parsedData.linkedinUrl,
+        githubUrl: parsedData.githubUrl,
+        portfolioUrl: parsedData.portfolioUrl,
+      };
+      
+          await onUpdateProfile(profileInfo);
+          console.log(`[${sessionId}] Profile info updated successfully`);
+      
+          savedItems.profile = true;
       
       // Update the local state
       setEditProfile(prev => ({
         ...prev,
-        ...parsedData
+        ...profileInfo
       }));
+
+          updateProgress(`Updated basic profile information`);
+        } catch (error) {
+          console.error(`[${sessionId}] Failed to update profile info:`, error);
+          updateProgress(`Failed to update basic profile information`);
+        }
+      }
+
+      // Step 2: About Section
+      if (parsedData.about && onUpdateAbout) {
+        setApplyProgress(`Updating about section...`);
+        
+        try {
+          console.log(`[${sessionId}] Updating about section`);
+        await onUpdateAbout(parsedData.about);
+          console.log(`[${sessionId}] About section updated successfully`);
+          
+          savedItems.about = true;
+          updateProgress(`Updated about section`);
+        } catch (error) {
+          console.error(`[${sessionId}] Failed to save about section:`, error);
+          updateProgress(`Failed to update about section`);
+        }
+      }
+      
+      // Step 3: Education (process one item at a time)
+      if (parsedData.education && Array.isArray(parsedData.education) && parsedData.education.length > 0 && onAddEducation) {
+        console.log(`[${sessionId}] Processing ${parsedData.education.length} education items`);
+        
+        for (let i = 0; i < parsedData.education.length; i++) {
+          const edu = parsedData.education[i];
+          setApplyProgress(`Adding education ${i+1} of ${parsedData.education.length}...`);
+          
+          try {
+            console.log(`[${sessionId}] Adding education item ${i+1}/${parsedData.education.length}`);
+            
+          const education = {
+            school: edu.school || '',
+            degree: edu.degree || '',
+            startDate: edu.graduationDate ? edu.graduationDate.split(' - ')[0] : '',
+            endDate: edu.graduationDate ? edu.graduationDate.split(' - ')[1] || edu.graduationDate : '',
+            cgpa: '',
+            includeInResume: true
+          };
+          
+            // Only call the regular add function if userId is not available
+            if (!userId) {
+          await onAddEducation(education);
+            } else {
+              // Create education with ID for direct MongoDB update
+              const newEducation = { ...education, id: Math.random().toString(36).substring(2, 15) };
+              await addEducationItem(userId, newEducation);
+              console.log(`[${sessionId}] Education item ${i+1} added - refreshing profile`);
+            }
+            
+            console.log(`[${sessionId}] Education item ${i+1} added successfully`);
+            
+            savedItems.education++;
+            updateProgress(`Added education ${i+1} of ${parsedData.education.length}`);
+            
+          } catch (eduError) {
+            console.error(`[${sessionId}] Failed to add education item ${i+1}:`, eduError);
+            updateProgress(`Failed to add education ${i+1}`);
+          }
+        }
+      }
+      
+      // Step 4: Experience (process one item at a time)
+      if (parsedData.experience && Array.isArray(parsedData.experience) && parsedData.experience.length > 0 && onAddExperience) {
+        console.log(`[${sessionId}] Processing ${parsedData.experience.length} experience items`);
+        
+        for (let i = 0; i < parsedData.experience.length; i++) {
+          const exp = parsedData.experience[i];
+          setApplyProgress(`Adding experience ${i+1} of ${parsedData.experience.length}...`);
+          
+          try {
+            console.log(`[${sessionId}] Adding experience item ${i+1}/${parsedData.experience.length}`);
+            
+          const experience = {
+            company: exp.company || '',
+            position: exp.title || '',
+            location: '',
+            startDate: exp.dates ? exp.dates.split(' - ')[0] : '',
+            endDate: exp.dates ? exp.dates.split(' - ')[1] || exp.dates : '',
+            description: exp.responsibilities ? exp.responsibilities.join('\n') : '',
+            includeInResume: true
+          };
+          
+            // Log the experience object being added
+            console.log(`[${sessionId}] Experience data:`, JSON.stringify(experience, null, 2));
+            
+            if (!userId) {
+          await onAddExperience(experience);
+            } else {
+              // Create experience with ID for direct MongoDB update
+              const newExperience = { ...experience, id: Math.random().toString(36).substring(2, 15) };
+              await addExperienceItem(userId, newExperience);
+              console.log(`[${sessionId}] Experience item ${i+1} added - refreshing profile`);
+            }
+            
+            console.log(`[${sessionId}] Experience item ${i+1} added successfully`);
+            
+            savedItems.experience++;
+            updateProgress(`Added experience ${i+1} of ${parsedData.experience.length}`);
+            
+          } catch (expError) {
+            console.error(`[${sessionId}] Failed to add experience item ${i+1}:`, expError);
+            updateProgress(`Failed to add experience ${i+1}`);
+          }
+        }
+      }
+      
+      // Step 5: Skills
+      if (parsedData.skills && Array.isArray(parsedData.skills) && parsedData.skills.length > 0) {
+        console.log(`[${sessionId}] Processing ${parsedData.skills.length} skills`);
+        
+        if (onAddSkillsBatch && !userId) {
+          // Use batch processing if available
+          try {
+            setApplyProgress(`Adding ${parsedData.skills.length} skills...`);
+            console.log(`[${sessionId}] Adding skills batch`);
+            
+            const skillsToAdd = parsedData.skills.map((skill: string) => ({
+            name: skill,
+            domain: 'Other',
+            includeInResume: true
+          }));
+          
+            await onAddSkillsBatch(skillsToAdd);
+            console.log(`[${sessionId}] Skills batch added successfully`);
+            savedItems.skills = skillsToAdd.length;
+            
+            updateProgress(`Added ${skillsToAdd.length} skills`);
+            
+          } catch (skillsError) {
+            console.error(`[${sessionId}] Failed to add skills batch:`, skillsError);
+            updateProgress(`Failed to add skills`);
+          }
+        } 
+        else if (onAddSkill) {
+          // Process skills one by one
+          for (let i = 0; i < parsedData.skills.length; i++) {
+            const skillName = parsedData.skills[i];
+            setApplyProgress(`Adding skill ${i+1} of ${parsedData.skills.length}...`);
+            
+            try {
+              console.log(`[${sessionId}] Adding skill ${i+1}/${parsedData.skills.length}: ${skillName}`);
+              
+              const skill = {
+                name: skillName,
+              domain: 'Other',
+              includeInResume: true
+            };
+              
+              if (!userId) {
+                await onAddSkill(skill, false);
+              } else {
+                // Create skill with ID for direct MongoDB update
+                const newSkill = { ...skill, id: Math.random().toString(36).substring(2, 15) };
+                await addSkillItem(userId, newSkill);
+                console.log(`[${sessionId}] Skill ${i+1} added - refreshing profile`);
+              }
+              
+              console.log(`[${sessionId}] Skill ${i+1} added successfully`);
+              
+              savedItems.skills++;
+              updateProgress(`Added skill ${i+1} of ${parsedData.skills.length}`);
+              
+            } catch (skillError) {
+              console.error(`[${sessionId}] Failed to add skill ${i+1}:`, skillError);
+              updateProgress(`Failed to add skill ${i+1}`);
+            }
+          }
+        }
+      }
+      
+      // Step 6: Projects
+      if (parsedData.projects && Array.isArray(parsedData.projects) && parsedData.projects.length > 0 && onAddProject) {
+        console.log(`[${sessionId}] Processing ${parsedData.projects.length} projects`);
+        
+        for (let i = 0; i < parsedData.projects.length; i++) {
+          const proj = parsedData.projects[i];
+          setApplyProgress(`Adding project ${i+1} of ${parsedData.projects.length}...`);
+          
+          try {
+            console.log(`[${sessionId}] Adding project item ${i+1}/${parsedData.projects.length}`);
+            
+          const project = {
+            title: proj.name || '',
+            description: proj.description || '',
+            technologies: Array.isArray(proj.technologies) 
+              ? proj.technologies.join(', ') 
+              : (typeof proj.technologies === 'string' ? proj.technologies : ''),
+            startDate: '',
+            endDate: '',
+            projectUrl: '',
+            githubUrl: '',
+            includeInResume: true
+          };
+          
+            if (!userId) {
+          await onAddProject(project);
+            } else {
+              // Create project with ID for direct MongoDB update
+              const newProject = { ...project, id: Math.random().toString(36).substring(2, 15) };
+              await addProjectItem(userId, newProject);
+              console.log(`[${sessionId}] Project ${i+1} added - refreshing profile`);
+            }
+            
+            console.log(`[${sessionId}] Project ${i+1} added successfully`);
+            
+            savedItems.projects++;
+            updateProgress(`Added project ${i+1} of ${parsedData.projects.length}`);
+            
+          } catch (projError) {
+            console.error(`[${sessionId}] Failed to add project ${i+1}:`, projError);
+            updateProgress(`Failed to add project ${i+1}`);
+          }
+        }
+      }
+      
+      // Show final summary
+      const summary = `Successfully imported: ${savedItems.profile ? 'Profile info, ' : ''}${savedItems.about ? 'About, ' : ''}${savedItems.education} education items, ${savedItems.experience} experiences, ${savedItems.skills} skills, ${savedItems.projects} projects`;
+      
+      console.log(`[${sessionId}] Resume import complete. ${summary}`);
+      setProgressPercentage(100);
+      setApplyProgress(`Complete! ${summary}`);
       
     } catch (error) {
       console.error('Failed to apply resume data to profile:', error);
-      alert('Failed to apply resume data to your profile. Please try again.');
+      setApplyProgress('Error occurred during import. Check console for details.');
+      alert('There was an error while importing your resume data. Some items may not have been saved.');
+    } finally {
+      setTimeout(() => {
+        setIsApplyingResumeData(false);
+        setApplyProgress('');
+        setProgressPercentage(0);
+        setIsParserModalOpen(false);
+        
+        // Call the callback to refresh the page if provided
+        if (onParsingComplete) {
+          onParsingComplete();
+        }
+      }, 2000); // Show completion message for 2 seconds before closing
     }
   };
 
@@ -284,11 +599,13 @@ export default function ProfileHeader({
       <ResumeParserModal
         open={isParserModalOpen}
         onClose={() => setIsParserModalOpen(false)}
-        isLoading={isParsingResume}
+        isLoading={isParsingResume || isApplyingResumeData}
         parsedData={parsedResumeData}
         error={parserError}
         extractedText={extractedText}
         onApplyData={handleApplyParsedData}
+        applyProgress={isApplyingResumeData ? applyProgress : undefined}
+        progressPercentage={progressPercentage}
       />
       
       {!isEditing ? (
