@@ -9,8 +9,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Your App Name",
-  description: "Your app description",
+  title: "Boron Atom",
+  description: "A powerful AI powered application built with Next.js",
+  keywords: ["web app", "next.js", "react"],
+  authors: [{ name: "Tarun Janapati" }],
+  creator: "Tarun Janapati",
+  viewport: "width=device-width, initial-scale=1",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
