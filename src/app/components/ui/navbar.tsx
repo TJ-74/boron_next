@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from "@/app/components/ui/button";
 import { Menu, X } from "lucide-react";
 import logo from "@/app/images/logo-no-background.png";
 import { useAuth } from '@/app/context/AuthContext';
+import SearchProfiles from '@/app/components/SearchProfiles';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
+
+  // Check if we're on a profile-related page
+  const isProfilePage = pathname?.includes('/profile') || pathname?.includes('/search');
 
   // Handle scroll effect
   useEffect(() => {
@@ -43,6 +48,11 @@ export function Navbar() {
     setIsOpen(false); // Close mobile menu after navigation
   };
 
+  const handleProfileClick = () => {
+    router.push('/profile');
+    setIsOpen(false);
+  };
+
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
       isScrolled ? 'bg-gray-900/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
@@ -72,12 +82,21 @@ export function Navbar() {
                 {item.label}
               </button>
             ))}
+            
             <div className="flex items-center gap-4">
               {user ? (
                 <>
-                  <div className="text-sm text-gray-300">
-                    {user.email}
-                  </div>
+                  <Button
+                    onClick={handleProfileClick}
+                    variant="outline"
+                    className="text-white hover:text-gray-200"
+                  >
+                    My Profile
+                  </Button>
+                  
+                  {/* Search Profiles (Desktop) - only show on profile pages */}
+                  {isProfilePage && <SearchProfiles />}
+                  
                   <Button
                     onClick={logout}
                     variant="outline"
@@ -132,9 +151,21 @@ export function Navbar() {
                 <div className="flex flex-col items-center gap-2">
                   {user ? (
                     <>
-                      <div className="text-sm text-gray-300">
-                        {user.email}
-                      </div>
+                      <Button
+                        onClick={handleProfileClick}
+                        variant="outline"
+                        className="w-full text-white hover:text-gray-200"
+                      >
+                        My Profile
+                      </Button>
+                      
+                      {/* Search Profiles (Mobile) - only show on profile pages */}
+                      {isProfilePage && (
+                        <div className="w-full py-2">
+                          <SearchProfiles />
+                        </div>
+                      )}
+                      
                       <Button
                         onClick={logout}
                         variant="outline"

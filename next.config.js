@@ -46,6 +46,11 @@ const nextConfig = {
           protocol: 'https',
           hostname: 'lh3.googleusercontent.com',
           pathname: '/**',
+        },
+        {
+          protocol: 'https',
+          hostname: 'via.placeholder.com',
+          pathname: '/**',
         }
       ],
     },
@@ -97,6 +102,21 @@ const nextConfig = {
       // number of pages that should be kept simultaneously without being disposed
       pagesBufferLength: 2,
     },
-  }
+    api: {
+      bodyParser: {
+        sizeLimit: '10mb', // Increase size limit for API routes
+      },
+      responseLimit: '10mb',
+    },
+    experimental: {
+      serverComponentsExternalPackages: ['pdf-parse']
+    },
+}
+
+// Configure API routes to handle larger request bodies (for image uploads)
+// This needs to be done at the server configuration level
+if (process.env.NODE_ENV === 'development') {
+  console.log('Configuring server for large file uploads...');
+}
   
-  module.exports = nextConfig 
+module.exports = nextConfig 

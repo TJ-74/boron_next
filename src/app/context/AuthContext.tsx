@@ -22,7 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Check if user is logged in
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // If user exists, update token in cookies
+        const token = await user.getIdToken();
+        document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      }
       setUser(user);
       setLoading(false);
     });
@@ -56,6 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
+      // Get token from the user
+      const token = await user.getIdToken();
+      
+      // Store token in cookies for middleware authentication
+      document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 1 week
+      
       // Store additional user data if needed
       localStorage.setItem('user', JSON.stringify({
         id: user.uid,
@@ -74,6 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      
+      // Clear the auth token cookie
+      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      
       localStorage.removeItem('user');
       setUser(null);
       router.push('/login');

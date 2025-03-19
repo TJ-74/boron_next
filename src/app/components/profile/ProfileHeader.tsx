@@ -1,43 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
 import { PenSquare, Upload, Loader2, ExternalLink, FileText } from "lucide-react";
-
-interface ProfileInfo {
-  name: string;
-  email: string;
-  profileImage?: string;
-  phone?: string;
-  location?: string;
-  title?: string;
-  linkedinUrl?: string;
-  githubUrl?: string;
-  portfolioUrl?: string;
-}
+import ResumeParserModal from './ResumeParserModal';
+import { ProfileInfo } from '@/app/types';
+import ImageCropModal from './ImageCropModal';
+import ImageFallback from '@/app/components/ui/ImageFallback';
 
 interface ProfileHeaderProps {
   profile: ProfileInfo;
+  userId?: string;
   onUpdateProfile: (profile: Partial<ProfileInfo>) => Promise<void>;
   onUploadImage: (file: File) => Promise<void>;
   onUploadResume: (file: File) => Promise<void>;
   onPreviewInOverleaf: () => Promise<void>;
   onViewRawLatex?: () => Promise<void>;
+  onViewPdf?: () => Promise<void>;
 }
 
 export default function ProfileHeader({ 
   profile, 
+  userId,
   onUpdateProfile, 
   onUploadImage, 
   onUploadResume,
   onPreviewInOverleaf,
-  onViewRawLatex
+  onViewRawLatex,
+  onViewPdf
 }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isResumeUploading, setIsResumeUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Image cropping state
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  
+  // Resume parser state
+  const [isParserModalOpen, setIsParserModalOpen] = useState(false);
+  const [parsedResumeData, setParsedResumeData] = useState<any>(null);
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [parserError, setParserError] = useState<string | undefined>(undefined);
+  const [extractedText, setExtractedText] = useState<string | undefined>(undefined);
   
   const [editProfile, setEditProfile] = useState<ProfileInfo>({
     name: profile.name,
@@ -55,13 +63,81 @@ export default function ProfileHeader({
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Create a temporary URL for the selected image
+    const imageUrl = URL.createObjectURL(file);
+    
+    // Open the crop modal with the selected image
+    setImageToCrop(imageUrl);
+    setIsCropModalOpen(true);
+    
+    // Reset the file input value so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const handleCropComplete = async (croppedBlob: Blob, base64Data: string) => {
     setIsImageUploading(true);
     try {
-      await onUploadImage(file);
+      console.log('Starting image upload process...');
+      console.log('Base64 data length:', base64Data.length);
+      
+      // Create a file from the cropped blob
+      const croppedFile = new File([croppedBlob], 'cropped_profile.jpg', { 
+        type: 'image/jpeg' 
+      });
+      console.log('Created file from blob:', croppedFile.name, croppedFile.type, croppedFile.size);
+      
+      // For very large images, we'll just send the base64 data to avoid FormData issues
+      console.log('Uploading image to API directly with base64...');
+      
+      // Upload the cropped image with a longer timeout
+      const uploadResponse = await fetch('/api/profile/image/base64', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          base64Data,
+          uid: userId || '',
+          mimeType: 'image/jpeg',
+          fileName: 'cropped_profile.jpg'
+        }),
+      });
+      
+      const responseText = await uploadResponse.text();
+      console.log('Upload response text:', responseText);
+      
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('Upload response data:', responseData);
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', e);
+      }
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Failed to upload image: ${responseData?.error || uploadResponse.statusText}`);
+      }
+      
+      // Generate the image URL from our image API endpoint with a cache-busting timestamp
+      const imageUrl = `/api/profile/image/${userId}?t=${new Date().getTime()}`; 
+      console.log('Generated image URL:', imageUrl);
+      
+      // Update the profile with the new image URL
+      console.log('Updating profile with new image URL...');
+      await onUpdateProfile({ profileImage: imageUrl });
+      console.log('Profile updated successfully');
+      
+      // Revoke the object URL to avoid memory leaks
+      if (imageToCrop) {
+        URL.revokeObjectURL(imageToCrop);
+      }
     } catch (error) {
-      console.error('Failed to upload profile image:', error);
+      console.error('Failed to upload cropped profile image:', error);
     } finally {
       setIsImageUploading(false);
+      setImageToCrop(null);
     }
   };
 
@@ -70,12 +146,43 @@ export default function ProfileHeader({
     if (!file) return;
     
     setIsResumeUploading(true);
+    setIsParsingResume(true);
+    setParsedResumeData(null);
+    setParserError(undefined);
+    setExtractedText(undefined);
+    setIsParserModalOpen(true);
+    
     try {
+      // Upload the resume file
       await onUploadResume(file);
+      
+      // Parse the resume with Groq
+      const formData = new FormData();
+      formData.append('resume', file);
+      
+      const response = await fetch('/api/resume-parser', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setParsedResumeData(result.data);
+        // Store the extracted text from the response
+        if (result.extractedText) {
+          setExtractedText(result.extractedText);
+        }
+      } else {
+        console.error('Failed to parse resume:', result.error);
+        setParserError(result.error || 'Failed to parse resume. Please try again or upload a different file.');
+      }
     } catch (error) {
-      console.error('Failed to upload resume:', error);
+      console.error('Failed to process resume:', error);
+      setParserError('An error occurred while processing your resume. Please try again.');
     } finally {
       setIsResumeUploading(false);
+      setIsParsingResume(false);
     }
   };
 
@@ -106,6 +213,23 @@ export default function ProfileHeader({
     });
   };
 
+  // Handle applying parsed resume data to profile
+  const handleApplyParsedData = async (parsedData: Partial<ProfileInfo>) => {
+    try {
+      await onUpdateProfile(parsedData);
+      
+      // Update the local state
+      setEditProfile(prev => ({
+        ...prev,
+        ...parsedData
+      }));
+      
+    } catch (error) {
+      console.error('Failed to apply resume data to profile:', error);
+      alert('Failed to apply resume data to your profile. Please try again.');
+    }
+  };
+
   // Function to handle Overleaf preview
   const handleOverleafPreview = async () => {
     try {
@@ -125,14 +249,54 @@ export default function ProfileHeader({
     }
   };
 
+  const handleViewPdfClick = async () => {
+    try {
+      if (onViewPdf) {
+        await onViewPdf();
+      }
+    } catch (error) {
+      console.error('Failed to view PDF resume:', error);
+    }
+  };
+
   return (
     <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8 mb-8">
+      {/* Image Crop Modal */}
+      {imageToCrop && (
+        <ImageCropModal
+          open={isCropModalOpen}
+          onClose={() => {
+            setIsCropModalOpen(false);
+            // Clean up the URL after a short delay to allow for any animations to complete
+            setTimeout(() => {
+              if (imageToCrop) {
+                URL.revokeObjectURL(imageToCrop);
+                setImageToCrop(null);
+              }
+            }, 300);
+          }}
+          imageUrl={imageToCrop}
+          onCropComplete={handleCropComplete}
+        />
+      )}
+      
+      {/* Resume Parser Modal */}
+      <ResumeParserModal
+        open={isParserModalOpen}
+        onClose={() => setIsParserModalOpen(false)}
+        isLoading={isParsingResume}
+        parsedData={parsedResumeData}
+        error={parserError}
+        extractedText={extractedText}
+        onApplyData={handleApplyParsedData}
+      />
+      
       {!isEditing ? (
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
           <div className="relative">
             <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-700 border-4 border-blue-500/20">
               {profile.profileImage ? (
-                <Image
+                <ImageFallback
                   src={profile.profileImage}
                   alt="Profile"
                   width={128}
@@ -147,6 +311,7 @@ export default function ProfileHeader({
             </div>
             <label className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600 transition-colors shadow-lg">
               <input
+                ref={fileInputRef}
                 type="file"
                 className="hidden"
                 accept="image/*"
@@ -246,7 +411,7 @@ export default function ProfileHeader({
               <input
                 type="file"
                 className="hidden"
-                accept=".pdf,.doc,.docx"
+                accept=".pdf,.doc,.docx,.txt"
                 onChange={handleResumeUpload}
                 disabled={isResumeUploading}
               />
@@ -262,7 +427,19 @@ export default function ProfileHeader({
               Preview in Overleaf
             </Button>
             
-            {onViewRawLatex && (
+            {onViewPdf && (
+              <Button
+                variant="outline"
+                size="default"
+                onClick={handleViewPdfClick}
+                className="flex items-center gap-2 border-red-600 text-red-500 hover:bg-red-900/20 hover:text-red-400"
+              >
+                <FileText className="h-4 w-4" />
+                View PDF
+              </Button>
+            )}
+            
+            {/* {onViewRawLatex && (
               <Button
                 variant="outline"
                 size="default"
@@ -272,7 +449,7 @@ export default function ProfileHeader({
                 <FileText className="h-4 w-4" />
                 View LaTeX Code
               </Button>
-            )}
+            )} */}
           </div>
         </div>
       ) : (

@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle, Zap, X, MessageSquare } from "lucide-react";
 import Link from 'next/link';
 import logo from "@/app/images/logo-no-background.png";
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
 import { v4 as uuidv4 } from 'uuid';
 import { saveUserProfileSummary, getUserProfileSummary, UserProfileSummary } from '@/app/lib/userProfileService';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
+import type { UserProfile as ProfileType } from '@/app/types/profile';
 
 // Import profile section components
 import ProfileHeader from '@/app/components/profile/ProfileHeader';
@@ -18,6 +20,8 @@ import ExperienceSection from '@/app/components/profile/ExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import SkillsSection from '@/app/components/profile/SkillsSection';
 import ProjectsSection from '@/app/components/profile/ProjectsSection';
+import PdfViewer from '../components/profile/PdfViewer';
+import BoronBot from '../components/profile/ChatBot';
 
 // Define interfaces for profile data
 interface ProfileInfo {
@@ -82,19 +86,16 @@ interface UserProfile extends ProfileInfo {
 
 export default function Profile() {
   const router = useRouter();
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isChatBotOpen, setIsChatBotOpen] = useState(false);
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
     const fetchProfile = async () => {
       try {
         if (!user?.uid) {
@@ -156,7 +157,7 @@ export default function Profile() {
     if (user) {
       fetchProfile();
     }
-  }, [router, user, authLoading]);
+  }, [user]);
 
   // Function to save profile to MongoDB
   const saveProfileToMongoDB = async (profileData: UserProfile, deferSave: boolean = false) => {
@@ -210,6 +211,14 @@ export default function Profile() {
     }
   };
 
+  // Function to refresh the PDF viewer if it's open
+  const refreshPdfIfOpen = () => {
+    if (isPdfViewerOpen && user?.uid) {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/pdf-resume/${user.uid}?t=${new Date().getTime()}`;
+      setPdfUrl(apiUrl);
+    }
+  };
+
   // Profile update handlers
   const handleUpdateProfile = async (updatedInfo: Partial<ProfileInfo>) => {
     // Update local state
@@ -221,6 +230,7 @@ export default function Profile() {
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after profile update
         }
         
         resolve();
@@ -229,21 +239,43 @@ export default function Profile() {
   };
 
   const handleUploadImage = async (file: File) => {
-    // TODO: Replace with actual image upload API call
-    return new Promise<void>((resolve) => {
-      setTimeout(async () => {
-        // Mock image URL - in a real app, this would be the URL returned from your image upload service
-        const imageUrl = URL.createObjectURL(file);
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        if (!user?.uid) {
+          throw new Error('User not authenticated');
+        }
+        
+        // Create form data for the image upload
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('uid', user.uid);
+        
+        // Upload the image to our API as binary data
+        const uploadResponse = await fetch('/api/profile/image', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        // Generate the image URL from our image API endpoint
+        const imageUrl = `/api/profile/image/${user.uid}?t=${new Date().getTime()}`; // Add timestamp to prevent caching
+        
         const updatedProfile = profile ? { ...profile, profileImage: imageUrl } : null;
         setProfile(updatedProfile);
         
-        // Save to MongoDB
+        // Save image URL to MongoDB profile
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
         }
         
         resolve();
-      }, 1500);
+      } catch (error) {
+        console.error('Failed to upload profile image:', error);
+        reject(error);
+      }
     });
   };
 
@@ -266,6 +298,7 @@ export default function Profile() {
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after about update
         }
         
         resolve();
@@ -305,6 +338,19 @@ export default function Profile() {
       window.open(apiUrl, '_blank');
     } catch (error) {
       console.error('Error opening LaTeX:', error);
+    }
+  };
+
+  const handleViewPdf = async () => {
+    if (!profile || !user?.uid) return;
+    
+    try {
+      // Create the PDF URL but don't open a new tab
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/pdf-resume/${user.uid}`;
+      setPdfUrl(apiUrl);
+      setIsPdfViewerOpen(true);
+    } catch (error) {
+      console.error('Error opening PDF resume:', error);
     }
   };
   
@@ -550,6 +596,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after adding experience
         }
         
         resolve();
@@ -572,6 +619,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after updating experience
         }
         
         resolve();
@@ -592,6 +640,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after deleting experience
         }
         
         resolve();
@@ -614,6 +663,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after adding education
         }
         
         resolve();
@@ -636,6 +686,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after updating education
         }
         
         resolve();
@@ -656,6 +707,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after deleting education
         }
         
         resolve();
@@ -685,6 +737,10 @@ ${projectSection}
       // Save to MongoDB (defer save if it's part of a batch)
       await saveProfileToMongoDB(updatedProfile, isBatchOperation);
       
+      if (!isBatchOperation) {
+        refreshPdfIfOpen(); // Refresh PDF after adding skill
+      }
+      
       return Promise.resolve();
     } catch (error) {
       console.error("Error adding skill:", error);
@@ -707,6 +763,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after updating skill
         }
         
         resolve();
@@ -727,6 +784,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after deleting skill
         }
         
         resolve();
@@ -749,6 +807,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after adding project
         }
         
         resolve();
@@ -771,6 +830,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after updating project
         }
         
         resolve();
@@ -791,6 +851,7 @@ ${projectSection}
         // Save to MongoDB
         if (updatedProfile) {
           await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after deleting project
         }
         
         resolve();
@@ -842,6 +903,7 @@ ${projectSection}
       
       // Save final state to MongoDB
       await saveProfileToMongoDB(updatedProfile);
+      refreshPdfIfOpen(); // Refresh PDF after adding batch of skills
       setSaveStatus('success');
       
       // Reset status after delay
@@ -860,7 +922,7 @@ ${projectSection}
     }
   };
 
-  if (loading || authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -876,173 +938,204 @@ ${projectSection}
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      {/* Header */}
-      <header className="w-full py-6 px-4 sm:px-6 lg:px-8 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center">
-            <Image 
-              src={logo} 
-              alt="Logo" 
-              width={150} 
-              height={40} 
-              className="h-8 w-auto"
-            />
-          </Link>
-          <div className="flex items-center gap-4">
-            {saveStatus === 'saving' && (
-              <span className="text-sm text-yellow-400 flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </span>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+        {/* Header */}
+        <header className="w-full py-6 px-4 sm:px-6 lg:px-8 border-b border-gray-800">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <Link href="/" className="flex items-center">
+              <Image 
+                src={logo} 
+                alt="Logo" 
+                width={150} 
+                height={40} 
+                className="h-8 w-auto"
+              />
+            </Link>
+            <div className="flex items-center gap-4">
+              {saveStatus === 'saving' && (
+                <span className="text-sm text-yellow-400 flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </span>
+              )}
+              {saveStatus === 'success' && (
+                <span className="text-sm text-green-400">
+                  Saved successfully
+                </span>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-sm text-red-400">
+                  Error saving
+                </span>
+              )}
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="text-gray-300 border-gray-700 hover:bg-gray-800"
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Profile Header */}
+          <ProfileHeader 
+            profile={profile}
+            userId={user?.uid}
+            onUpdateProfile={handleUpdateProfile}
+            onUploadImage={handleUploadImage}
+            onUploadResume={handleUploadResume}
+            onPreviewInOverleaf={handlePreviewInOverleaf}
+            onViewRawLatex={handleViewRawLatex}
+            onViewPdf={handleViewPdf}
+          />
+          
+          {/* ChatBot toggle button */}
+          <div className="fixed bottom-6 right-6 z-10">
+            <Button
+              onClick={() => setIsChatBotOpen(!isChatBotOpen)}
+              className="rounded-full w-14 h-14 bg-gradient-to-r from-blue-900 to-purple-900 hover:from-blue-800 hover:to-purple-800 shadow-lg flex items-center justify-center"
+            >
+              {isChatBotOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+            </Button>
+          </div>
+          
+          {/* Tabs Navigation */}
+          <div className="flex border-b border-gray-800 mb-8 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => setActiveTab('about')}
+              className={`px-6 py-3 font-medium text-sm transition-colors ${
+                activeTab === 'about' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              About
+            </button>
+            <button
+              onClick={() => setActiveTab('experience')}
+              className={`px-6 py-3 font-medium text-sm transition-colors ${
+                activeTab === 'experience' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Experience
+            </button>
+            <button
+              onClick={() => setActiveTab('education')}
+              className={`px-6 py-3 font-medium text-sm transition-colors ${
+                activeTab === 'education' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Education
+            </button>
+            <button
+              onClick={() => setActiveTab('skills')}
+              className={`px-6 py-3 font-medium text-sm transition-colors ${
+                activeTab === 'skills' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Skills
+            </button>
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={`px-6 py-3 font-medium text-sm transition-colors ${
+                activeTab === 'projects' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Projects
+            </button>
+          </div>
+          
+          {/* Tab Content */}
+          <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8">
+            {/* About Tab */}
+            {activeTab === 'about' && (
+              <AboutSection 
+                initialAbout={profile.about}
+                onSave={handleUpdateAbout}
+                experiences={formattedExperiences}
+                skills={formattedSkills}
+                education={formattedEducation}
+              />
             )}
-            {saveStatus === 'success' && (
-              <span className="text-sm text-green-400">
-                Saved successfully
-              </span>
+            
+            {/* Experience Tab */}
+            {activeTab === 'experience' && (
+              <ExperienceSection 
+                experiences={profile.experiences}
+                onAdd={handleAddExperience}
+                onUpdate={handleUpdateExperience}
+                onDelete={handleDeleteExperience}
+              />
             )}
-            {saveStatus === 'error' && (
-              <span className="text-sm text-red-400">
-                Error saving
-              </span>
+            
+            {/* Education Tab */}
+            {activeTab === 'education' && (
+              <EducationSection 
+                educations={profile.education}
+                onAdd={handleAddEducation}
+                onUpdate={handleUpdateEducation}
+                onDelete={handleDeleteEducation}
+              />
             )}
-          <Button
-            onClick={logout}
-            variant="outline"
-            className="text-gray-300 border-gray-700 hover:bg-gray-800"
-          >
-            Sign Out
-          </Button>
+            
+            {/* Skills Tab */}
+            {activeTab === 'skills' && (
+              <SkillsSection 
+                skills={profile.skills}
+                onAdd={handleAddSkill}
+                onUpdate={handleUpdateSkill}
+                onDelete={handleDeleteSkill}
+                onAddBatch={handleAddSkillsBatch}
+                experiences={formattedExperiences}
+                projects={profile.projects.map(proj => ({
+                  title: proj.title,
+                  technologies: proj.technologies,
+                  description: proj.description
+                }))}
+              />
+            )}
+            
+            {/* Projects Tab */}
+            {activeTab === 'projects' && (
+              <ProjectsSection 
+                projects={profile.projects}
+                onAdd={handleAddProject}
+                onUpdate={handleUpdateProject}
+                onDelete={handleDeleteProject}
+              />
+            )}
           </div>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header */}
-        <ProfileHeader 
-          profile={profile}
-          onUpdateProfile={handleUpdateProfile}
-          onUploadImage={handleUploadImage}
-          onUploadResume={handleUploadResume}
-          onPreviewInOverleaf={handlePreviewInOverleaf}
-          onViewRawLatex={handleViewRawLatex}
+        {/* PDF Viewer */}
+        <PdfViewer 
+          isOpen={isPdfViewerOpen}
+          onClose={() => setIsPdfViewerOpen(false)}
+          pdfUrl={pdfUrl}
+          userId={user?.uid}
         />
         
-        {/* Tabs Navigation */}
-        <div className="flex border-b border-gray-800 mb-8 overflow-x-auto scrollbar-hide">
-          <button
-            onClick={() => setActiveTab('about')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'about' 
-                ? 'text-blue-400 border-b-2 border-blue-400' 
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            About
-          </button>
-          <button
-            onClick={() => setActiveTab('experience')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'experience' 
-                ? 'text-blue-400 border-b-2 border-blue-400' 
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            Experience
-          </button>
-          <button
-            onClick={() => setActiveTab('education')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'education' 
-                ? 'text-blue-400 border-b-2 border-blue-400' 
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            Education
-          </button>
-          <button
-            onClick={() => setActiveTab('skills')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'skills' 
-                ? 'text-blue-400 border-b-2 border-blue-400' 
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            Skills
-          </button>
-          <button
-            onClick={() => setActiveTab('projects')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'projects' 
-                ? 'text-blue-400 border-b-2 border-blue-400' 
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            Projects
-          </button>
-        </div>
-        
-        {/* Tab Content */}
-        <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8">
-          {/* About Tab */}
-          {activeTab === 'about' && (
-            <AboutSection 
-              initialAbout={profile.about}
-              onSave={handleUpdateAbout}
-              experiences={formattedExperiences}
-              skills={formattedSkills}
-              education={formattedEducation}
-            />
-          )}
-          
-          {/* Experience Tab */}
-          {activeTab === 'experience' && (
-            <ExperienceSection 
-              experiences={profile.experiences}
-              onAdd={handleAddExperience}
-              onUpdate={handleUpdateExperience}
-              onDelete={handleDeleteExperience}
-            />
-          )}
-          
-          {/* Education Tab */}
-          {activeTab === 'education' && (
-            <EducationSection 
-              educations={profile.education}
-              onAdd={handleAddEducation}
-              onUpdate={handleUpdateEducation}
-              onDelete={handleDeleteEducation}
-            />
-          )}
-          
-          {/* Skills Tab */}
-          {activeTab === 'skills' && (
-            <SkillsSection 
-              skills={profile.skills}
-              onAdd={handleAddSkill}
-              onUpdate={handleUpdateSkill}
-              onDelete={handleDeleteSkill}
-              onAddBatch={handleAddSkillsBatch}
-              experiences={formattedExperiences}
-              projects={profile.projects.map(proj => ({
-                title: proj.title,
-                technologies: proj.technologies,
-                description: proj.description
-              }))}
-            />
-          )}
-          
-          {/* Projects Tab */}
-          {activeTab === 'projects' && (
-            <ProjectsSection 
-              projects={profile.projects}
-              onAdd={handleAddProject}
-              onUpdate={handleUpdateProject}
-              onDelete={handleDeleteProject}
-            />
-          )}
-        </div>
+        {/* Boron Bot */}
+        {profile && (
+          <BoronBot
+            isOpen={isChatBotOpen}
+            onClose={() => setIsChatBotOpen(false)}
+            profile={profile as unknown as ProfileType}
+          />
+        )}
       </div>
-    </div>
+    </ProtectedRoute>
   );
 } 

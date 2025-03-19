@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/app/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 // Interface definitions
 interface Experience {
   id: string;
@@ -48,6 +50,9 @@ interface UserProfile {
   email: string;
   about: string;
   profileImage?: string;
+  profileImageBase64?: string; // Base64 encoded image
+  profileImageMimeType?: string; // MIME type of the image
+  profileImageName?: string; // Original filename
   phone?: string;
   location?: string;
   title?: string;
@@ -62,7 +67,7 @@ interface UserProfile {
 
 export async function GET(request: NextRequest) {
   try {
-    // Don't use request.url directly as it causes dynamic server usage errors
+    // Use nextUrl.searchParams instead of parsing the URL directly
     const uid = request.nextUrl.searchParams.get('uid');
     
     if (!uid) {

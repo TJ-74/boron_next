@@ -8,6 +8,9 @@ export interface UserProfileSummary {
   email: string;
   about: string;
   profileImage?: string;
+  profileImageBase64?: string; // Base64 encoded image
+  profileImageMimeType?: string; // MIME type of the image
+  profileImageName?: string; // Original filename
   phone?: string;
   location?: string;
   title?: string;
@@ -60,10 +63,12 @@ interface Project {
   includeInResume?: boolean;
 }
 
+// Add the dynamic config
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const uid = searchParams.get('uid');
+    const uid = request.nextUrl.searchParams.get('uid');
     
     if (!uid) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
