@@ -2,25 +2,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // List of paths that are public (don't require authentication)
-const publicPaths = ['/', '/login', '/pricing', '/features', '/about', '/success'];
+const publicPaths = ['/', '/login', '/pricing', '/features', '/about', '/success', '/templates'];
 
 // List of paths that require authentication
 const protectedPaths = ['/profile', '/dashboard', '/settings'];
-
-// List of paths that require active Stripe subscription
-const subscriptionPaths = ['/profile'];
 
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Get Firebase auth token and email from cookies
+  // Get Firebase auth token from cookies
   const token = request.cookies.get('firebase-token')?.value || 
                 request.cookies.get('__session')?.value || 
                 request.cookies.get('session')?.value ||
                 request.cookies.get('auth_token')?.value;
-                
-  const userEmail = request.cookies.get('user_email')?.value;
 
   const response = NextResponse.next();
 
@@ -50,39 +45,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Allow public paths without authentication
-  if (publicPaths.some(path => pathname === path)) {
+  if (publicPaths.some(path => pathname === path || pathname.startsWith('/public'))) {
     return response;
   }
 
   // Check if the path is protected and user is not authenticated
   if (protectedPaths.some(path => pathname.startsWith(path)) && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // Check if path requires Stripe subscription
-  if (subscriptionPaths.some(path => pathname.startsWith(path))) {
-    if (!userEmail) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    try {
-      const res = await fetch(`${request.nextUrl.origin}/api/check-subscription`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: userEmail }),
-      });
-
-      const data = await res.json();
-
-      if (!data.hasSubscription) {
-        return NextResponse.redirect(new URL('/pricing', request.url));
-      }
-    } catch (error) {
-      console.error('Subscription check failed:', error);
-      return NextResponse.redirect(new URL('/pricing', request.url));
-    }
   }
 
   // If user is authenticated and trying to access login page, redirect to profile

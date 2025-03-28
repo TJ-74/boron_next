@@ -128,7 +128,19 @@ export default function EducationSection({
   };
 
   const formatDateRange = (startDate: string, endDate: string) => {
-    return `${startDate} - ${endDate || 'Present'}`;
+    // Format dates from YYYY-MM to MMM YYYY
+    const formatDate = (dateString: string) => {
+      if (!dateString) return 'Present';
+      try {
+        const [year, month] = dateString.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      } catch (e) {
+        return dateString; // Return as is if format is not YYYY-MM
+      }
+    };
+    
+    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
   };
 
   return (
@@ -181,27 +193,25 @@ export default function EducationSection({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Start Date (MM/YYYY)
+                  Start Date
                 </label>
                 <input
-                  type="text"
+                  type="month"
                   value={newEducation.startDate}
                   onChange={(e) => setNewEducation({...newEducation, startDate: e.target.value})}
                   className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="09/2018"
                   disabled={isLoading}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  End Date (MM/YYYY or leave empty for present)
+                  End Date (leave empty for present)
                 </label>
                 <input
-                  type="text"
+                  type="month"
                   value={newEducation.endDate}
                   onChange={(e) => setNewEducation({...newEducation, endDate: e.target.value})}
                   className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="05/2022"
                   disabled={isLoading}
                 />
               </div>
@@ -306,10 +316,10 @@ export default function EducationSection({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
-                          Start Date (MM/YYYY)
+                          Start Date
                         </label>
                         <input
-                          type="text"
+                          type="month"
                           value={editEducation.startDate}
                           onChange={(e) => setEditEducation({...editEducation, startDate: e.target.value})}
                           className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
@@ -318,10 +328,10 @@ export default function EducationSection({
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">
-                          End Date (MM/YYYY or leave empty for present)
+                          End Date (leave empty for present)
                         </label>
                         <input
-                          type="text"
+                          type="month"
                           value={editEducation.endDate}
                           onChange={(e) => setEditEducation({...editEducation, endDate: e.target.value})}
                           className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"

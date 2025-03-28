@@ -103,8 +103,17 @@ const formatDateForLatex = (dateString?: string): string => {
   if (!dateString) return '';
   
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    // Handle YYYY-MM format from month input type
+    if (dateString.includes('-')) {
+      const [year, month] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    } 
+    // Handle existing date strings
+    else {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
   } catch (e) {
     return dateString;
   }
@@ -253,6 +262,10 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
 \\setlength{\\footskip}{30pt}
 \\def\\bull{\\vrule height 0.8ex width .7ex depth -.1ex }
 
+% Improve page breaks
+\\usepackage{needspace}
+\\usepackage{placeins}
+
 \\newcommand{\\contact}[3]{
   \\vspace*{5pt}
   \\begin{center}
@@ -265,13 +278,16 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
   \\vspace*{-8pt}
 }
 \\newcommand{\\school}[4]{
+  \\needspace{2\\baselineskip}
   \\textbf{#1} \\labelitemi #2 \\hfill #3 \\\\ #4 \\vspace*{5pt}
 }
 \\newcommand{\\employer}[4]{{
+  \\needspace{3\\baselineskip}
   \\vspace*{2pt}%
   \\textbf{#1} #2 \\hfill #3\\\\ #4 \\vspace*{2pt}}
 }
 \\newcommand{\\project}[4]{{
+  \\needspace{3\\baselineskip}
   \\vspace*{2pt}% 
   \\textbf{#1} #2 \\hfill #3\\\\ #4 \\vspace*{2pt}}
 }
@@ -280,6 +296,8 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
   \\hrulefill \\\\
 }
 \\newcommand{\\header}[1]{{
+  \\needspace{4\\baselineskip}
+  \\FloatBarrier
   \\hspace*{-15pt}\\vspace*{6pt} \\textsc{#1}} \\vspace*{-6pt} 
   \\lineunder
 }

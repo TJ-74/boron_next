@@ -119,7 +119,19 @@ export default function ExperienceSection({
   };
 
   const formatDateRange = (startDate: string, endDate: string) => {
-    return `${startDate} - ${endDate || 'Present'}`;
+    // Format dates from YYYY-MM to MMM YYYY
+    const formatDate = (dateString: string) => {
+      if (!dateString) return 'Present';
+      try {
+        const [year, month] = dateString.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      } catch (e) {
+        return dateString; // Return as is if format is not YYYY-MM
+      }
+    };
+    
+    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
   };
 
   const handleToggleIncludeInResume = async (experience: Experience) => {
@@ -261,23 +273,23 @@ export default function ExperienceSection({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Start Date (MM/YYYY)
+                  Start Date
                 </label>
                 <input
-                  type="text"
+                  type="month"
                   value={newExperience.startDate}
                   onChange={(e) => setNewExperience({...newExperience, startDate: e.target.value})}
                   className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="01/2022"
+                  placeholder="2022-01"
                   disabled={isLoading}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  End Date (MM/YYYY or leave empty for present)
+                  End Date (leave empty for present)
                 </label>
                 <input
-                  type="text"
+                  type="month"
                   value={newExperience.endDate}
                   onChange={(e) => setNewExperience({...newExperience, endDate: e.target.value})}
                   className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
@@ -409,7 +421,7 @@ export default function ExperienceSection({
                             Start Date
                           </label>
                           <input
-                            type="date"
+                            type="month"
                             value={editExperience.startDate}
                             onChange={(e) => setEditExperience({...editExperience, startDate: e.target.value})}
                             className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
@@ -421,7 +433,7 @@ export default function ExperienceSection({
                             End Date (leave empty if current)
                           </label>
                           <input
-                            type="date"
+                            type="month"
                             value={editExperience.endDate}
                             onChange={(e) => setEditExperience({...editExperience, endDate: e.target.value})}
                             className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"

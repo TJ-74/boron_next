@@ -383,8 +383,17 @@ export default function Profile() {
     if (!dateString) return '';
     
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      // Handle YYYY-MM format from month input type
+      if (dateString.includes('-')) {
+        const [year, month] = dateString.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      } 
+      // Handle existing date strings
+      else {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
     } catch (e) {
       return dateString;
     }

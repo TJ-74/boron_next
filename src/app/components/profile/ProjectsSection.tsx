@@ -216,6 +216,18 @@ export default function ProjectsSection({
     }
   };
 
+  // Helper function to format dates in a consistent way
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Present';
+    try {
+      const [year, month] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+    } catch (e) {
+      return dateString; // Return as is if format is not YYYY-MM
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -298,7 +310,7 @@ export default function ProjectsSection({
                   Start Date
                 </label>
                 <input
-                  type="date"
+                  type="month"
                   name="startDate"
                   value={newProject.startDate}
                   onChange={handleInputChange}
@@ -311,7 +323,7 @@ export default function ProjectsSection({
                   End Date (leave empty if ongoing)
                 </label>
                 <input
-                  type="date"
+                  type="month"
                   name="endDate"
                   value={newProject.endDate}
                   onChange={handleInputChange}
@@ -464,7 +476,7 @@ export default function ProjectsSection({
                             Start Date
                           </label>
                           <input
-                            type="date"
+                            type="month"
                             name="startDate"
                             value={editingProject.startDate}
                             onChange={handleEditInputChange}
@@ -477,7 +489,7 @@ export default function ProjectsSection({
                             End Date (leave empty if ongoing)
                           </label>
                           <input
-                            type="date"
+                            type="month"
                             name="endDate"
                             value={editingProject.endDate}
                             onChange={handleEditInputChange}
@@ -593,10 +605,10 @@ export default function ProjectsSection({
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-1" />
                                 <span>
-                                  {new Date(project.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                                  {formatDate(project.startDate)}
                                   {' - '}
                                   {project.endDate 
-                                    ? new Date(project.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+                                    ? formatDate(project.endDate)
                                     : 'Present'}
                                 </span>
                               </div>

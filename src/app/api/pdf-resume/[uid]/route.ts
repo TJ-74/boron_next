@@ -229,6 +229,20 @@ const generateHtmlResume = (profile: UserProfile): string => {
       box-sizing: border-box;
     }
     
+    /* Multi-page specific styles */
+    body.multi-page .resume-container {
+      overflow: visible;
+      height: auto;
+    }
+    
+    /* Each section should have proper spacing for multi-page layout */
+    .section {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.25rem;
+      width: 100%;
+      break-inside: avoid;
+    }
+    
     html, body {
       width: 100%;
       margin: 0;
@@ -295,11 +309,6 @@ const generateHtmlResume = (profile: UserProfile): string => {
       gap: 0.25rem;
     }
     
-    .section {
-      margin-bottom: 0.5rem;
-      width: 100%;
-    }
-    
     .section-title {
       font-weight: bold;
       text-transform: uppercase;
@@ -323,6 +332,7 @@ const generateHtmlResume = (profile: UserProfile): string => {
       margin-bottom: 0.15rem;
       color: #000;
       width: 100%;
+      break-inside: avoid;
     }
     
     .date-text {
@@ -371,6 +381,11 @@ const generateHtmlResume = (profile: UserProfile): string => {
       display: block;
     }
     
+    /* Each entry in experience, projects, etc. should avoid breaking across pages */
+    .content-indent {
+      break-inside: avoid;
+    }
+    
     @media print {
       /* Reset all styles for printing */
       * {
@@ -381,10 +396,10 @@ const generateHtmlResume = (profile: UserProfile): string => {
       
       html, body {
         width: 100%;
-        height: 100%;
+        height: auto;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: hidden;
+        overflow: visible;
       }
       
       body {
@@ -400,6 +415,32 @@ const generateHtmlResume = (profile: UserProfile): string => {
         max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+      }
+      
+      /* Support proper page breaks */
+      .section {
+        page-break-inside: avoid;
+      }
+      
+      /* Allow content to flow to multiple pages */
+      .resume-container {
+        page-break-after: always;
+        page-break-before: avoid;
+      }
+      
+      /* Keep headers with their content */
+      h2, .section-title, .section-divider {
+        page-break-after: avoid;
+      }
+      
+      /* Keep list items together */
+      li {
+        page-break-inside: avoid;
+      }
+      
+      /* Keep the title block on the first page */
+      .header {
+        page-break-after: avoid;
       }
       
       /* Hide all non-printable elements */
@@ -418,7 +459,7 @@ const generateHtmlResume = (profile: UserProfile): string => {
       }
       
       @page {
-        margin: 0;
+        margin: 0.5in;
         size: letter;
       }
     }
@@ -507,11 +548,21 @@ const generateHtmlResume = (profile: UserProfile): string => {
         element.style.position = 'absolute';
         element.style.left = '-9999px';
       });
+
+      // Check if content requires multiple pages
+      const contentHeight = document.querySelector('.resume-container').scrollHeight;
+      const pageHeight = 11 * 96; // Letter paper height in pixels (11 inches * 96 DPI)
+      
+      // If content exceeds one page, add a class to enable multi-page layout
+      if (contentHeight > pageHeight) {
+        document.body.classList.add('multi-page');
+      }
     };
     
     window.onafterprint = function() {
       // Remove printing class from body
       document.body.classList.remove('printing');
+      document.body.classList.remove('multi-page');
       
       // Restore non-printable elements
       const noPrintElements = document.querySelectorAll('.no-print, button');
@@ -530,6 +581,25 @@ const generateHtmlResume = (profile: UserProfile): string => {
         el.style.display = 'none';
       });
     }
+
+    // Add page break suggestions based on content
+    window.addEventListener('load', function() {
+      const contentSections = document.querySelectorAll('.section');
+      const pageHeight = 9.5 * 96; // Usable page height in pixels (11 inches - margins * 96 DPI)
+      let currentHeight = document.querySelector('.header').offsetHeight;
+      
+      contentSections.forEach(function(section) {
+        const sectionHeight = section.offsetHeight;
+        
+        // If adding this section would exceed page height, suggest a page break
+        if (currentHeight + sectionHeight > pageHeight) {
+          section.style.pageBreakBefore = 'always';
+          currentHeight = sectionHeight;
+        } else {
+          currentHeight += sectionHeight;
+        }
+      });
+    });
   </script>
 </body>
 </html>
@@ -543,8 +613,17 @@ const formatDateForDisplay = (dateString?: string): string => {
   if (!dateString) return 'Present';
   
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    // Handle YYYY-MM format from month input type
+    if (dateString.includes('-')) {
+      const [year, month] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    } 
+    // Handle existing date strings
+    else {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
   } catch (e) {
     return dateString;
   }
