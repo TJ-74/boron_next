@@ -5,7 +5,7 @@ import HeroSection from '@/app/components/homepage/home';
 import FeaturesSection from '@/app/components/homepage/FeaturesSection';
 import HowItWorksSection from '@/app/components/homepage/HowitWorks';
 import CTASection from '@/app/components/homepage/CTASection';
-import Footer from '@/app/components/homepage/Footer';
+import { Footer } from '@/app/components/ui/footer';
 
 export default function Home() {
   return (

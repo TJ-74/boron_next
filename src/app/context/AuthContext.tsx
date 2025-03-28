@@ -24,9 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check if user is logged in
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // If user exists, update token in cookies
+        // If user exists, update token and email in cookies
         const token = await user.getIdToken();
         document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+        if (user.email) {
+          document.cookie = `user_email=${user.email}; path=/; max-age=${60 * 60 * 24 * 7}`;
+        }
       }
       setUser(user);
       setLoading(false);
@@ -44,8 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: 'John Doe',
       };
 
-      // Store user data
+      // Store user data and email cookie
       localStorage.setItem('user', JSON.stringify(mockUser));
+      document.cookie = `user_email=${email}; path=/; max-age=${60 * 60 * 24 * 7}`;
       setUser(mockUser);
 
       // Redirect to profile page
@@ -64,8 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get token from the user
       const token = await user.getIdToken();
       
-      // Store token in cookies for middleware authentication
+      // Store token and email in cookies for middleware authentication
       document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 1 week
+      if (user.email) {
+        document.cookie = `user_email=${user.email}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      }
       
       // Store additional user data if needed
       localStorage.setItem('user', JSON.stringify({
@@ -86,8 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signOut(auth);
       
-      // Clear the auth token cookie
+      // Clear all auth cookies
       document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'user_email=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       
       localStorage.removeItem('user');
       setUser(null);

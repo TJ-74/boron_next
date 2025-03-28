@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
@@ -28,10 +29,10 @@ export function Navbar() {
 
   const navItems = [
     { label: "Home", href: "/" },
-    { label: "Features", href: "#features" },
+    { label: "Features", href: "/features" },
     { label: "Templates", href: "/templates" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "About", href: "#about" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "About", href: "/about" },
   ];
 
   const handleNavigation = (href: string) => {
