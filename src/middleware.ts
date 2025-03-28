@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: https://*.stripe.com https://*.googleapis.com https://*.google.com https://*.firebaseapp.com;
-    frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://*.firebaseio.com;
+    frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://*.firebaseio.com https://boronatom.vercel.app;
     connect-src 'self' https://api.stripe.com https://*.googleapis.com https://accounts.google.com https://securetoken.googleapis.com https://*.firebaseapp.com https://*.firebaseio.com;
     media-src 'self' https://videos.pexels.com;
   `.replace(/\s{2,}/g, ' ').trim();
