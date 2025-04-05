@@ -50,10 +50,21 @@ export interface Project {
   includeInResume?: boolean;
 }
 
+export interface Certificate {
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialUrl?: string;
+  includeInResume?: boolean;
+}
+
 export interface UserProfile extends ProfileInfo {
   about: string;
   experiences: Experience[];
   education: Education[];
   skills: Skill[];
   projects: Project[];
+  certificates: Certificate[];
 } 

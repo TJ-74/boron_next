@@ -21,6 +21,7 @@ export interface UserProfileSummary {
   education?: Education[];
   skills?: Skill[];
   projects?: Project[];
+  certificates?: Certificate[];
 }
 
 interface Experience {
@@ -60,6 +61,16 @@ interface Project {
   endDate: string;
   projectUrl?: string;
   githubUrl?: string;
+  includeInResume?: boolean;
+}
+
+interface Certificate {
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialUrl?: string;
   includeInResume?: boolean;
 }
 
@@ -106,6 +117,7 @@ export async function POST(request: NextRequest) {
       education: profileData.education ? `[${profileData.education.length} items]` : '[]',
       skills: profileData.skills ? `[${profileData.skills.length} items]` : '[]',
       projects: profileData.projects ? `[${profileData.projects.length} items]` : '[]',
+      certificates: profileData.certificates ? `[${profileData.certificates.length} items]` : '[]',
       isArrayUpdate: isArrayUpdate,
       arrayType: arrayType
     });
@@ -217,6 +229,38 @@ export async function POST(request: NextRequest) {
           await collection.updateOne(
             { uid: profileData.uid },
             { $push: { skills: newItem } }
+          );
+        }
+      }
+      else if (arrayType === 'certificate' && profileData.certificates && profileData.certificates.length > 0) {
+        const newItem = profileData.certificates[0];
+        console.log(`MongoDB API: Adding new ${arrayType} item:`, newItem);
+        
+        // If document doesn't exist yet, initialize with empty arrays
+        if (!existingDoc) {
+          await collection.insertOne({
+            uid: profileData.uid,
+            name: profileData.name || '',
+            email: profileData.email || '',
+            about: profileData.about || '',
+            phone: profileData.phone || '',
+            location: profileData.location || '',
+            title: profileData.title || '',
+            profileImage: profileData.profileImage || '',
+            linkedinUrl: profileData.linkedinUrl || '',
+            githubUrl: profileData.githubUrl || '',
+            portfolioUrl: profileData.portfolioUrl || '',
+            certificates: [newItem],
+            experiences: [],
+            education: [],
+            skills: [],
+            projects: []
+          });
+        } else {
+          // Add to existing array without overwriting
+          await collection.updateOne(
+            { uid: profileData.uid },
+            { $push: { certificates: newItem } }
           );
         }
       }

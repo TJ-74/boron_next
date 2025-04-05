@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Upload, Loader2, ExternalLink, FileText } from "lucide-react";
+import { PenSquare, Upload, Loader2, ExternalLink, FileText, Code } from "lucide-react";
 import ResumeParserModal from './ResumeParserModal';
 import { ProfileInfo } from '@/app/types';
 import ImageCropModal from './ImageCropModal';
@@ -756,17 +756,17 @@ export default function ProfileHeader({
               </Button>
             )}
             
-            {/* {onViewRawLatex && (
+            {onViewRawLatex && (
               <Button
                 variant="outline"
                 size="default"
                 onClick={handleViewRawLatexClick}
-                className="flex items-center gap-2 border-blue-600 text-blue-500 hover:bg-blue-900/20 hover:text-blue-400"
+                className="flex items-center gap-2 border-purple-600 text-purple-500 hover:bg-purple-900/20 hover:text-purple-400"
               >
-                <FileText className="h-4 w-4" />
+                <Code className="h-4 w-4" />
                 View LaTeX Code
               </Button>
-            )} */}
+            )}
           </div>
         </div>
       ) : (

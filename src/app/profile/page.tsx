@@ -16,10 +16,19 @@ import {
   addEducationItem, 
   addSkillItem, 
   addProjectItem,
+  addCertificateItem,
   UserProfileSummary
 } from '@/app/lib/userProfileService';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
-import type { UserProfile as ProfileType } from '@/app/types/profile';
+import type { 
+  UserProfile as ProfileType,
+  ProfileInfo,
+  Experience,
+  Education,
+  Skill,
+  Project,
+  Certificate
+} from '@/app/types/profile';
 
 // Import profile section components
 import ProfileHeader from '@/app/components/profile/ProfileHeader';
@@ -28,68 +37,18 @@ import ExperienceSection from '@/app/components/profile/ExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import SkillsSection from '@/app/components/profile/SkillsSection';
 import ProjectsSection from '@/app/components/profile/ProjectsSection';
+import CertificatesSection from '@/app/components/profile/CertificatesSection';
 import PdfViewer from '../components/profile/PdfViewer';
 import BoronBot from '../components/profile/ChatBot';
 
 // Define interfaces for profile data
-interface ProfileInfo {
-  name: string;
-  email: string;
-  profileImage?: string;
-  phone?: string;
-  location?: string;
-  title?: string;
-  linkedinUrl?: string;
-  githubUrl?: string;
-  portfolioUrl?: string;
-}
-
-interface Experience {
-  id: string;
-  company: string;
-  position: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-  includeInResume?: boolean;
-}
-
-interface Education {
-  id: string;
-  school: string;
-  degree: string;
-  startDate: string;
-  endDate: string;
-  cgpa: string;
-  includeInResume?: boolean;
-}
-
-interface Skill {
-  id: string;
-  name: string;
-  domain: string;
-  includeInResume?: boolean;
-}
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  technologies: string;
-  startDate: string;
-  endDate: string;
-  projectUrl?: string;
-  githubUrl?: string;
-  includeInResume?: boolean;
-}
-
 interface UserProfile extends ProfileInfo {
   about: string;
   experiences: Experience[];
   education: Education[];
   skills: Skill[];
   projects: Project[];
+  certificates: Certificate[];
 }
 
 export default function Profile() {
@@ -129,7 +88,8 @@ export default function Profile() {
             experiences: savedProfile.experiences || [],
             education: savedProfile.education || [],
             skills: savedProfile.skills || [],
-            projects: savedProfile.projects || []
+            projects: savedProfile.projects || [],
+            certificates: savedProfile.certificates || []
           });
         } else {
           // Create a minimal profile with user info from Firebase
@@ -147,7 +107,8 @@ export default function Profile() {
             experiences: [],
             education: [],
             skills: [],
-            projects: []
+            projects: [],
+            certificates: []
           };
           
           setProfile(defaultProfile);
@@ -202,7 +163,8 @@ export default function Profile() {
         experiences: profileData.experiences,
         education: profileData.education,
         skills: profileData.skills,
-        projects: profileData.projects
+        projects: profileData.projects,
+        certificates: profileData.certificates
       };
       
       console.log("MONGODB: Saving profile to MongoDB API...");
@@ -1123,7 +1085,8 @@ ${projectSection}
             experiences: refreshedProfile.experiences || [],
             education: refreshedProfile.education || [],
             skills: refreshedProfile.skills || [],
-            projects: refreshedProfile.projects || []
+            projects: refreshedProfile.projects || [],
+            certificates: refreshedProfile.certificates || []
           });
           console.log("Profile data refreshed successfully");
         }
@@ -1132,6 +1095,122 @@ ${projectSection}
       console.error("Failed to refresh profile:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to handle adding a new certificate
+  const handleAddCertificate = async (certificate: Omit<Certificate, 'id'>): Promise<void> => {
+    if (!user?.uid || !profile) return;
+    
+    try {
+      // Generate a new ID
+      const newCertificate: Certificate = {
+        ...certificate,
+        id: uuidv4()
+      };
+      
+      // Optimistically update UI first
+      setProfile(prevProfile => {
+        if (!prevProfile) return null;
+        
+        return {
+          ...prevProfile,
+          certificates: [...prevProfile.certificates, newCertificate]
+        };
+      });
+      
+      // Save to database
+      try {
+        await addCertificateItem(user.uid, newCertificate);
+      } catch (error) {
+        console.error('Failed to add certificate to database:', error);
+        
+        // Rollback UI change if save fails
+        setProfile(prevProfile => {
+          if (!prevProfile) return null;
+          
+          return {
+            ...prevProfile,
+            certificates: prevProfile.certificates.filter(c => c.id !== newCertificate.id)
+          };
+        });
+        
+        throw error;
+      }
+      
+      // Then update MongoDB for full profile consistency
+      if (profile) {
+        const updatedProfile = {
+          ...profile,
+          certificates: [...profile.certificates, newCertificate]
+        };
+        await saveProfileToMongoDB(updatedProfile, true);
+      }
+    } catch (error) {
+      console.error('Error adding certificate:', error);
+      throw new Error('Failed to add certificate');
+    }
+  };
+
+  // Function to handle updating a certificate
+  const handleUpdateCertificate = async (certificate: Certificate) => {
+    if (!user?.uid || !profile) return;
+    
+    try {
+      // Optimistically update UI first
+      setProfile(prevProfile => {
+        if (!prevProfile) return null;
+        
+        return {
+          ...prevProfile,
+          certificates: prevProfile.certificates.map(c => 
+            c.id === certificate.id ? certificate : c
+          )
+        };
+      });
+      
+      // Then update MongoDB
+      if (profile) {
+        const updatedProfile = {
+          ...profile,
+          certificates: profile.certificates.map(c => 
+            c.id === certificate.id ? certificate : c
+          )
+        };
+        await saveProfileToMongoDB(updatedProfile);
+      }
+    } catch (error) {
+      console.error('Error updating certificate:', error);
+      throw new Error('Failed to update certificate');
+    }
+  };
+
+  // Function to handle deleting a certificate
+  const handleDeleteCertificate = async (id: string) => {
+    if (!user?.uid || !profile) return;
+    
+    try {
+      // Optimistically update UI first
+      setProfile(prevProfile => {
+        if (!prevProfile) return null;
+        
+        return {
+          ...prevProfile,
+          certificates: prevProfile.certificates.filter(c => c.id !== id)
+        };
+      });
+      
+      // Then update MongoDB
+      if (profile) {
+        const updatedProfile = {
+          ...profile,
+          certificates: profile.certificates.filter(c => c.id !== id)
+        };
+        await saveProfileToMongoDB(updatedProfile);
+      }
+    } catch (error) {
+      console.error('Error deleting certificate:', error);
+      throw new Error('Failed to delete certificate');
     }
   };
 
@@ -1256,6 +1335,16 @@ ${projectSection}
               Education
             </button>
             <button
+              onClick={() => setActiveTab('certificates')}
+              className={`px-6 py-3 font-medium text-sm transition-colors ${
+                activeTab === 'certificates' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Certificates
+            </button>
+            <button
               onClick={() => setActiveTab('skills')}
               className={`px-6 py-3 font-medium text-sm transition-colors ${
                 activeTab === 'skills' 
@@ -1310,6 +1399,16 @@ ${projectSection}
               />
             )}
             
+            {/* Certificates Tab */}
+            {activeTab === 'certificates' && (
+              <CertificatesSection
+                certificates={profile.certificates}
+                onAdd={handleAddCertificate}
+                onUpdate={handleUpdateCertificate}
+                onDelete={handleDeleteCertificate}
+              />
+            )}
+            
             {/* Skills Tab */}
             {activeTab === 'skills' && (
               <SkillsSection 
@@ -1319,11 +1418,6 @@ ${projectSection}
                 onDelete={handleDeleteSkill}
                 onAddBatch={handleAddSkillsBatch}
                 experiences={formattedExperiences}
-                projects={profile.projects.map(proj => ({
-                  title: proj.title,
-                  technologies: proj.technologies,
-                  description: proj.description
-                }))}
               />
             )}
             

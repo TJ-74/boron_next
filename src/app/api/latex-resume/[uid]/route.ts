@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/app/lib/mongodb';
+import { convertToLatex, formatDateForLatex, formatDateRangeForLatex, formatUrlForLatex } from '@/app/lib/latexUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,12 +45,25 @@ interface Project {
   includeInResume?: boolean;
 }
 
+interface Certificate {
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialUrl?: string;
+  includeInResume?: boolean;
+}
+
 interface UserProfile {
   uid: string;
   name: string;
   email: string;
   about: string;
   profileImage?: string;
+  profileImageBase64?: string;
+  profileImageMimeType?: string;
+  profileImageName?: string;
   phone?: string;
   location?: string;
   title?: string;
@@ -60,7 +74,23 @@ interface UserProfile {
   education: Education[];
   skills: Skill[];
   projects: Project[];
+  certificates: Certificate[];
 }
+
+// Add helper function to get the last path segment of a URL
+const getLastPathSegment = (url: string): string => {
+  try {
+    return url.split('/').filter(Boolean).pop() || '';
+  } catch (e) {
+    return '';
+  }
+};
+
+// Helper function to ensure URL has protocol
+const ensureFullUrl = (url: string): string => {
+  if (!url) return '';
+  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+};
 
 export async function GET(
   request: NextRequest,
@@ -98,44 +128,6 @@ export async function GET(
   }
 }
 
-// Helper function to format dates for LaTeX
-const formatDateForLatex = (dateString?: string): string => {
-  if (!dateString) return '';
-  
-  try {
-    // Handle YYYY-MM format from month input type
-    if (dateString.includes('-')) {
-      const [year, month] = dateString.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1);
-      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    } 
-    // Handle existing date strings
-    else {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    }
-  } catch (e) {
-    return dateString;
-  }
-};
-
-// Helper function to convert text to LaTeX-safe format
-const convertToLatex = (text: string): string => {
-  return text
-    .replace(/&/g, '\\&')
-    .replace(/%/g, '\\%')
-    .replace(/\$/g, '\\$')
-    .replace(/#/g, '\\#')
-    .replace(/_/g, '\\_')
-    .replace(/\{/g, '\\{')
-    .replace(/\}/g, '\\}')
-    .replace(/~/g, '\\textasciitilde{}')
-    .replace(/\^/g, '\\textasciicircum{}')
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/</g, '\\textless{}')
-    .replace(/>/g, '\\textgreater{}');
-};
-
 // Function to generate a LaTeX resume from the user's profile data
 const generateLatexResume = (profile: UserProfile): string => {
   // Filter items that should be included in the resume
@@ -143,6 +135,7 @@ const generateLatexResume = (profile: UserProfile): string => {
   const includedEducations = profile.education.filter(edu => edu.includeInResume !== false);
   const includedSkills = profile.skills.filter(skill => skill.includeInResume !== false);
   const includedProjects = profile.projects.filter(project => project.includeInResume !== false);
+  const includedCertificates = profile.certificates?.filter(cert => cert.includeInResume !== false) || [];
   
   // Group skills by domain
   const skillsByDomain: Record<string, string[]> = {};
@@ -158,11 +151,10 @@ const generateLatexResume = (profile: UserProfile): string => {
 \\header{Education}
 ${includedEducations.map(education => {
   const endDateStr = formatDateForLatex(education.endDate);
+  const cgpaText = education.cgpa ? `\\labelitemi GPA: ${convertToLatex(education.cgpa)}` : '';
   
   return `
-    \\school{${convertToLatex(education.school)}}{${convertToLatex(education.degree)}}{
-      Graduation: ${endDateStr}
-    }{\\textit{${education.degree} \\labelitemi GPA: ${education.cgpa}}}
+    \\school{${convertToLatex(education.school)}}{${convertToLatex(education.degree)}}{${endDateStr}}{${cgpaText}}
   `;
 }).join("\n")}
 ` : '';
@@ -171,8 +163,7 @@ ${includedEducations.map(education => {
   const experienceSection = includedExperiences.length > 0 ? `
 \\header{Experience}
 ${includedExperiences.map(experience => {
-  const startDateStr = formatDateForLatex(experience.startDate);
-  const endDateStr = formatDateForLatex(experience.endDate);
+  const dateRange = formatDateRangeForLatex(experience.startDate, experience.endDate);
   
   // Process description to create bullet points from each line
   const descriptionBulletPoints = experience.description
@@ -183,7 +174,7 @@ ${includedExperiences.map(experience => {
   
   return `
     \\employer{${convertToLatex(experience.position)}}{--${convertToLatex(experience.company)}}{
-      ${startDateStr} -- ${endDateStr}
+      ${dateRange}
     }{${convertToLatex(experience.location)}}
     ${experience.description ? `
       \\begin{bullet-list-minor}
@@ -198,8 +189,7 @@ ${includedExperiences.map(experience => {
   const projectSection = includedProjects.length > 0 ? `
 \\header{Projects}
 ${includedProjects.map(project => {
-  const startDateStr = formatDateForLatex(project.startDate);
-  const endDateStr = formatDateForLatex(project.endDate);
+  const dateRange = formatDateRangeForLatex(project.startDate, project.endDate);
   
   // Process description to create bullet points from each line
   const descriptionBulletPoints = project.description
@@ -208,14 +198,20 @@ ${includedProjects.map(project => {
     .map(line => `\\item ${convertToLatex(line.trim())}`)
     .join('\n');
   
+  // Create project title with optional link and GitHub icon
+  const projectTitle = project.projectUrl 
+    ? `\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(project.projectUrl))}}{${convertToLatex(project.title)}}` 
+    : convertToLatex(project.title);
+  const githubLink = project.githubUrl 
+    ? `\\hspace{1em}\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(project.githubUrl))}}{\\faGithub}` 
+    : '';
+  
   return `
-    \\project{${convertToLatex(project.title)}}{${convertToLatex(project.technologies)}}{
-      ${startDateStr} -- ${endDateStr}
+    \\project{${projectTitle}${githubLink}}{}{
+      ${dateRange}
     }{
       \\begin{bullet-list-minor}
         ${descriptionBulletPoints}
-        ${project.githubUrl ? `\\item \\textbf{GitHub:} \\href{${project.githubUrl}}{${project.githubUrl}}` : ''}
-        ${project.projectUrl ? `\\item \\textbf{Project Link:} \\href{${project.projectUrl}}{${project.projectUrl}}` : ''}
       \\end{bullet-list-minor}
     }
   `;
@@ -238,6 +234,27 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
 \\textit{${convertToLatex(profile.about)}}
 ` : '';
 
+  // In the contact section, update to show usernames
+  const linkedinUsername = profile.linkedinUrl ? getLastPathSegment(profile.linkedinUrl) : '';
+  const githubUsername = profile.githubUrl ? getLastPathSegment(profile.githubUrl) : '';
+
+  // Create certificates section
+  const certificatesSection = includedCertificates.length > 0 ? `
+\\header{Certifications}
+${includedCertificates.map(certificate => {
+  const issueDate = formatDateForLatex(certificate.issueDate);
+  const certTitle = certificate.credentialUrl 
+    ? `\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(certificate.credentialUrl))}}{${convertToLatex(certificate.name)}}` 
+    : convertToLatex(certificate.name);
+  
+  return `
+  \\begin{bullet-list-major}
+    \\item \\textbf{${certTitle}} \\textit{by ${convertToLatex(certificate.issuer)}} \\hfill ${issueDate}
+  \\end{bullet-list-major}
+  `;
+}).join("\n")}
+` : '';
+
   // Construct the complete LaTeX document
   const latexCode = `\\documentclass{article}
 \\usepackage{geometry}
@@ -246,7 +263,7 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
 \\newgeometry{top=0.5in, bottom=1in, left=1in, right=1in}
 \\usepackage{enumitem}
 \\setlist{nosep}
-\\usepackage{hyperref}
+\\usepackage[hidelinks,pdfnewwindow=true]{hyperref}
 \\usepackage{fancyhdr}
 \\pagestyle{fancy}
 \\renewcommand{\\headrulewidth}{0pt}
@@ -266,31 +283,42 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
 \\usepackage{needspace}
 \\usepackage{placeins}
 
-\\newcommand{\\contact}[3]{
-  \\vspace*{5pt}
-  \\begin{center}
-    {\\LARGE \\scshape {#1}}\\\\
-    \\vspace{3pt}
-    #2 
-    \\vspace{2pt}
-    #3
-  \\end{center}
-  \\vspace*{-8pt}
+\\newcommand{\\contact}[3]{%
+  \\vspace*{5pt}%
+  \\begin{center}%
+    {\\LARGE \\scshape {#1}}\\\\%
+    \\vspace{3pt}%
+    #2%
+    \\vspace{2pt}%
+    #3%
+  \\end{center}%
+  \\vspace*{-8pt}%
 }
-\\newcommand{\\school}[4]{
-  \\needspace{2\\baselineskip}
-  \\textbf{#1} \\labelitemi #2 \\hfill #3 \\\\ #4 \\vspace*{5pt}
+
+\\newcommand{\\school}[4]{%
+  \\needspace{2\\baselineskip}%
+  \\textbf{#1} \\labelitemi #2 \\hfill #3%
+  \\\\%
+  \\ifx\\empty#4\\empty\\else{\\textit{#4}}\\fi%
+  \\vspace*{5pt}%
 }
-\\newcommand{\\employer}[4]{{
-  \\needspace{3\\baselineskip}
+
+\\newcommand{\\employer}[4]{{%
+  \\needspace{3\\baselineskip}%
   \\vspace*{2pt}%
-  \\textbf{#1} #2 \\hfill #3\\\\ #4 \\vspace*{2pt}}
-}
-\\newcommand{\\project}[4]{{
-  \\needspace{3\\baselineskip}
-  \\vspace*{2pt}% 
-  \\textbf{#1} #2 \\hfill #3\\\\ #4 \\vspace*{2pt}}
-}
+  \\textbf{#1} #2 \\hfill #3\\\\%
+  #4%
+  \\vspace*{2pt}%
+}}
+
+\\newcommand{\\project}[4]{{%
+  \\needspace{3\\baselineskip}%
+  \\vspace*{2pt}%
+  \\textbf{#1}\\hfill #3\\\\%
+  #4%
+  \\vspace*{2pt}%
+}}
+
 \\newcommand{\\lineunder}{
   \\vspace*{-8pt} \\\\ \\hspace*{-18pt} 
   \\hrulefill \\\\
@@ -323,18 +351,20 @@ ${Object.entries(skillsByDomain).map(([domain, skills]) => `
 \\smallskip
 \\vspace*{-44pt}
 \\begin{center}
-  {\\LARGE \\textbf{${convertToLatex(profile.name)}}} \\\\
-  \\faPhone\\ ${profile.phone || 'N/A'} \\quad
-  \\faEnvelope\\ \\href{mailto:${profile.email}}{${profile.email}} \\quad
-  ${profile.linkedinUrl ? `\\faLinkedin\\ \\url{${profile.linkedinUrl}}` : ''}
-  ${profile.githubUrl ? `\\quad \\faGithub\\ \\url{${profile.githubUrl}}` : ''}
-  ${profile.portfolioUrl ? `\\quad \\faGlobe\\ \\url{${profile.portfolioUrl}}` : ''}
+  {\\LARGE \\textbf{${convertToLatex(profile.name)}}}\\\\
+  \\vspace{3pt}
+  \\faPhone\\ ${profile.phone ? convertToLatex(profile.phone) : 'N/A'} \\quad
+  \\faEnvelope\\ \\href[pdfnewwindow=true]{mailto:${profile.email}}{${convertToLatex(profile.email)}} \\quad
+  ${profile.linkedinUrl ? `\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(profile.linkedinUrl))}}{\\faLinkedin\\ ${convertToLatex(linkedinUsername)}}` : ''}
+  ${profile.githubUrl ? `\\quad \\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(profile.githubUrl))}}{\\faGithub\\ ${convertToLatex(githubUsername)}}` : ''}
+  ${profile.portfolioUrl ? `\\quad \\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(profile.portfolioUrl))}}{\\faGlobe\\ Portfolio}` : ''}
 \\end{center}
 ${summarySection}
 ${educationSection}
 ${experienceSection}
 ${skillSection}
 ${projectSection}
+${certificatesSection}
 \\end{document}`;
 
   return latexCode;

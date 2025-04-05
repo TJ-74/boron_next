@@ -59,14 +59,22 @@ export default function PdfViewer({ isOpen, onClose, pdfUrl, userId }: PdfViewer
   // Add a timestamp to the URL to force reload when needed
   const getUrlWithTimestamp = () => {
     if (!currentUrl) return '';
-    const separator = currentUrl.includes('?') ? '&' : '?';
-    return `${currentUrl}${separator}t=${new Date().getTime()}`;
+    // Always force a fresh reload by adding a timestamp
+    const baseUrl = currentUrl.split('?')[0]; // Remove any existing query params
+    return `${baseUrl}?t=${new Date().getTime()}`;
   };
 
   const refreshResume = () => {
     setIsLoading(true);
     setError(null);
-    setCurrentUrl(pdfUrl);
+    
+    // Force a new PDF to be generated with updated certificates
+    if (userId) {
+      const baseUrl = window.location.origin;
+      setCurrentUrl(`${baseUrl}/api/pdf-resume/${userId}`);
+    } else {
+      setCurrentUrl(pdfUrl);
+    }
   };
 
   const handlePrint = () => {

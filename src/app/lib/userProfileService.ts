@@ -15,6 +15,7 @@ export interface UserProfileSummary {
   education?: Education[];
   skills?: Skill[];
   projects?: Project[];
+  certificates?: Certificate[];
 }
 
 export interface Experience {
@@ -54,6 +55,16 @@ export interface Project {
   endDate: string;
   projectUrl?: string;
   githubUrl?: string;
+  includeInResume?: boolean;
+}
+
+export interface Certificate {
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialUrl?: string;
   includeInResume?: boolean;
 }
 
@@ -224,6 +235,40 @@ export async function addProjectItem(uid: string, project: Project): Promise<Use
   } catch (error) {
     console.error('API ERROR: Error saving project item:', error);
     throw new Error('Failed to save project item');
+  }
+}
+
+// New function to add a single certificate item
+export async function addCertificateItem(uid: string, certificate: Certificate): Promise<UserProfileSummary | null> {
+  try {
+    console.log("API: addCertificateItem called with:", certificate);
+    
+    const response = await fetch('/api/profile?arrayUpdate=true&arrayType=certificate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        uid,
+        certificates: [certificate]
+      }),
+    });
+
+    console.log("API: Certificate item save response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API ERROR: Failed to save certificate item:", errorData);
+      throw new Error(errorData.error || 'Failed to save certificate item');
+    }
+    
+    console.log("API: Certificate item saved successfully");
+    
+    // Fetch updated profile
+    return await getUserProfileSummary(uid);
+  } catch (error) {
+    console.error('API ERROR: Error saving certificate item:', error);
+    throw new Error('Failed to save certificate item');
   }
 }
 

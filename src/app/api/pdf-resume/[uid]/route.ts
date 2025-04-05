@@ -58,12 +58,23 @@ interface Project {
   includeInResume?: boolean;
 }
 
+interface Certificate {
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialUrl?: string;
+  includeInResume?: boolean;
+}
+
 interface UserProfile extends ProfileInfo {
   about: string;
   experiences: Experience[];
   education: Education[];
   skills: Skill[];
   projects: Project[];
+  certificates: Certificate[];
 }
 
 export async function GET(
@@ -112,6 +123,7 @@ const generateHtmlResume = (profile: UserProfile): string => {
   const includedEducations = profile.education ? profile.education.filter((edu: Education) => edu.includeInResume !== false) : [];
   const includedSkills = profile.skills ? profile.skills.filter((skill: Skill) => skill.includeInResume !== false) : [];
   const includedProjects = profile.projects ? profile.projects.filter((project: Project) => project.includeInResume !== false) : [];
+  const includedCertificates = profile.certificates ? profile.certificates.filter((cert: Certificate) => cert.includeInResume !== false) : [];
   
   // Group skills by domain
   const skillsByDomain: Record<string, string[]> = {};
@@ -208,6 +220,26 @@ const generateHtmlResume = (profile: UserProfile): string => {
                 ${descriptionItems}
                 ${links.join('')}
               </ul>
+            </div>
+          `;
+        }).join('')}
+      </div>`
+    : '';
+
+  // Create certificates section
+  const certificatesSection = includedCertificates.length > 0 
+    ? `<div class="section">
+        <h2 class="section-title">Certifications</h2>
+        <div class="section-divider"></div>
+        ${includedCertificates.map((certificate: Certificate) => {
+          const certUrl = certificate.credentialUrl 
+            ? `<a href="${certificate.credentialUrl}" target="_blank">${certificate.name}</a>` 
+            : certificate.name;
+            
+          return `
+            <div class="content-indent">
+              <p class="entry-title"><strong>${certUrl}</strong> <em>by ${certificate.issuer}</em>
+              <span class="date-text">${formatDateForDisplay(certificate.issueDate)}</span></p>
             </div>
           `;
         }).join('')}
@@ -516,6 +548,7 @@ const generateHtmlResume = (profile: UserProfile): string => {
     ${experienceSection}
     ${skillsSection}
     ${projectsSection}
+    ${certificatesSection}
 
     <div class="no-print" style="margin-top: 30pt; text-align: center;">
       <button onclick="window.print();" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
@@ -636,6 +669,7 @@ const generateLatexResume = (profile: UserProfile): string => {
   const includedEducations = profile.education ? profile.education.filter((edu: Education) => edu.includeInResume !== false) : [];
   const includedSkills = profile.skills ? profile.skills.filter((skill: Skill) => skill.includeInResume !== false) : [];
   const includedProjects = profile.projects ? profile.projects.filter((project: Project) => project.includeInResume !== false) : [];
+  const includedCertificates = profile.certificates ? profile.certificates.filter((cert: Certificate) => cert.includeInResume !== false) : [];
   
   // Group skills by domain
   const skillsByDomain: Record<string, string[]> = {};
@@ -687,6 +721,23 @@ ${includedExperiences.map((experience: Experience) => {
 }).join('\n')}
 ` : '';
 
-  // Create LaTeX template (truncated for brevity)
+  // Create certificates section
+  const certificatesSection = includedCertificates.length > 0 ? `
+\\header{Certifications}
+${includedCertificates.map((certificate: Certificate) => {
+  const issueDate = formatDateForLatex(certificate.issueDate);
+  const certTitle = certificate.credentialUrl 
+    ? `\\href[pdfnewwindow=true]{${certificate.credentialUrl}}{${convertToLatex(certificate.name)}}` 
+    : convertToLatex(certificate.name);
+  
+  return `
+  \\begin{bullet-list-major}
+    \\item \\textbf{${certTitle}} \\textit{by ${convertToLatex(certificate.issuer)}} \\hfill ${issueDate}
+  \\end{bullet-list-major}
+  `;
+}).join("\n")}
+` : '';
+
+  // LaTeX template (truncated for brevity)
   return "LaTeX template removed for brevity";
 }; 
