@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    distDir: '.next',
+    experimental: {
+      appDir: true,
+    },
     images: {
       remotePatterns: [
         {
@@ -50,6 +54,11 @@ const nextConfig = {
         {
           protocol: 'https',
           hostname: 'via.placeholder.com',
+          pathname: '/**',
+        },
+        {
+          protocol: 'https',
+          hostname: 'img.freepik.com',
           pathname: '/**',
         }
       ],
@@ -107,9 +116,6 @@ const nextConfig = {
         sizeLimit: '10mb', // Increase size limit for API routes
       },
       responseLimit: '10mb',
-    },
-    experimental: {
-      serverComponentsExternalPackages: ['pdf-parse']
     },
 }
 

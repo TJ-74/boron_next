@@ -2,12 +2,19 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 interface AuthContextType {
   user: any | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
   loading: boolean;
@@ -38,24 +45,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const signup = async (email: string, password: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Get token from the user
+      const token = await user.getIdToken();
+      
+      // Store token and email in cookies for middleware authentication
+      document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      if (user.email) {
+        document.cookie = `user_email=${user.email}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      }
+      
+      // Store additional user data if needed
+      localStorage.setItem('user', JSON.stringify({
+        id: user.uid,
+        email: user.email,
+        name: user.displayName || 'New User',
+        photoURL: user.photoURL,
+      }));
+      
+      router.push('/profile');
+    } catch (error: any) {
+      console.error('Registration failed:', error);
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('Email already in use');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Password is too weak');
+      } else {
+        throw new Error('Registration failed');
+      }
+    }
+  };
+
   const login = async (email: string, password: string) => {
     try {
-      // TODO: Replace with actual authentication API call
-      const mockUser = {
-        id: '1',
-        email,
-        name: 'John Doe',
-      };
-
-      // Store user data and email cookie
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      document.cookie = `user_email=${email}; path=/; max-age=${60 * 60 * 24 * 7}`;
-      setUser(mockUser);
-
-      // Redirect to profile page
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Get token from the user
+      const token = await user.getIdToken();
+      
+      // Store token and email in cookies for middleware authentication
+      document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      if (user.email) {
+        document.cookie = `user_email=${user.email}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      }
+      
+      // Store additional user data if needed
+      localStorage.setItem('user', JSON.stringify({
+        id: user.uid,
+        email: user.email,
+        name: user.displayName || email.split('@')[0],
+        photoURL: user.photoURL,
+      }));
+      
       router.push('/profile');
-    } catch (error) {
-      throw new Error('Login failed');
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        throw new Error('Invalid email or password');
+      } else {
+        throw new Error('Login failed');
+      }
     }
   };
 
@@ -106,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, loginWithGoogle, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

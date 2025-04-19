@@ -11,6 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export async function POST(request: Request) {
   try {
+    const { timezone } = await request.json();
+    console.log('Customer timezone:', timezone);
+
     // Create a product first
     const product = await stripe.products.create({
       name: 'Premium Plan',

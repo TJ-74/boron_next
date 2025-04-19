@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { Loader2, MessageCircle, Zap, X, MessageSquare } from "lucide-react";
+import { Loader2, MessageCircle, Zap, X, MessageSquare, FileText, User } from "lucide-react";
 import Link from 'next/link';
 import logo from "@/app/images/logo-no-background.png";
 import Image from 'next/image';
@@ -77,7 +77,7 @@ export default function Profile() {
           setProfile({
             name: savedProfile.name,
             email: savedProfile.email,
-            profileImage: savedProfile.profileImage || user?.photoURL || '/placeholder-avatar.png',
+            profileImage: savedProfile.profileImage || user?.photoURL || 'https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1744854995~exp=1744858595~hmac=bcb9142a464b4b807e13a8a4b8479b29d1ba1154f80c9b02091ab4a462a3c5fe&w=826',
             phone: savedProfile.phone || '',
             location: savedProfile.location || '',
             title: savedProfile.title || '',
@@ -94,9 +94,9 @@ export default function Profile() {
         } else {
           // Create a minimal profile with user info from Firebase
           const defaultProfile: UserProfile = {
-            name: user?.displayName || 'John Doe',
+            name: user?.displayName || 'Your Name',
             email: user?.email || 'john@example.com',
-            profileImage: user?.photoURL || '/placeholder-avatar.png',
+            profileImage: user?.photoURL || 'https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1744854995~exp=1744858595~hmac=bcb9142a464b4b807e13a8a4b8479b29d1ba1154f80c9b02091ab4a462a3c5fe&w=826',
             phone: '',
             location: '',
             title: '',
@@ -1074,7 +1074,7 @@ ${projectSection}
           setProfile({
             name: refreshedProfile.name,
             email: refreshedProfile.email,
-            profileImage: refreshedProfile.profileImage || user?.photoURL || '/placeholder-avatar.png',
+            profileImage: refreshedProfile.profileImage || user?.photoURL || 'https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?t=st=1744854995~exp=1744858595~hmac=bcb9142a464b4b807e13a8a4b8479b29d1ba1154f80c9b02091ab4a462a3c5fe&w=826',
             phone: refreshedProfile.phone || '',
             location: refreshedProfile.location || '',
             title: refreshedProfile.title || '',
@@ -1253,14 +1253,32 @@ ${projectSection}
               )}
               {saveStatus === 'success' && (
                 <span className="text-sm text-green-400">
-                  Saved successfully
+                  Changes saved successfully
                 </span>
               )}
               {saveStatus === 'error' && (
                 <span className="text-sm text-red-400">
-                  Error saving
+                  Error saving changes
                 </span>
               )}
+              <Link href="/profile">
+                <Button
+                  variant="outline"
+                  className="text-gray-300 border-gray-700 hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Button>
+              </Link>
+              <Link href="/resume-generator">
+                <Button
+                  variant="outline"
+                  className="text-gray-300 border-gray-700 hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Resume Generator
+                </Button>
+              </Link>
               <Button
                 onClick={logout}
                 variant="outline"
@@ -1281,7 +1299,6 @@ ${projectSection}
             onUploadImage={handleUploadImage}
             onUploadResume={handleUploadResume}
             onPreviewInOverleaf={handlePreviewInOverleaf}
-            onViewRawLatex={handleViewRawLatex}
             onViewPdf={handleViewPdf}
             onUpdateAbout={handleUpdateAbout}
             onAddExperience={handleAddExperience}
@@ -1290,6 +1307,7 @@ ${projectSection}
             onAddProject={handleAddProject}
             onAddSkillsBatch={handleAddSkillsBatch}
             onParsingComplete={refreshProfile}
+            onJobScraper={() => router.push('/job-scraper')}
           />
           
           {/* ChatBot toggle button */}

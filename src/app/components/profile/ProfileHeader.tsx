@@ -3,13 +3,14 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Upload, Loader2, ExternalLink, FileText, Code } from "lucide-react";
+import { PenSquare, Upload, Loader2, ExternalLink, FileText, Code, Zap } from "lucide-react";
 import ResumeParserModal from './ResumeParserModal';
 import { ProfileInfo } from '@/app/types';
 import ImageCropModal from './ImageCropModal';
 import ImageFallback from '@/app/components/ui/ImageFallback';
 import { addExperienceItem, addEducationItem, addSkillItem, addProjectItem } from '@/app/lib/userProfileService';
 import { Progress } from "@/app/components/ui/progress";
+import { useRouter } from 'next/navigation';
 
 interface ProfileHeaderProps {
   profile: ProfileInfo;
@@ -18,7 +19,6 @@ interface ProfileHeaderProps {
   onUploadImage: (file: File) => Promise<void>;
   onUploadResume: (file: File) => Promise<void>;
   onPreviewInOverleaf: () => Promise<void>;
-  onViewRawLatex?: () => Promise<void>;
   onViewPdf?: () => Promise<void>;
   onUpdateAbout?: (about: string) => Promise<void>;
   onAddExperience?: (experience: any) => Promise<void>;
@@ -27,6 +27,8 @@ interface ProfileHeaderProps {
   onAddProject?: (project: any) => Promise<void>;
   onAddSkillsBatch?: (skills: any[]) => Promise<void>;
   onParsingComplete?: () => void;
+  onLogout?: () => void;
+  onJobScraper?: () => void;
 }
 
 export default function ProfileHeader({ 
@@ -36,7 +38,6 @@ export default function ProfileHeader({
   onUploadImage, 
   onUploadResume,
   onPreviewInOverleaf,
-  onViewRawLatex,
   onViewPdf,
   onUpdateAbout,
   onAddExperience,
@@ -44,7 +45,9 @@ export default function ProfileHeader({
   onAddSkill,
   onAddProject,
   onAddSkillsBatch,
-  onParsingComplete
+  onParsingComplete,
+  onLogout,
+  onJobScraper
 }: ProfileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +80,8 @@ export default function ProfileHeader({
     githubUrl: profile.githubUrl || '',
     portfolioUrl: profile.portfolioUrl || ''
   });
+
+  const router = useRouter();
 
   const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -554,16 +559,6 @@ export default function ProfileHeader({
     }
   };
 
-  const handleViewRawLatexClick = async () => {
-    try {
-      if (onViewRawLatex) {
-        await onViewRawLatex();
-      }
-    } catch (error) {
-      console.error('Failed to view raw LaTeX:', error);
-    }
-  };
-
   const handleViewPdfClick = async () => {
     try {
       if (onViewPdf) {
@@ -575,7 +570,7 @@ export default function ProfileHeader({
   };
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8 mb-8">
+    <div className="relative mb-8 p-6 rounded-lg bg-gray-800/50 border border-gray-700">
       {/* Image Crop Modal */}
       {imageToCrop && (
         <ImageCropModal
@@ -619,6 +614,7 @@ export default function ProfileHeader({
                   width={128}
                   height={128}
                   className="object-cover w-full h-full"
+                  fallback="/user.png"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -753,18 +749,6 @@ export default function ProfileHeader({
               >
                 <FileText className="h-4 w-4" />
                 View PDF
-              </Button>
-            )}
-            
-            {onViewRawLatex && (
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleViewRawLatexClick}
-                className="flex items-center gap-2 border-purple-600 text-purple-500 hover:bg-purple-900/20 hover:text-purple-400"
-              >
-                <Code className="h-4 w-4" />
-                View LaTeX Code
               </Button>
             )}
           </div>
@@ -912,6 +896,17 @@ export default function ProfileHeader({
           </div>
         </div>
       )}
+      <div className="flex flex-wrap gap-2 mt-4">
+        {onLogout && (
+          <Button
+            variant="outline"
+            onClick={onLogout}
+            className="flex items-center gap-2 ml-auto"
+          >
+            Sign Out
+          </Button>
+        )}
+      </div>
     </div>
   );
 } 

@@ -143,6 +143,7 @@ export default function ViewProfile() {
                     width={128}
                     height={128}
                     className="object-cover w-full h-full"
+                    fallback="/user.png"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">

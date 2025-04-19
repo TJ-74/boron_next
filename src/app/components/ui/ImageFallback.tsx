@@ -19,7 +19,7 @@ export default function ImageFallback({
   width,
   height,
   className = '',
-  fallback = '/placeholder-avatar.png'
+  fallback = '/user.png'
 }: ImageFallbackProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -55,7 +55,7 @@ export default function ImageFallback({
       
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30">
-          <span className="text-xs text-gray-400">Failed to load</span>
+          
         </div>
       )}
       
@@ -67,9 +67,10 @@ export default function ImageFallback({
         className={`${className} ${error ? 'opacity-70' : ''}`}
         onLoad={() => setLoading(false)}
         onError={() => {
-          console.error(`Failed to load image: ${imgSrc}`);
-          setError(true);
-          setLoading(false);
+          if (!error) {
+            setError(true);
+            setLoading(false);
+          }
         }}
       />
     </div>
