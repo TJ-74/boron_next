@@ -678,6 +678,27 @@ ${projectSection}
     });
   };
 
+  const handleReorderExperiences = async (reorderedExperiences: Experience[]) => {
+    return new Promise<void>((resolve) => {
+      setTimeout(async () => {
+        const updatedProfile = profile ? {
+          ...profile,
+          experiences: reorderedExperiences
+        } : null;
+        
+        setProfile(updatedProfile);
+        
+        // Save to MongoDB
+        if (updatedProfile) {
+          await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after reordering experiences
+        }
+        
+        resolve();
+      }, 1000);
+    });
+  };
+
   // Education CRUD handlers
   const handleAddEducation = async (education: Omit<Education, 'id'>) => {
     console.log("HANDLER: handleAddEducation called with:", JSON.stringify(education, null, 2));
@@ -996,6 +1017,27 @@ ${projectSection}
     });
   };
 
+  const handleReorderProjects = async (reorderedProjects: Project[]) => {
+    return new Promise<void>((resolve) => {
+      setTimeout(async () => {
+        const updatedProfile = profile ? {
+          ...profile,
+          projects: reorderedProjects
+        } : null;
+        
+        setProfile(updatedProfile);
+        
+        // Save to MongoDB
+        if (updatedProfile) {
+          await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after reordering projects
+        }
+        
+        resolve();
+      }, 1000);
+    });
+  };
+
   // Create properly formatted data for AboutSection
   const formattedExperiences = profile?.experiences.map(exp => ({
     position: exp.position,
@@ -1214,6 +1256,27 @@ ${projectSection}
     }
   };
 
+  const handleReorderSkills = async (reorderedSkills: Skill[]) => {
+    return new Promise<void>((resolve) => {
+      setTimeout(async () => {
+        const updatedProfile = profile ? {
+          ...profile,
+          skills: reorderedSkills
+        } : null;
+        
+        setProfile(updatedProfile);
+        
+        // Save to MongoDB
+        if (updatedProfile) {
+          await saveProfileToMongoDB(updatedProfile);
+          refreshPdfIfOpen(); // Refresh PDF after reordering skills
+        }
+        
+        resolve();
+      }, 1000);
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
@@ -1404,6 +1467,7 @@ ${projectSection}
                 onAdd={handleAddExperience}
                 onUpdate={handleUpdateExperience}
                 onDelete={handleDeleteExperience}
+                onReorder={handleReorderExperiences}
               />
             )}
             
@@ -1435,6 +1499,7 @@ ${projectSection}
                 onUpdate={handleUpdateSkill}
                 onDelete={handleDeleteSkill}
                 onAddBatch={handleAddSkillsBatch}
+                onReorder={handleReorderSkills}
                 experiences={formattedExperiences}
               />
             )}
@@ -1446,6 +1511,7 @@ ${projectSection}
                 onAdd={handleAddProject}
                 onUpdate={handleUpdateProject}
                 onDelete={handleDeleteProject}
+                onReorder={handleReorderProjects}
               />
             )}
           </div>

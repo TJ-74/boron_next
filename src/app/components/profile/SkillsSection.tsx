@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, Sparkles, CheckCircle } from "lucide-react";
+import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, Sparkles, CheckCircle, ChevronUp, ChevronDown } from "lucide-react";
 import { generateSkills, SkillsGenerationPrompt } from '@/app/services/skillsService';
 
 interface Skill {
@@ -10,6 +10,7 @@ interface Skill {
   name: string;
   domain: string;
   includeInResume?: boolean;
+  order?: number;
 }
 
 interface SkillsSectionProps {
@@ -17,6 +18,7 @@ interface SkillsSectionProps {
   onAdd: (skill: Omit<Skill, 'id'>, isBatchOperation?: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onUpdate?: (skill: Skill) => Promise<void>;
+  onReorder?: (skills: Skill[]) => Promise<void>;
   experiences?: Array<{
     position: string;
     company: string;
@@ -35,6 +37,7 @@ export default function SkillsSection({
   onAdd, 
   onDelete,
   onUpdate,
+  onReorder,
   experiences = [],
   projects = [],
   onAddBatch
@@ -238,7 +241,7 @@ export default function SkillsSection({
     }
   };
 
-  // Group skills by domain
+  // Sort skills by order within each domain
   const groupedSkills = skills.reduce((acc, skill) => {
     const domain = skill.domain || 'Other';
     if (!acc[domain]) {
@@ -247,6 +250,57 @@ export default function SkillsSection({
     acc[domain].push(skill);
     return acc;
   }, {} as Record<string, Skill[]>);
+
+  // Sort domains by order of their first skill
+  const sortedDomains = Object.keys(groupedSkills).sort((a, b) => {
+    const firstSkillA = groupedSkills[a][0];
+    const firstSkillB = groupedSkills[b][0];
+    if (typeof firstSkillA?.order === 'number' && typeof firstSkillB?.order === 'number') {
+      return firstSkillA.order - firstSkillB.order;
+    }
+    return 0;
+  });
+
+  const handleMoveDomain = async (currentIndex: number, direction: 'up' | 'down') => {
+    if (!onReorder) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= sortedDomains.length) return;
+
+    // Get all domains and their skills
+    const domains = [...sortedDomains];
+    const allSkills = [...skills];
+
+    // Get the domains we're swapping
+    const currentDomain = domains[currentIndex];
+    const targetDomain = domains[newIndex];
+
+    // Calculate base order numbers for each position
+    const orderStep = 10; // Leave space between orders for future insertions
+    const getBaseOrder = (index: number) => index * orderStep;
+
+    // Swap the domains
+    domains[currentIndex] = targetDomain;
+    domains[newIndex] = currentDomain;
+
+    // Update order numbers for all skills based on their domain's new position
+    const updatedSkills = allSkills.map(skill => {
+      const domainIndex = domains.indexOf(skill.domain);
+      const skillsInDomain = groupedSkills[skill.domain];
+      const skillIndexInDomain = skillsInDomain.findIndex(s => s.id === skill.id);
+      
+      return {
+        ...skill,
+        order: getBaseOrder(domainIndex) + skillIndexInDomain
+      };
+    });
+
+    try {
+      await onReorder(updatedSkills);
+    } catch (error) {
+      console.error('Failed to reorder domains:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -412,14 +466,36 @@ export default function SkillsSection({
             No skills added yet. Click the "Add Skill" button to add your skills or use "Generate Skills with AI" to automatically create skills based on your profile.
           </div>
         ) : (
-          Object.entries(groupedSkills).map(([domain, domainSkills]) => (
+          sortedDomains.map((domain, domainIndex) => (
             <div key={domain} className="space-y-3">
-              <h3 className="text-lg font-semibold text-blue-400 flex items-center">
-                <Layers className="h-5 w-5 mr-2" />
-                {domain}
-              </h3>
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMoveDomain(domainIndex, 'up')}
+                    disabled={domainIndex === 0 || isLoading}
+                    className="p-1 hover:bg-gray-700/50"
+                  >
+                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMoveDomain(domainIndex, 'down')}
+                    disabled={domainIndex === sortedDomains.length - 1 || isLoading}
+                    className="p-1 hover:bg-gray-700/50"
+                  >
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  </Button>
+                </div>
+                <h3 className="text-lg font-semibold text-blue-400 flex items-center">
+                  <Layers className="h-5 w-5 mr-2" />
+                  {domain}
+                </h3>
+              </div>
               <div className="flex flex-wrap gap-3 pl-7">
-                {domainSkills.map((skill) => (
+                {groupedSkills[domain].map((skill) => (
                   <div 
                     key={skill.id} 
                   >

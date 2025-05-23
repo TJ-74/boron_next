@@ -19,6 +19,7 @@ export interface Experience {
   endDate: string;
   description: string;
   includeInResume?: boolean;
+  order?: number;
 }
 
 export interface Education {

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, ExternalLink, Github, Sparkles, FolderKanban, Calendar } from "lucide-react";
+import { PenSquare, Plus, Code, Save, X, Trash2, Layers, Edit, ExternalLink, Github, Sparkles, FolderKanban, Calendar, ChevronUp, ChevronDown } from "lucide-react";
 import { generateDescription, GenerationPrompt } from '@/app/services/groqService';
 
 interface Project {
@@ -15,6 +15,7 @@ interface Project {
   projectUrl?: string;
   githubUrl?: string;
   includeInResume?: boolean;
+  order?: number;
 }
 
 interface ProjectsSectionProps {
@@ -22,13 +23,15 @@ interface ProjectsSectionProps {
   onAdd: (project: Omit<Project, 'id'>) => Promise<void>;
   onUpdate: (project: Project) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onReorder?: (projects: Project[]) => Promise<void>;
 }
 
 export default function ProjectsSection({ 
   projects, 
   onAdd, 
   onUpdate, 
-  onDelete 
+  onDelete,
+  onReorder 
 }: ProjectsSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -46,22 +49,52 @@ export default function ProjectsSection({
     includeInResume: true
   });
 
+  const adjustTextareaHeight = (element: HTMLTextAreaElement) => {
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>, isEditing: boolean) => {
+    const element = e.target;
+    adjustTextareaHeight(element);
+    
+    if (isEditing && editingProject) {
+      setEditingProject({...editingProject, description: e.target.value});
+    } else {
+      setNewProject({...newProject, description: e.target.value});
+    }
+  };
+
+  // Effect to adjust textarea height when editing starts
+  useEffect(() => {
+    if (editingProject) {
+      const textarea = document.querySelector('textarea');
+      if (textarea) {
+        adjustTextareaHeight(textarea);
+      }
+    }
+  }, [editingProject]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNewProject({
-      ...newProject,
-      [name]: value
-    });
+    if (name !== 'description') {
+      setNewProject({
+        ...newProject,
+        [name]: value
+      });
+    }
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!editingProject) return;
     
     const { name, value } = e.target;
-    setEditingProject({
-      ...editingProject,
-      [name]: value
-    });
+    if (name !== 'description') {
+      setEditingProject({
+        ...editingProject,
+        [name]: value
+      });
+    }
   };
 
   const handleAdd = async () => {
@@ -228,6 +261,37 @@ export default function ProjectsSection({
     }
   };
 
+  // Sort projects by order if available
+  const sortedProjects = [...projects].sort((a, b) => {
+    if (typeof a.order === 'number' && typeof b.order === 'number') {
+      return a.order - b.order;
+    }
+    return 0;
+  });
+
+  const handleMoveProject = async (currentIndex: number, direction: 'up' | 'down') => {
+    if (!onReorder) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= sortedProjects.length) return;
+
+    const items = Array.from(sortedProjects);
+    const [movedItem] = items.splice(currentIndex, 1);
+    items.splice(newIndex, 0, movedItem);
+
+    // Update order numbers
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+
+    try {
+      await onReorder(updatedItems);
+    } catch (error) {
+      console.error('Failed to reorder projects:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -282,9 +346,8 @@ export default function ProjectsSection({
               <textarea
                 name="description"
                 value={newProject.description}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                onChange={(e) => handleDescriptionChange(e, false)}
+                className="w-full min-h-[100px] px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white resize-none overflow-hidden"
                 placeholder="Describe your project with bullet points (one per line)"
                 disabled={isLoading || isGeneratingDescription}
               />
@@ -409,7 +472,7 @@ export default function ProjectsSection({
           </div>
         ) : (
           <div className="space-y-6">
-            {projects.map((project) => (
+            {sortedProjects.map((project, index) => (
               <div key={project.id}>
                 {editingProject && editingProject.id === project.id ? (
                   <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
@@ -448,9 +511,8 @@ export default function ProjectsSection({
                         <textarea
                           name="description"
                           value={editingProject.description}
-                          onChange={handleEditInputChange}
-                          rows={3}
-                          className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                          onChange={(e) => handleDescriptionChange(e, true)}
+                          className="w-full min-h-[100px] px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white resize-none overflow-hidden"
                           placeholder="Describe your project with bullet points (one per line)"
                           disabled={isLoading || isGeneratingDescription}
                         />
@@ -569,74 +631,96 @@ export default function ProjectsSection({
                   <div className={`${project.includeInResume === false ? 'opacity-60' : ''}`}>
                     <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors">
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-white flex items-center">
-                            <FolderKanban className="h-5 w-5 mr-2 text-blue-400" />
-                            {project.title}
-                          </h3>
-                          
-                          <div className="mt-3 space-y-1">
-                            {project.description.split('\n').map((line, i) => (
-                              line.trim() ? (
-                                <div key={i} className="flex items-start text-gray-300">
-                                  <span className="mr-2 mt-1.5 text-blue-400">•</span>
-                                  <p>{line.trim()}</p>
-                                </div>
-                              ) : null
-                            ))}
+                        <div className="flex items-start gap-4">
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMoveProject(index, 'up')}
+                              disabled={index === 0 || isLoading}
+                              className="p-1 hover:bg-gray-700/50"
+                            >
+                              <ChevronUp className="h-4 w-4 text-gray-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMoveProject(index, 'down')}
+                              disabled={index === sortedProjects.length - 1 || isLoading}
+                              className="p-1 hover:bg-gray-700/50"
+                            >
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            </Button>
                           </div>
-                          
-                          <div className="mt-4">
-                            <p className="text-gray-300 text-sm font-medium">Technologies:</p>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {project.technologies.split(',').map((tech, index) => (
-                                <span 
-                                  key={index} 
-                                  className="bg-gray-700/70 text-blue-400 px-3 py-1 rounded-full text-sm"
-                                >
-                                  {tech.trim()}
-                                </span>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-semibold text-white flex items-center">
+                              <FolderKanban className="h-5 w-5 mr-2 text-blue-400" />
+                              {project.title}
+                            </h3>
+                            
+                            <div className="mt-3 space-y-1">
+                              {project.description.split('\n').map((line, i) => (
+                                line.trim() ? (
+                                  <div key={i} className="flex items-start text-gray-300">
+                                    <span className="mr-2 mt-1.5 text-blue-400">•</span>
+                                    <p>{line.trim()}</p>
+                                  </div>
+                                ) : null
                               ))}
                             </div>
-                          </div>
-                          
-                          <div className="mt-4 text-sm text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
-                            {project.startDate && (
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1" />
-                                <span>
-                                  {formatDate(project.startDate)}
-                                  {' - '}
-                                  {project.endDate 
-                                    ? formatDate(project.endDate)
-                                    : 'Present'}
-                                </span>
+                            
+                            <div className="mt-4">
+                              <p className="text-gray-300 text-sm font-medium">Technologies:</p>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {project.technologies.split(',').map((tech, index) => (
+                                  <span 
+                                    key={index} 
+                                    className="bg-gray-700/70 text-blue-400 px-3 py-1 rounded-full text-sm"
+                                  >
+                                    {tech.trim()}
+                                  </span>
+                                ))}
                               </div>
-                            )}
+                            </div>
                             
-                            {project.githubUrl && (
-                              <a 
-                                href={project.githubUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300 flex items-center"
-                              >
-                                <Github className="h-4 w-4 mr-1" />
-                                GitHub
-                              </a>
-                            )}
-                            
-                            {project.projectUrl && (
-                              <a 
-                                href={project.projectUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-green-400 hover:text-green-300 flex items-center"
-                              >
-                                <ExternalLink className="h-4 w-4 mr-1" />
-                                View Project
-                              </a>
-                            )}
+                            <div className="mt-4 text-sm text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+                              {project.startDate && (
+                                <div className="flex items-center">
+                                  <Calendar className="h-4 w-4 mr-1" />
+                                  <span>
+                                    {formatDate(project.startDate)}
+                                    {' - '}
+                                    {project.endDate 
+                                      ? formatDate(project.endDate)
+                                      : 'Present'}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {project.githubUrl && (
+                                <a 
+                                  href={project.githubUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-400 hover:text-blue-300 flex items-center"
+                                >
+                                  <Github className="h-4 w-4 mr-1" />
+                                  GitHub
+                                </a>
+                              )}
+                              
+                              {project.projectUrl && (
+                                <a 
+                                  href={project.projectUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-green-400 hover:text-green-300 flex items-center"
+                                >
+                                  <ExternalLink className="h-4 w-4 mr-1" />
+                                  View Project
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                         

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Plus, Briefcase, Save, X, Trash2, Sparkles } from "lucide-react";
+import { PenSquare, Plus, Briefcase, Save, X, Trash2, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
 import { generateDescription, GenerationPrompt } from '@/app/services/groqService';
 
 interface Experience {
@@ -14,6 +14,7 @@ interface Experience {
   endDate: string;
   description: string;
   includeInResume?: boolean;
+  order?: number;
 }
 
 interface ExperienceSectionProps {
@@ -21,18 +22,21 @@ interface ExperienceSectionProps {
   onAdd: (experience: Omit<Experience, 'id'>) => Promise<void>;
   onUpdate: (experience: Experience) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onReorder?: (experiences: Experience[]) => Promise<void>;
 }
 
 export default function ExperienceSection({ 
   experiences, 
   onAdd, 
   onUpdate, 
-  onDelete 
+  onDelete,
+  onReorder 
 }: ExperienceSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [textareaHeight, setTextareaHeight] = useState<string>('auto');
   
   const [newExperience, setNewExperience] = useState<Omit<Experience, 'id'>>({
     company: '',
@@ -45,6 +49,37 @@ export default function ExperienceSection({
   });
   
   const [editExperience, setEditExperience] = useState<Experience | null>(null);
+
+  // Sort experiences by order if available
+  const sortedExperiences = [...experiences].sort((a, b) => {
+    if (typeof a.order === 'number' && typeof b.order === 'number') {
+      return a.order - b.order;
+    }
+    return 0;
+  });
+
+  const handleMoveExperience = async (currentIndex: number, direction: 'up' | 'down') => {
+    if (!onReorder) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= sortedExperiences.length) return;
+
+    const items = Array.from(sortedExperiences);
+    const [movedItem] = items.splice(currentIndex, 1);
+    items.splice(newIndex, 0, movedItem);
+
+    // Update order numbers
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+
+    try {
+      await onReorder(updatedItems);
+    } catch (error) {
+      console.error('Failed to reorder experiences:', error);
+    }
+  };
 
   const handleAdd = async () => {
     setIsLoading(true);
@@ -210,6 +245,32 @@ export default function ExperienceSection({
     }
   };
 
+  const adjustTextareaHeight = (element: HTMLTextAreaElement) => {
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>, isEditing: boolean) => {
+    const element = e.target;
+    adjustTextareaHeight(element);
+    
+    if (isEditing && editExperience) {
+      setEditExperience({...editExperience, description: e.target.value});
+    } else {
+      setNewExperience({...newExperience, description: e.target.value});
+    }
+  };
+
+  // Effect to adjust textarea height when editing starts
+  useEffect(() => {
+    if (editExperience) {
+      const textarea = document.querySelector('textarea');
+      if (textarea) {
+        adjustTextareaHeight(textarea);
+      }
+    }
+  }, [editExperience]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -316,8 +377,8 @@ export default function ExperienceSection({
               </div>
               <textarea
                 value={newExperience.description}
-                onChange={(e) => setNewExperience({...newExperience, description: e.target.value})}
-                className="w-full h-24 px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                onChange={(e) => handleDescriptionChange(e, false)}
+                className="w-full min-h-[100px] px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white resize-none overflow-hidden"
                 placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
                 disabled={isLoading || isGeneratingDescription}
               />
@@ -369,13 +430,14 @@ export default function ExperienceSection({
             No experience added yet. Click the "Add Experience" button to add your work history.
           </div>
         ) : (
-          <>
-            {/* Experience Cards */}
-            {experiences.map((experience) => (
-              <div key={experience.id}>
+          <div className="space-y-6">
+            {sortedExperiences.map((experience, index) => (
+              <div
+                key={experience.id}
+                className={`${experience.includeInResume === false ? 'opacity-60' : ''}`}
+              >
                 {editingId === experience.id && editExperience ? (
-                  // Edit Form In place
-                  <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors">
+                  <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
                     <h3 className="text-lg font-medium text-white mb-4">Edit Experience</h3>
                     <div className="space-y-4">
                       <div>
@@ -459,8 +521,8 @@ export default function ExperienceSection({
                         </div>
                         <textarea
                           value={editExperience.description}
-                          onChange={(e) => setEditExperience({...editExperience, description: e.target.value})}
-                          className="w-full h-24 px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                          onChange={(e) => handleDescriptionChange(e, true)}
+                          className="w-full min-h-[100px] px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white resize-none overflow-hidden"
                           placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
                           disabled={isLoading || isGeneratingDescription}
                         />
@@ -504,65 +566,82 @@ export default function ExperienceSection({
                     </div>
                   </div>
                 ) : (
-                  // Experience Card (only render if not editing)
-                  <div className={`${experience.includeInResume === false ? 'opacity-60' : ''}`}>
-                    <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-blue-500/20 p-3 rounded-lg">
-                            <Briefcase className="h-6 w-6 text-blue-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold text-white">{experience.position}</h3>
-                            <p className="text-gray-300">{experience.company}</p>
-                            <p className="text-gray-400 text-sm mt-1">{experience.location}</p>
-                            <p className="text-gray-400 text-sm">{formatDateRange(experience.startDate, experience.endDate)}</p>
-                          </div>
+                  <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors group">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start gap-4 flex-1">
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveExperience(index, 'up')}
+                            disabled={index === 0 || isLoading}
+                            className="p-1 hover:bg-gray-700/50"
+                          >
+                            <ChevronUp className="h-4 w-4 text-gray-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveExperience(index, 'down')}
+                            disabled={index === sortedExperiences.length - 1 || isLoading}
+                            className="p-1 hover:bg-gray-700/50"
+                          >
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          </Button>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleToggleIncludeInResume(experience)}
-                            className={`p-2 rounded-full ${experience.includeInResume !== false ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-300'} hover:bg-gray-700/50`}
-                            disabled={isLoading}
-                            title={experience.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
-                          >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => startEditing(experience)}
-                            className="p-2 rounded-full text-gray-400 hover:text-blue-400 hover:bg-gray-700/50"
-                            disabled={isLoading}
-                          >
-                            <PenSquare className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(experience.id)}
-                            className="p-2 rounded-full text-gray-400 hover:text-red-400 hover:bg-gray-700/50"
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
+                        <div className="bg-blue-500/20 p-3 rounded-lg">
+                          <Briefcase className="h-6 w-6 text-blue-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-white">{experience.position}</h3>
+                          <p className="text-gray-300">{experience.company}</p>
+                          <p className="text-gray-400 text-sm mt-1">{experience.location}</p>
+                          <p className="text-gray-400 text-sm">{formatDateRange(experience.startDate, experience.endDate)}</p>
                         </div>
                       </div>
-                      
-                      <div className="mt-4 space-y-1">
-                        {experience.description.split('\n').map((line, i) => (
-                          line.trim() ? (
-                            <div key={i} className="flex items-start text-gray-300">
-                              <span className="mr-2 mt-1.5 text-blue-400">•</span>
-                              <p>{line.trim()}</p>
-                            </div>
-                          ) : null
-                        ))}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleToggleIncludeInResume(experience)}
+                          className={`p-2 rounded-full ${experience.includeInResume !== false ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-300'} hover:bg-gray-700/50`}
+                          disabled={isLoading}
+                          title={experience.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => startEditing(experience)}
+                          className="p-2 rounded-full text-gray-400 hover:text-blue-400 hover:bg-gray-700/50"
+                          disabled={isLoading}
+                        >
+                          <PenSquare className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(experience.id)}
+                          className="p-2 rounded-full text-gray-400 hover:text-red-400 hover:bg-gray-700/50"
+                          disabled={isLoading}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                       </div>
+                    </div>
+                    
+                    <div className="mt-4 space-y-1">
+                      {experience.description.split('\n').map((line, i) => (
+                        line.trim() ? (
+                          <div key={i} className="flex items-start text-gray-300">
+                            <span className="mr-2 mt-1.5 text-blue-400">•</span>
+                            <p>{line.trim()}</p>
+                          </div>
+                        ) : null
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
             ))}
-          </>
+          </div>
         )}
       </div>
     </div>

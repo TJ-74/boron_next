@@ -41,6 +41,7 @@ model Experience {
   endDate         DateTime?
   description     String
   includeInResume Boolean  @default(true)
+  order           Int      @default(0)
   user            User     @relation(fields: [userId], references: [id])
   userId          String
 }
