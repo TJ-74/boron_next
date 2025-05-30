@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     distDir: '.next',
-    experimental: {
-      appDir: true,
-    },
     images: {
       remotePatterns: [
         {
@@ -111,12 +108,12 @@ const nextConfig = {
       // number of pages that should be kept simultaneously without being disposed
       pagesBufferLength: 2,
     },
-    api: {
+    serverRuntimeConfig: {
       bodyParser: {
         sizeLimit: '10mb', // Increase size limit for API routes
       },
       responseLimit: '10mb',
-    },
+    }
 }
 
 // Configure API routes to handle larger request bodies (for image uploads)

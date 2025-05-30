@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Navbar } from '@/app/components/ui/navbar';
+import Navbar from '@/app/components/ui/navbar';
 import { Footer } from '@/app/components/ui/footer';
 
 export default function JobScraper() {

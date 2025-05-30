@@ -1,6 +1,6 @@
 'use client';
 
-import { Navbar } from '../components/ui/navbar';
+import Navbar from '../components/ui/navbar';
 import Image from 'next/image';
 import { Footer } from '../components/ui/footer';
 

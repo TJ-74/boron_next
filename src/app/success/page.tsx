@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Navbar } from '../components/ui/navbar';
+import Navbar from '../components/ui/navbar';
 import { Footer } from '../components/ui/footer';
 
 function SuccessContent() {

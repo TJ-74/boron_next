@@ -1,7 +1,7 @@
 'use client';
 
 import CheckoutButton from '../components/CheckoutButton';
-import { Navbar } from '../components/ui/navbar';
+import Navbar from '../components/ui/navbar';
 import { Footer } from '../components/ui/footer';   
 
 export default function PricingPage() {

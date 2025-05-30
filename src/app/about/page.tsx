@@ -1,6 +1,6 @@
 'use client';
 
-import { Navbar } from '../components/ui/navbar';
+import Navbar from '../components/ui/navbar';
 import { Footer } from '../components/ui/footer';
 
 export default function AboutPage() {

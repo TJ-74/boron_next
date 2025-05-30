@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { Loader2, MessageCircle, Zap, X, MessageSquare, FileText, User } from "lucide-react";
 import Link from 'next/link';
-import logo from "@/app/images/logo-no-background.png";
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
 import { v4 as uuidv4 } from 'uuid';
+import Navbar from "@/app/components/ui/navbar";
 import { 
   saveUserProfileSummary, 
   getUserProfileSummary, 
@@ -1295,63 +1295,7 @@ ${projectSection}
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-        {/* Header */}
-        <header className="w-full py-6 px-4 sm:px-6 lg:px-8 border-b border-gray-800">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <Link href="/" className="flex items-center">
-              <Image 
-                src={logo} 
-                alt="Logo" 
-                width={150} 
-                height={40} 
-                className="h-8 w-auto"
-              />
-            </Link>
-            <div className="flex items-center gap-4">
-              {saveStatus === 'saving' && (
-                <span className="text-sm text-yellow-400 flex items-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </span>
-              )}
-              {saveStatus === 'success' && (
-                <span className="text-sm text-green-400">
-                  Changes saved successfully
-                </span>
-              )}
-              {saveStatus === 'error' && (
-                <span className="text-sm text-red-400">
-                  Error saving changes
-                </span>
-              )}
-              <Link href="/profile">
-                <Button
-                  variant="outline"
-                  className="text-gray-300 border-gray-700 hover:bg-gray-800 flex items-center gap-2"
-                >
-                  <User className="h-4 w-4" />
-                  Profile
-                </Button>
-              </Link>
-              <Link href="/resume-generator">
-                <Button
-                  variant="outline"
-                  className="text-gray-300 border-gray-700 hover:bg-gray-800 flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Resume Generator
-                </Button>
-              </Link>
-              <Button
-                onClick={logout}
-                variant="outline"
-                className="text-gray-300 border-gray-700 hover:bg-gray-800"
-              >
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </header>
+        <Navbar />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Profile Header */}
@@ -1381,6 +1325,26 @@ ${projectSection}
             >
               {isChatBotOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
             </Button>
+          </div>
+          
+          {/* Save Status Indicators */}
+          <div className="flex justify-center mb-4">
+            {saveStatus === 'saving' && (
+              <span className="text-sm text-yellow-400 flex items-center bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-700/50">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </span>
+            )}
+            {saveStatus === 'success' && (
+              <span className="text-sm text-green-400 bg-green-900/20 px-3 py-1 rounded-full border border-green-700/50">
+                Changes saved successfully
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-sm text-red-400 bg-red-900/20 px-3 py-1 rounded-full border border-red-700/50">
+                Error saving changes
+              </span>
+            )}
           </div>
           
           {/* Tabs Navigation */}
