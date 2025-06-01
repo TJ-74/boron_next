@@ -49,7 +49,16 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
   const [isEditedCoverLetter, setIsEditedCoverLetter] = useState(false);
   const [isCoverLetterMode, setIsCoverLetterMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea function
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+  };
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -58,9 +67,9 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
 
   useEffect(() => {
     // Focus input when component opens
-    if (isOpen && inputRef.current && isChatVisible) {
+    if (isOpen && textareaRef.current && isChatVisible) {
       setTimeout(() => {
-        inputRef.current?.focus();
+        textareaRef.current?.focus();
       }, 300);
     }
   }, [isOpen, isChatVisible]);
@@ -75,6 +84,11 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
     }
     setIsTabVisible(isOpen);
   }, [isOpen]);
+
+  useEffect(() => {
+    // Adjust textarea height when input value changes
+    adjustTextareaHeight();
+  }, [inputValue]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -409,7 +423,7 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
     
     return (
       <div 
-        className={`fixed left-0 top-1/2 transform -translate-y-1/2 z-20 transition-transform duration-300 ${isChatVisible ? 'translate-x-0' : 'translate-x-12'}`}
+        className={`fixed left-0 top-1/2 transform -translate-y-1/2 z-50 transition-transform duration-300 ${isChatVisible ? 'translate-x-0' : 'translate-x-12'}`}
       >
         <button
           onClick={() => {
@@ -420,55 +434,18 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
               setIsCoverLetterPanelOpen(false);
             }
           }}
-          className="flex items-center justify-center bg-gradient-to-r from-blue-900 to-purple-900 text-white p-3 rounded-r-lg shadow-lg"
+          className="flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-800 text-white p-3 rounded-r-xl shadow-2xl border border-blue-400/20 transition-all duration-200 hover:scale-105"
           title={isChatVisible ? "Hide Boron Bot" : "Show Boron Bot"}
         >
           {isChatVisible ? (
             <X className="h-6 w-6" />
           ) : (
             <div className="flex flex-col items-center">
-              <Zap className="h-6 w-6 text-yellow-400 mb-1" />
+              <Zap className="h-6 w-6 text-yellow-400 mb-1 animate-pulse" />
               <MessageSquare className="h-5 w-5" />
             </div>
           )}
         </button>
-
-        {!isChatVisible && (
-          <>
-            <button
-              onClick={() => {
-                setIsChatVisible(false);
-                setIsCoverLetterPanelOpen(true);
-                // Don't clear existing content if there is some
-                if (!jobDescription) {
-                  setJobDescription('');
-                }
-                if (!coverLetterContent) {
-                  setCoverLetterContent('');
-                }
-                // Set to cover letter mode when opening cover letter panel directly
-                setIsCoverLetterMode(true);
-              }}
-              className="flex items-center justify-center bg-gradient-to-r from-green-900 to-blue-900 text-white p-3 rounded-r-lg shadow-lg mt-2"
-              title="Create Cover Letter"
-            >
-              <div className="flex flex-col items-center">
-                <FileText className="h-6 w-6 text-green-400 mb-1" />
-                <span className="text-xs whitespace-nowrap rotate-90 mt-1">Cover Letter</span>
-              </div>
-            </button>
-            <button
-              onClick={closeAllPanels}
-              className="flex items-center justify-center bg-gradient-to-r from-red-900 to-red-700 text-white p-3 rounded-r-lg shadow-lg mt-2"
-              title="Close Boron Bot"
-            >
-              <div className="flex flex-col items-center">
-                <X className="h-6 w-6 text-red-300 mb-1" />
-                <span className="text-xs whitespace-nowrap rotate-90 mt-1">Close</span>
-              </div>
-            </button>
-          </>
-        )}
       </div>
     );
   };
@@ -501,7 +478,7 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
       {/* Shared backdrop for both panels */}
       {(isChatVisible || isCoverLetterPanelOpen) && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 z-20"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           onClick={handleBackdropClick}
           aria-hidden="true"
         />
@@ -512,7 +489,7 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
         <>
           {/* Chat panel */}
           <div
-            className={`fixed inset-y-0 right-0 w-full md:w-2/3 lg:w-1/2 xl:w-2/5 bg-gray-900 shadow-xl z-30 transition-transform duration-300 ease-in-out transform ${isChatVisible ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`fixed inset-y-0 right-0 w-full md:w-2/3 lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 shadow-2xl z-50 transition-transform duration-300 ease-in-out transform border-l border-slate-700/50 ${isChatVisible ? 'translate-x-0' : 'translate-x-full'}`}
             onClick={(e) => e.stopPropagation()}
             style={{
               animation: 'slide-in 0.3s forwards',
@@ -530,95 +507,16 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
             `}</style>
 
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gradient-to-r from-blue-900 to-purple-900">
-                <h2 className="text-xl font-semibold text-white flex items-center">
-                  <Bot className="h-5 w-5 mr-2 text-blue-400" />
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-gradient-to-r from-blue-900/80 via-purple-900/80 to-indigo-900/80 backdrop-blur-sm">
+                <h2 className="text-xl font-bold text-white flex items-center">
                   Boron Bot
+                  <span className="ml-2 text-sm font-normal text-blue-300">AI Assistant</span>
                 </h2>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-gray-800 rounded-full px-2 py-1 mr-2">
-                    <span className="text-xs text-gray-400 mr-2">Cover Letter Mode</span>
-                    <button
-                      onClick={() => setIsCoverLetterMode(!isCoverLetterMode)}
-                      className={`relative inline-flex items-center h-5 rounded-full w-10 transition-colors focus:outline-none ${
-                        isCoverLetterMode ? 'bg-green-600' : 'bg-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block w-4 h-4 transform transition-transform bg-white rounded-full ${
-                          isCoverLetterMode ? 'translate-x-5' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      if (!jobDescription || jobDescription.trim().length < 20) {
-                        // Add a message prompting for a job description
-                        if (isCoverLetterMode) {
-                          setMessages((prev) => [
-                            ...prev,
-                            {
-                              text: "To generate a cover letter, please provide a job description. You can say something like 'Here's the job description: [paste job description]'.",
-                              sender: 'bot',
-                              timestamp: new Date(),
-                            },
-                          ]);
-                          // Also update API messages
-                          setApiMessages([...apiMessages, {
-                            role: 'assistant',
-                            content: "To generate a cover letter, please provide a job description. You can say something like 'Here's the job description: [paste job description]'."
-                          }]);
-                        } else {
-                          // Just open the empty panel if not in cover letter mode
-                          setIsCoverLetterPanelOpen(true);
-                        }
-                        return;
-                      }
-                      
-                      setIsCoverLetterPanelOpen(true);
-                      if (!coverLetterContent) {
-                        setIsGeneratingCoverLetter(true);
-                        fetch('/api/cover-letter', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            profile,
-                            jobDescription: jobDescription
-                          }),
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                          setCoverLetterContent(data.coverLetter);
-                          setIsGeneratingCoverLetter(false);
-                        })
-                        .catch(err => {
-                          console.error('Error generating cover letter:', err);
-                          setIsGeneratingCoverLetter(false);
-                        });
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="text-green-400 border-green-700 hover:bg-green-900/20"
-                  >
-                    <FileText className="h-4 w-4 mr-1" />
-                    Cover Letter
-                  </Button>
-                  <Button
-                    onClick={closeAllPanels}
-                    variant="ghost"
-                    size="icon"
-                    className="text-gray-400 hover:text-white hover:bg-gray-800"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-800/30">
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
                 {messages.map((message, index) => (
                   <div
                     key={index}
@@ -627,19 +525,19 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
                     }`}
                   >
                     <div
-                      className={`max-w-3/4 rounded-lg p-3 ${
+                      className={`max-w-[80%] rounded-2xl p-4 shadow-lg backdrop-blur-sm border transition-all duration-200 hover:scale-[1.02] ${
                         message.sender === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-100'
+                          ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white border-blue-500/30 shadow-blue-500/20'
+                          : 'bg-gradient-to-br from-slate-800 to-slate-700 text-slate-100 border-slate-600/30 shadow-slate-800/50'
                       }`}
                     >
-                      <div className="flex items-center mb-1">
+                      <div className="flex items-center mb-2">
                         {message.sender === 'bot' ? (
-                          <Zap className="h-4 w-4 mr-1 text-yellow-400" />
+                          <Zap className="h-4 w-4 mr-2 text-yellow-400 animate-pulse" />
                         ) : (
-                          <User className="h-4 w-4 mr-1 text-white" />
+                          <User className="h-4 w-4 mr-2 text-blue-200" />
                         )}
-                        <span className="text-xs opacity-75">
+                        <span className="text-xs font-medium opacity-75">
                           {message.sender === 'user' ? 'You' : 'Boron Bot'} •{' '}
                           {message.timestamp.toLocaleTimeString([], {
                             hour: '2-digit',
@@ -647,17 +545,21 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
                           })}
                         </span>
                       </div>
-                      <p className="whitespace-pre-wrap">{message.text}</p>
+                      <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
                     </div>
                   </div>
                 ))}
                 {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-lg p-3">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl p-4 shadow-lg border border-slate-600/30 backdrop-blur-sm">
+                      <div className="flex items-center space-x-1">
+                        <Zap className="h-4 w-4 text-yellow-400 mr-2" />
+                        <span className="text-xs text-slate-400 mr-3">Boron Bot is thinking...</span>
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -665,21 +567,28 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="p-4 border-t border-gray-800">
-                <div className="flex items-center">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask me about your profile or generate a cover letter..."
-                    className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                  />
+              {/* Input Area */}
+              <div className="p-6 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm">
+                <div className="flex items-end space-x-3">
+                  <div className="flex-1 relative">
+                    <textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Ask me about your profile or generate a cover letter..."
+                      className="w-full px-4 py-3 bg-slate-800/70 backdrop-blur-sm border border-slate-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white placeholder-slate-400 resize-none transition-all duration-200 min-h-[48px] max-h-[120px]"
+                      rows={1}
+                      style={{ 
+                        height: 'auto',
+                        minHeight: '48px'
+                      }}
+                    />
+                  </div>
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim() || isTyping}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-r-md px-4 py-2 h-[42px]"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700 text-white rounded-xl px-6 py-3 h-12 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
