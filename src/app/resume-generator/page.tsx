@@ -121,6 +121,7 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
 <html>
 <head>
   <meta charset="UTF-8">
+  <title></title>
   <style>
     * { 
       margin: 0; 
@@ -227,6 +228,13 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
       @page {
         size: letter;
         margin: 0.5in;
+        /* Remove all browser-generated content */
+        @top-left { content: ""; }
+        @top-center { content: ""; }
+        @top-right { content: ""; }
+        @bottom-left { content: ""; }
+        @bottom-center { content: ""; }
+        @bottom-right { content: ""; }
       }
       
       body {
@@ -234,6 +242,15 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
         max-width: none;
         margin: 0;
         padding: 0;
+      }
+      
+      /* Hide any potential browser UI elements */
+      body::before,
+      body::after,
+      html::before,
+      html::after {
+        display: none !important;
+        content: none !important;
       }
       
       /* Ensure text remains selectable */
@@ -372,8 +389,11 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       
-      // Wait for content to load
-      printWindow.onload = () => {
+      // Wait for content to load and clear any potential headers
+      setTimeout(() => {
+        // Clear the title to prevent it from showing in headers
+        printWindow.document.title = '';
+        
         // Show print dialog
         printWindow.print();
         
@@ -381,7 +401,7 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
         printWindow.onafterprint = () => {
           printWindow.close();
         };
-      };
+      }, 500);
     } else {
       throw new Error('Failed to open print window. Please allow popups for this site.');
     }
@@ -605,6 +625,13 @@ export default function ResumeGenerator() {
         @page {
           size: letter;
           margin: 0.4in;
+          /* Hide default browser headers and footers */
+          @top-left { content: none; }
+          @top-center { content: none; }
+          @top-right { content: none; }
+          @bottom-left { content: none; }
+          @bottom-center { content: none; }
+          @bottom-right { content: none; }
         }
 
         html, body {
@@ -793,12 +820,112 @@ export default function ResumeGenerator() {
     return formattedHtml;
   };
 
-  // Fetch user profile on component mount
+  // Function to save resume and chat data
+  const saveResumeData = async (resumeData: ResumeData, chatHistory: Message[]) => {
+    if (!user?.uid) return;
+    
+    try {
+      setSaveStatus('saving');
+      
+      // Convert Message[] to ChatMessage[] format for API
+      const apiChatHistory = chatHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.text,
+        timestamp: msg.timestamp.toISOString()
+      }));
+
+      const response = await fetch('/api/resume-save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          jobDescription,
+          resumeData,
+          chatHistory: apiChatHistory,
+        }),
+      });
+
+      if (response.ok) {
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      } else {
+        throw new Error('Failed to save resume');
+      }
+    } catch (error) {
+      console.error('Error saving resume:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
+
+  // Function to load saved resume and chat data
+  const loadSavedData = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const response = await fetch(`/api/resume-save?uid=${user.uid}`);
+      
+      if (response.ok) {
+        const { data } = await response.json();
+        
+        // Load resume data
+        if (data.resumeData) {
+          setResumeData(data.resumeData);
+        }
+        
+        // Load job description
+        if (data.jobDescription) {
+          setJobDescription(data.jobDescription);
+        }
+        
+        // Load chat history
+        if (data.chatHistory && data.chatHistory.length > 0) {
+          const loadedMessages: Message[] = data.chatHistory.map((msg: any) => ({
+            text: msg.content,
+            sender: msg.role === 'user' ? 'user' : 'bot',
+            timestamp: new Date(msg.timestamp || Date.now()),
+          }));
+          
+          // Merge with initial bot message if no bot messages exist
+          const hasInitialBotMessage = loadedMessages.some(msg => msg.sender === 'bot');
+          if (!hasInitialBotMessage) {
+            const initialMessage: Message = {
+              text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+              sender: 'bot',
+              timestamp: new Date(),
+            };
+            setMessages([initialMessage, ...loadedMessages]);
+          } else {
+            setMessages(loadedMessages);
+          }
+          
+          // Update API messages too
+          const apiMessages: ChatMessage[] = data.chatHistory.map((msg: any) => ({
+            role: msg.role,
+            content: msg.content,
+          }));
+          setApiMessages(apiMessages);
+        }
+        
+        console.log('Resume data loaded successfully');
+      } else if (response.status !== 404) {
+        // Only log error if it's not a "not found" error (which is expected for new users)
+        console.error('Failed to load saved resume data');
+      }
+    } catch (error) {
+      console.error('Error loading saved data:', error);
+    }
+  };
+
+  // Fetch user profile and saved data on component mount
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       if (!user?.uid) return;
       
       try {
+        // Fetch profile
         const savedProfile = await getUserProfileSummary(user.uid);
         if (savedProfile) {
           // Convert UserProfileSummary to UserProfile by ensuring all required fields have values
@@ -820,13 +947,17 @@ export default function ResumeGenerator() {
             certificates: savedProfile.certificates || []
           });
         }
+
+        // Load saved resume and chat data
+        await loadSavedData();
+        
       } catch (error) {
-        console.error('Failed to fetch profile:', error);
+        console.error('Failed to fetch data:', error);
       }
     };
 
     if (user) {
-      fetchProfile();
+      fetchData();
     }
   }, [user]);
 
@@ -876,14 +1007,25 @@ export default function ResumeGenerator() {
       const data = await response.json();
       
       // Add bot response to UI
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: data.message,
-          sender: 'bot',
-          timestamp: new Date(),
-        },
-      ]);
+      setMessages((prev) => {
+        const updatedMessages = [
+          ...prev,
+          {
+            text: data.message,
+            sender: 'bot' as const,
+            timestamp: new Date(),
+          },
+        ];
+
+        // Save chat periodically (every few messages)
+        if (updatedMessages.length % 4 === 0 && user?.uid && resumeData) {
+          setTimeout(() => {
+            saveResumeData(resumeData, updatedMessages);
+          }, 100);
+        }
+
+        return updatedMessages;
+      });
       
       // Add bot response to API message history
       setApiMessages([...updatedApiMessages, {
@@ -902,14 +1044,25 @@ export default function ResumeGenerator() {
       
       // Fallback response
       const fallbackResponse = "I'm sorry, I'm having trouble connecting right now. Please try again in a moment, or feel free to paste your job description and I'll help you create a tailored resume.";
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: fallbackResponse,
-          sender: 'bot',
-          timestamp: new Date(),
-        },
-      ]);
+      setMessages((prev) => {
+        const updatedMessages = [
+          ...prev,
+          {
+            text: fallbackResponse,
+            sender: 'bot' as const,
+            timestamp: new Date(),
+          },
+        ];
+
+        // Save chat data even for fallback responses
+        if (user?.uid && resumeData) {
+          setTimeout(() => {
+            saveResumeData(resumeData, updatedMessages);
+          }, 100);
+        }
+
+        return updatedMessages;
+      });
       
       // Add fallback response to API message history
       setApiMessages([...updatedApiMessages, {
@@ -989,13 +1142,10 @@ export default function ResumeGenerator() {
       };
 
       setResumeData(resumeData);
-      setSaveStatus('success');
 
       // Add success message with insights
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: `🎉 Your tailored resume is ready! I used a multi-agent system to optimize it:
+      const successMessage = {
+        text: `🎉 Your tailored resume is ready! I used a multi-agent system to optimize it:
 
 ✅ Job Description Analysis Complete
 ✅ Profile Matching Complete  
@@ -1011,13 +1161,21 @@ The resume has been intelligently optimized with:
 • Enhanced metrics and achievements
 • Strategic skill positioning
 
-You can now view it on the right, print it, or save it as PDF!`,
-          sender: 'bot',
-          timestamp: new Date(),
-        },
-      ]);
+You can now view it on the right, print it, or save it as PDF! 💾 Your resume and chat have been automatically saved.`,
+        sender: 'bot' as const,
+        timestamp: new Date(),
+      };
 
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      setMessages((prev) => {
+        const updatedMessages = [...prev, successMessage];
+        
+        // Save resume and chat data after state update
+        setTimeout(() => {
+          saveResumeData(resumeData, updatedMessages);
+        }, 100);
+        
+        return updatedMessages;
+      });
     } catch (error) {
       console.error('Error generating resume:', error);
       setSaveStatus('error');
@@ -1132,47 +1290,32 @@ You can now view it on the right, print it, or save it as PDF!`,
         <div class="resume-container">
           <div class="header">
             <h1>${data.header.name}</h1>
-            <div className="contact-info">
-              <div className="contact-item">
-                <span className="icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
-                </span>
-                <span>${data.header.contact.phone}</span>
-              </div>
-              <div className="contact-item">
-                <span className="icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                </span>
-                <a href="mailto:${data.header.contact.email}">${data.header.contact.email}</a>
-              </div>
+            <div class="contact-info">
+              ${data.header.contact.phone ? `
+                <div class="contact-item">
+                  <span class="icon">📱</span>
+                  <span>${data.header.contact.phone}</span>
+                </div>
+              ` : ''}
+              ${data.header.contact.email ? `
+                <div class="contact-item">
+                  <span class="icon">📧</span>
+                  <a href="mailto:${data.header.contact.email}">${data.header.contact.email}</a>
+                </div>
+              ` : ''}
               ${data.header.contact.linkedin ? `
-                <div className="contact-item">
-                  <span className="icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-                      <rect x="2" y="9" width="4" height="12"></rect>
-                      <circle cx="4" cy="4" r="2"></circle>
-                    </svg>
-                  </span>
+                <div class="contact-item">
+                  <span class="icon">🔗</span>
                   <a href="${data.header.contact.linkedin}" target="_blank" rel="noopener noreferrer">
-                    ${data.header.contact.linkedin.replace('https://www.linkedin.com/in/', '')}
+                    ${data.header.contact.linkedin.replace('https://www.linkedin.com/in/', 'linkedin.com/in/')}
                   </a>
                 </div>
               ` : ''}
               ${data.header.contact.github ? `
-                <div className="contact-item">
-                  <span className="icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                    </svg>
-                  </span>
+                <div class="contact-item">
+                  <span class="icon">💻</span>
                   <a href="${data.header.contact.github}" target="_blank" rel="noopener noreferrer">
-                    ${data.header.contact.github.replace('https://github.com/', '')}
+                    ${data.header.contact.github.replace('https://github.com/', 'github.com/')}
                   </a>
                 </div>
               ` : ''}
@@ -1202,26 +1345,71 @@ You can now view it on the right, print it, or save it as PDF!`,
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Resume - ${resumeData.header.name}</title>
+            <title></title>
             ${resumeStyles}
             <style>
               @page {
                 size: letter;
                 margin: 0.4in;
+                /* Remove all browser-generated content */
+                @top-left { content: ""; }
+                @top-center { content: ""; }
+                @top-right { content: ""; }
+                @bottom-left { content: ""; }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+                /* Additional margin rules to prevent content */
+                margin-top: 0.4in;
+                margin-bottom: 0.4in;
+                margin-left: 0.4in;
+                margin-right: 0.4in;
               }
+              
+              /* Hide any potential browser UI elements */
+              @media print {
+                body::before,
+                body::after,
+                html::before,
+                html::after {
+                  display: none !important;
+                  content: none !important;
+                }
+                
+                /* Ensure no margins for browser headers/footers */
+                @page :first {
+                  margin-top: 0.4in;
+                }
+                
+                @page :left {
+                  margin-left: 0.4in;
+                  margin-right: 0.4in;
+                }
+                
+                @page :right {
+                  margin-left: 0.4in;
+                  margin-right: 0.4in;
+                }
+              }
+              
               body {
                 width: 8.5in;
                 max-width: 8.5in;
                 margin: 0 auto;
                 padding: 0;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
               }
+              
               #print-wrapper {
                 width: 100%;
                 max-width: 8.5in;
                 margin: 0 auto;
                 padding: 0;
                 box-sizing: border-box;
+                position: relative;
               }
+              
               .resume-container {
                 width: 100%;
                 max-width: 7.7in;
@@ -1230,6 +1418,29 @@ You can now view it on the right, print it, or save it as PDF!`,
                 box-sizing: border-box;
               }
             </style>
+            <script>
+              // Additional JavaScript to ensure clean printing
+              window.onload = function() {
+                // Clear document title to prevent it from showing in headers
+                document.title = '';
+                
+                // Hide potential browser UI elements
+                const style = document.createElement('style');
+                style.textContent = \`
+                  @media print {
+                    @page { 
+                      margin: 0.4in; 
+                      size: letter;
+                    }
+                    body { 
+                      margin: 0 !important; 
+                      padding: 0 !important; 
+                    }
+                  }
+                \`;
+                document.head.appendChild(style);
+              };
+            </script>
           </head>
           <body>
             <div id="print-wrapper">
@@ -1240,10 +1451,14 @@ You can now view it on the right, print it, or save it as PDF!`,
       `;
       printWindow.document.write(htmlContent);
       printWindow.document.close();
+      
+      // Wait for content to load and clear any potential headers
       setTimeout(() => {
+        // Clear the title again just before printing
+        printWindow.document.title = '';
         printWindow.print();
         printWindow.onafterprint = () => printWindow.close();
-      }, 250);
+      }, 500);
     }
   };
 
@@ -1266,6 +1481,38 @@ You can now view it on the right, print it, or save it as PDF!`,
                 Resume Assistant
                 <span className="ml-2 text-sm font-normal text-blue-300">AI-Powered</span>
               </h2>
+              
+              {/* Save Status and Manual Save Button */}
+              <div className="flex items-center space-x-3">
+                {saveStatus === 'saving' && (
+                  <div className="flex items-center text-blue-300 text-sm">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </div>
+                )}
+                {saveStatus === 'success' && (
+                  <div className="flex items-center text-green-300 text-sm">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                    Saved
+                  </div>
+                )}
+                {saveStatus === 'error' && (
+                  <div className="flex items-center text-red-300 text-sm">
+                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
+                    Save Error
+                  </div>
+                )}
+                
+                <Button
+                  onClick={() => resumeData && messages.length > 1 && saveResumeData(resumeData, messages)}
+                  disabled={!resumeData || saveStatus === 'saving'}
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-300 border-blue-800/50 hover:text-blue-200 hover:bg-blue-900/20 disabled:opacity-50"
+                >
+                  💾 Save
+                </Button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -1399,6 +1646,11 @@ You can now view it on the right, print it, or save it as PDF!`,
                   <h2 className="text-xl font-semibold text-white flex items-center">
                     <FileText className="h-5 w-5 mr-2 text-emerald-400" />
                     Resume Preview
+                    {resumeData && (
+                      <span className="ml-3 text-xs bg-emerald-900/30 text-emerald-300 px-2 py-1 rounded-full border border-emerald-700/50">
+                        Auto-Saved
+                      </span>
+                    )}
                   </h2>
                   <div className="flex items-center gap-3">
                     <Button
