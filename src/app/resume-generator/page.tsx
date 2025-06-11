@@ -272,27 +272,27 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
   ${data.header.title ? `<div class="title">${data.header.title}</div>` : ''}
   
   <div class="contact">
-    ${data.header.contact.email ? `
-      <div class="contact-item">
-        <span>📧</span>
-        <span>${data.header.contact.email}</span>
-      </div>
-    ` : ''}
     ${data.header.contact.phone ? `
       <div class="contact-item">
         <span>📱</span>
         <span>${data.header.contact.phone}</span>
       </div>
     ` : ''}
+    ${data.header.contact.email ? `
+      <div class="contact-item">
+        <span>✉️</span>
+        <span>${data.header.contact.email}</span>
+      </div>
+    ` : ''}
     ${data.header.contact.linkedin ? `
       <div class="contact-item">
-        <span>🔗</span>
+        <span>💼</span>
         <span>${data.header.contact.linkedin.replace('https://www.linkedin.com/in/', 'linkedin.com/in/')}</span>
       </div>
     ` : ''}
     ${data.header.contact.github ? `
       <div class="contact-item">
-        <span>💻</span>
+        <span>🔗</span>
         <span>${data.header.contact.github.replace('https://github.com/', 'github.com/')}</span>
       </div>
     ` : ''}
@@ -619,6 +619,17 @@ export default function ResumeGenerator() {
       .resume-preview-container .icon {
         font-size: 0.7rem;
         margin-right: 0.2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+      }
+      
+      .resume-preview-container .icon svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
       }
 
       @media print {
@@ -1293,19 +1304,34 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             <div class="contact-info">
               ${data.header.contact.phone ? `
                 <div class="contact-item">
-                  <span class="icon">📱</span>
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                  </span>
                   <span>${data.header.contact.phone}</span>
                 </div>
               ` : ''}
               ${data.header.contact.email ? `
                 <div class="contact-item">
-                  <span class="icon">📧</span>
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                  </span>
                   <a href="mailto:${data.header.contact.email}">${data.header.contact.email}</a>
                 </div>
               ` : ''}
               ${data.header.contact.linkedin ? `
                 <div class="contact-item">
-                  <span class="icon">🔗</span>
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                      <rect x="2" y="9" width="4" height="12"></rect>
+                      <circle cx="4" cy="4" r="2"></circle>
+                    </svg>
+                  </span>
                   <a href="${data.header.contact.linkedin}" target="_blank" rel="noopener noreferrer">
                     ${data.header.contact.linkedin.replace('https://www.linkedin.com/in/', 'linkedin.com/in/')}
                   </a>
@@ -1313,7 +1339,11 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
               ` : ''}
               ${data.header.contact.github ? `
                 <div class="contact-item">
-                  <span class="icon">💻</span>
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                  </span>
                   <a href="${data.header.contact.github}" target="_blank" rel="noopener noreferrer">
                     ${data.header.contact.github.replace('https://github.com/', 'github.com/')}
                   </a>
@@ -1642,7 +1672,17 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
               </div>
             ) : (
               <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800/50">
+                <div className="flex-1 relative overflow-hidden">
+                  <div className="absolute inset-0 overflow-y-auto">
+                    <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
+                    <div className="resume-preview-container">
+                      <div id="print-wrapper">
+                        <div dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800/50 flex-shrink-0">
                   <h2 className="text-xl font-semibold text-white flex items-center">
                     <FileText className="h-5 w-5 mr-2 text-emerald-400" />
                     Resume Preview
@@ -1678,16 +1718,6 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                       <Printer className="h-4 w-4 mr-1" />
                       Print
                     </Button>
-                  </div>
-                </div>
-                <div className="flex-1 relative overflow-hidden">
-                  <div className="absolute inset-0 overflow-y-auto">
-                    <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
-                    <div className="resume-preview-container">
-                      <div id="print-wrapper">
-                        <div dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
