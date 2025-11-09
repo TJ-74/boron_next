@@ -304,155 +304,157 @@ export default function SkillsSection({
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-200">Skills</h2>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 flex items-center justify-center">
+            <Code className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Skills & Technologies</h2>
+            <p className="text-sm text-gray-500">Showcase your technical expertise</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
             onClick={handleGenerateSkills}
             disabled={isAdding || isLoading || !!editingSkill || isGeneratingSkills}
-            className="text-blue-400 border-blue-600/30 hover:bg-blue-900/20"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
-            {isGeneratingSkills ? 'Generating...' : 'Generate Skills with AI'}
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
+            <Sparkles className="h-4 w-4" />
+            {isGeneratingSkills ? 'Generating...' : 'AI Generate'}
+          </button>
+          <button
             onClick={() => setIsAdding(true)}
             disabled={isAdding || isLoading || !!editingSkill || isGeneratingSkills}
-            className="text-gray-300 border-gray-700 hover:bg-gray-800"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             Add Skill
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Add Skill Form */}
       {isAdding && (
-        <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-violet-600" />
+            </div>
             {generatedSkills.length > 0 ? 'Select Skills to Add' : 'Add New Skill'}
           </h3>
-          
+
           {/* AI Generated Skills */}
           {generatedSkills.length > 0 ? (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-300">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-700 font-medium">
                   Select the skills you want to add to your profile:
                 </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      const allSelected = Object.values(selectedSkills).every(Boolean);
-                      const newSelection: {[key: string]: boolean} = {};
-                      generatedSkills.forEach((_, index) => {
-                        newSelection[index] = !allSelected;
-                      });
-                      setSelectedSkills(newSelection);
-                    }}
-                    className="text-xs text-blue-400 hover:text-blue-300"
-                  >
-                    {Object.values(selectedSkills).every(Boolean) ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    const allSelected = Object.values(selectedSkills).every(Boolean);
+                    const newSelection: {[key: string]: boolean} = {};
+                    generatedSkills.forEach((_, index) => {
+                      newSelection[index] = !allSelected;
+                    });
+                    setSelectedSkills(newSelection);
+                  }}
+                  className="text-sm text-violet-600 hover:text-violet-700 font-medium"
+                >
+                  {Object.values(selectedSkills).every(Boolean) ? 'Deselect All' : 'Select All'}
+                </button>
               </div>
-              
-              <div className="max-h-60 overflow-y-auto border border-gray-700 rounded-lg p-2">
+
+              <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl p-4 bg-gray-50">
                 {generatedSkills.map((skill, index) => (
-                  <div key={index} className="flex items-center py-2 border-b border-gray-700 last:border-b-0">
+                  <div key={index} className="flex items-center py-3 border-b border-gray-200 last:border-b-0">
                     <input
                       type="checkbox"
                       id={`skill-${index}`}
                       checked={selectedSkills[index] || false}
                       onChange={() => toggleSkillSelection(index)}
-                      className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                      className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 bg-white"
                     />
-                    <label htmlFor={`skill-${index}`} className="ml-2 flex-1">
-                      <span className="text-white font-medium">{skill.name}</span>
-                      <span className="text-gray-400 text-sm ml-2">({skill.domain})</span>
+                    <label htmlFor={`skill-${index}`} className="ml-3 flex-1 flex items-center justify-between">
+                      <span className="text-gray-900 font-medium">{skill.name}</span>
+                      <span className="text-gray-500 text-sm bg-gray-100 px-2 py-1 rounded-lg">{skill.domain}</span>
                     </label>
                   </div>
                 ))}
               </div>
-              
-              <div className="flex justify-end gap-2 pt-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
                   onClick={cancelAdding}
-                  className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
                   disabled={isLoading}
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-4 w-4" />
                   Cancel
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
+                </button>
+                <button
                   onClick={addSelectedSkills}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                   disabled={isLoading || Object.values(selectedSkills).filter(Boolean).length === 0}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isLoading 
-                    ? (savingProgress || 'Adding...') 
+                  <Save className="h-4 w-4" />
+                  {isLoading
+                    ? (savingProgress || 'Adding...')
                     : `Add Selected Skills (${Object.values(selectedSkills).filter(Boolean).length})`}
-                </Button>
+                </button>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Domain
-                </label>
-                <input
-                  type="text"
-                  value={newDomain}
-                  onChange={(e) => setNewDomain(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="e.g., Web Development, Data Science"
-                  disabled={isLoading}
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Domain
+                  </label>
+                  <input
+                    type="text"
+                    value={newDomain}
+                    onChange={(e) => setNewDomain(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="e.g., Web Development, Data Science"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Skill Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                    placeholder="e.g., JavaScript, Python"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Skill Name
-                </label>
-                <input
-                  type="text"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="e.g., JavaScript, Python"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
                   onClick={cancelAdding}
-                  className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
                   disabled={isLoading}
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-4 w-4" />
                   Cancel
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
+                </button>
+                <button
                   onClick={handleAdd}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                   disabled={isLoading || !newSkill.trim() || !newDomain.trim()}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isLoading ? 'Saving...' : 'Save'}
-                </Button>
+                  <Save className="h-4 w-4" />
+                  {isLoading ? 'Saving...' : 'Save Skill'}
+                </button>
               </div>
             </div>
           )}
@@ -460,137 +462,178 @@ export default function SkillsSection({
       )}
 
       {/* Skills List */}
-      <div className="space-y-6 mt-6">
+      <div className="space-y-6">
         {skills.length === 0 ? (
-          <div className="text-center w-full py-8 text-gray-400">
-            No skills added yet. Click the "Add Skill" button to add your skills or use "Generate Skills with AI" to automatically create skills based on your profile.
+          <div className="text-center py-12">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center mx-auto mb-4">
+              <Code className="h-8 w-8 text-violet-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Skills Added Yet</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              Showcase your technical skills and expertise. Add skills manually or use AI to generate them based on your experience and projects.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setIsAdding(true)}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all font-semibold shadow-sm hover:shadow-md"
+              >
+                <Plus className="h-5 w-5" />
+                Add Skill
+              </button>
+              <button
+                onClick={handleGenerateSkills}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-semibold shadow-sm hover:shadow-md"
+              >
+                <Sparkles className="h-5 w-5" />
+                AI Generate
+              </button>
+            </div>
           </div>
         ) : (
           sortedDomains.map((domain, domainIndex) => (
-            <div key={domain} className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+            <div key={domain} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 group">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+                    <Layers className="h-4 w-4 text-violet-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">{domain}</h3>
+                </div>
+
+                {/* Domain reorder buttons */}
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
                     onClick={() => handleMoveDomain(domainIndex, 'up')}
                     disabled={domainIndex === 0 || isLoading}
-                    className="p-1 hover:bg-gray-700/50"
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => handleMoveDomain(domainIndex, 'down')}
                     disabled={domainIndex === sortedDomains.length - 1 || isLoading}
-                    className="p-1 hover:bg-gray-700/50"
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  </Button>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
                 </div>
-                <h3 className="text-lg font-semibold text-blue-400 flex items-center">
-                  <Layers className="h-5 w-5 mr-2" />
-                  {domain}
-                </h3>
               </div>
-              <div className="flex flex-wrap gap-3 pl-7">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {groupedSkills[domain].map((skill) => (
-                  <div 
-                    key={skill.id} 
-                  >
+                  <div key={skill.id}>
                     {editingSkill && editingSkill.id === skill.id ? (
                       // Edit form in place for this skill
-                      <div className="bg-gray-800/70 px-4 py-3 rounded-lg border border-blue-500 flex flex-col gap-2">
-                        <h4 className="text-sm font-medium text-white">Edit Skill</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            value={editingSkill.domain}
-                            onChange={(e) => setEditingSkill({...editingSkill, domain: e.target.value})}
-                            className="px-2 py-1 bg-gray-700/70 border border-gray-600 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                            placeholder="Domain"
-                            disabled={isLoading}
-                          />
-                          <input
-                            type="text"
-                            value={editingSkill.name}
-                            onChange={(e) => setEditingSkill({...editingSkill, name: e.target.value})}
-                            className="px-2 py-1 bg-gray-700/70 border border-gray-600 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                            placeholder="Skill"
-                            disabled={isLoading}
-                          />
-                        </div>
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`includeSkill-${skill.id}`}
-                            checked={editingSkill.includeInResume !== false}
-                            onChange={(e) => setEditingSkill({...editingSkill, includeInResume: e.target.checked})}
-                            className="h-3 w-3 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
-                            disabled={isLoading}
-                          />
-                          <label htmlFor={`includeSkill-${skill.id}`} className="ml-2 block text-xs text-gray-300">
-                            Include in Resume
-                          </label>
-                        </div>
-                        <div className="flex justify-end gap-2 mt-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={cancelEditing}
-                            className="h-7 px-2 text-xs text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
-                            disabled={isLoading}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Cancel
-                          </Button>
-                          <Button 
-                            variant="default" 
-                            size="sm" 
-                            onClick={handleUpdate}
-                            className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700"
-                            disabled={isLoading || !editingSkill.name.trim() || !editingSkill.domain.trim()}
-                          >
-                            <Save className="h-3 w-3 mr-1" />
-                            {isLoading ? 'Saving...' : 'Save'}
-                          </Button>
+                      <div className="bg-white border-2 border-violet-300 rounded-xl p-4 shadow-sm">
+                        <h4 className="text-sm font-bold text-gray-900 mb-3">Edit Skill</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Domain</label>
+                            <input
+                              type="text"
+                              value={editingSkill.domain}
+                              onChange={(e) => setEditingSkill({...editingSkill, domain: e.target.value})}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 text-gray-900 text-sm"
+                              disabled={isLoading}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Skill</label>
+                            <input
+                              type="text"
+                              value={editingSkill.name}
+                              onChange={(e) => setEditingSkill({...editingSkill, name: e.target.value})}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 text-gray-900 text-sm"
+                              disabled={isLoading}
+                            />
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`includeSkill-${skill.id}`}
+                              checked={editingSkill.includeInResume !== false}
+                              onChange={(e) => setEditingSkill({...editingSkill, includeInResume: e.target.checked})}
+                              className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 bg-white"
+                              disabled={isLoading}
+                            />
+                            <label htmlFor={`includeSkill-${skill.id}`} className="ml-2 block text-sm font-semibold text-gray-700">
+                              Include in Resume
+                            </label>
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                            <button
+                              onClick={cancelEditing}
+                              className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-xs"
+                              disabled={isLoading}
+                            >
+                              <X className="h-3 w-3" />
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleUpdate}
+                              className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                              disabled={isLoading || !editingSkill.name.trim() || !editingSkill.domain.trim()}
+                            >
+                              <Save className="h-3 w-3" />
+                              {isLoading ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
                       // Normal skill display
-                      <div 
-                        className={`bg-gray-800/70 text-gray-200 px-4 py-2 rounded-full flex items-center gap-2 border border-gray-700 hover:border-blue-500 transition-colors group ${skill.includeInResume === false ? 'opacity-60' : ''}`}
+                      <div
+                        className={`bg-white border rounded-xl p-4 transition-all duration-200 hover:shadow-md group cursor-pointer ${
+                          skill.includeInResume === false
+                            ? 'border-gray-300 opacity-75'
+                            : 'border-gray-200 hover:border-violet-300'
+                        }`}
                       >
-                        <Code className="h-4 w-4 text-blue-400" />
-                        <span>{skill.name}</span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {onUpdate && (
-                            <>
-                              <button
-                                onClick={() => handleToggleIncludeInResume(skill)}
-                                className={`p-1 rounded-full ${skill.includeInResume !== false ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-300'} hover:bg-gray-700/50`}
-                                disabled={isLoading}
-                                title={skill.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleEdit(skill)}
-                                className="p-1 rounded-full text-gray-400 hover:text-blue-400 hover:bg-gray-700/50"
-                                disabled={isLoading}
-                              >
-                                <PenSquare className="h-3.5 w-3.5" />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleDelete(skill.id)}
-                            className="p-1 rounded-full text-gray-400 hover:text-red-400 hover:bg-gray-700/50"
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div className="bg-gradient-to-br from-violet-100 to-indigo-100 p-2 rounded-lg">
+                                <Code className="h-4 w-4 text-violet-600" />
+                              </div>
+                              {skill.includeInResume !== false && (
+                                <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-green-500 rounded-full border border-white"></div>
+                              )}
+                            </div>
+                            <span className="font-semibold text-gray-900">{skill.name}</span>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {onUpdate && (
+                              <>
+                                <button
+                                  onClick={() => handleToggleIncludeInResume(skill)}
+                                  className={`p-1.5 rounded-lg transition-all ${
+                                    skill.includeInResume !== false
+                                      ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                                      : 'text-gray-400 bg-gray-50 hover:bg-gray-100'
+                                  }`}
+                                  disabled={isLoading}
+                                  title={skill.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleEdit(skill)}
+                                  className="p-1.5 rounded-lg text-gray-400 bg-gray-50 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                                  disabled={isLoading}
+                                >
+                                  <PenSquare className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => handleDelete(skill.id)}
+                              className="p-1.5 rounded-lg text-gray-400 bg-gray-50 hover:text-red-600 hover:bg-red-50 transition-all"
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}

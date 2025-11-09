@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { Loader2, MessageCircle, Zap, X, MessageSquare, FileText, User } from "lucide-react";
+import { Loader2, MessageCircle, Zap, X, MessageSquare, FileText, User, UserCircle, Briefcase, GraduationCap, Award, Code, FolderKanban } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
@@ -1294,192 +1294,301 @@ ${projectSection}
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-        <Navbar />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+        <Navbar saveStatus={saveStatus} />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Profile Header */}
-          <ProfileHeader 
-            profile={profile}
-            userId={user?.uid}
-            onUpdateProfile={handleUpdateProfile}
-            onUploadImage={handleUploadImage}
-            onUploadResume={handleUploadResume}
-            onPreviewInOverleaf={handlePreviewInOverleaf}
-            onViewPdf={handleViewPdf}
-            onUpdateAbout={handleUpdateAbout}
-            onAddExperience={handleAddExperience}
-            onAddEducation={handleAddEducation}
-            onAddSkill={handleAddSkill}
-            onAddProject={handleAddProject}
-            onAddSkillsBatch={handleAddSkillsBatch}
-            onParsingComplete={refreshProfile}
-            onJobScraper={() => router.push('/job-scraper')}
-          />
-          
-          {/* ChatBot toggle button */}
-          <div className="fixed bottom-6 right-6 z-10">
-            <Button
-              onClick={() => setIsChatBotOpen(!isChatBotOpen)}
-              className="rounded-full w-14 h-14 bg-gradient-to-r from-blue-900 to-purple-900 hover:from-blue-800 hover:to-purple-800 shadow-lg flex items-center justify-center"
-            >
-              {isChatBotOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
-            </Button>
+        {/* Hero Background Pattern */}
+        <div className="absolute inset-0 z-0 opacity-30">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle, rgba(59, 130, 246, 0.1) 1px, transparent 1px)`,
+            backgroundSize: '30px 30px'
+          }}></div>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Profile Header Card */}
+          <div className="mb-8">
+            <ProfileHeader 
+              profile={profile}
+              userId={user?.uid}
+              onUpdateProfile={handleUpdateProfile}
+              onUploadImage={handleUploadImage}
+              onUploadResume={handleUploadResume}
+              onPreviewInOverleaf={handlePreviewInOverleaf}
+              onViewPdf={handleViewPdf}
+              onUpdateAbout={handleUpdateAbout}
+              onAddExperience={handleAddExperience}
+              onAddEducation={handleAddEducation}
+              onAddSkill={handleAddSkill}
+              onAddProject={handleAddProject}
+              onAddSkillsBatch={handleAddSkillsBatch}
+              onParsingComplete={refreshProfile}
+              onJobScraper={() => router.push('/job-scraper')}
+            />
           </div>
           
-          {/* Save Status Indicators */}
-          <div className="flex justify-center mb-4">
-            {saveStatus === 'saving' && (
-              <span className="text-sm text-yellow-400 flex items-center bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-700/50">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </span>
-            )}
-            {saveStatus === 'success' && (
-              <span className="text-sm text-green-400 bg-green-900/20 px-3 py-1 rounded-full border border-green-700/50">
-                Changes saved successfully
-              </span>
-            )}
-            {saveStatus === 'error' && (
-              <span className="text-sm text-red-400 bg-red-900/20 px-3 py-1 rounded-full border border-red-700/50">
-                Error saving changes
-              </span>
-            )}
+          {/* Save Status Floating Indicator */}
+          {saveStatus !== 'idle' && (
+            <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-right duration-300">
+              {saveStatus === 'saving' && (
+                <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-xl shadow-lg border border-blue-200">
+                  <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                  <span className="text-sm font-semibold text-gray-700">Saving changes...</span>
+                </div>
+              )}
+              {saveStatus === 'success' && (
+                <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-xl shadow-lg border border-green-200">
+                  <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm font-semibold text-gray-700">Saved successfully!</span>
+                </div>
+              )}
+              {saveStatus === 'error' && (
+                <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-xl shadow-lg border border-red-200">
+                  <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span className="text-sm font-semibold text-gray-700">Error saving</span>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Modern Tabs Navigation */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 mb-6">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => setActiveTab('about')}
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                  activeTab === 'about' 
+                    ? 'text-white' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {activeTab === 'about' && (
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    style={{
+                      animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      transformOrigin: 'left center'
+                    }}
+                  />
+                )}
+                <UserCircle className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">About</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('experience')}
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                  activeTab === 'experience' 
+                    ? 'text-white' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {activeTab === 'experience' && (
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    style={{
+                      animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      transformOrigin: 'left center'
+                    }}
+                  />
+                )}
+                <Briefcase className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">Experience</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('education')}
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                  activeTab === 'education' 
+                    ? 'text-white' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {activeTab === 'education' && (
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    style={{
+                      animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      transformOrigin: 'left center'
+                    }}
+                  />
+                )}
+                <GraduationCap className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">Education</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('certificates')}
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                  activeTab === 'certificates' 
+                    ? 'text-white' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {activeTab === 'certificates' && (
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    style={{
+                      animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      transformOrigin: 'left center'
+                    }}
+                  />
+                )}
+                <Award className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">Certificates</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('skills')}
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                  activeTab === 'skills' 
+                    ? 'text-white' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {activeTab === 'skills' && (
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    style={{
+                      animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      transformOrigin: 'left center'
+                    }}
+                  />
+                )}
+                <Code className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">Skills</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('projects')}
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                  activeTab === 'projects' 
+                    ? 'text-white' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {activeTab === 'projects' && (
+                  <span 
+                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    style={{
+                      animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      transformOrigin: 'left center'
+                    }}
+                  />
+                )}
+                <FolderKanban className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">Projects</span>
+              </button>
+            </div>
           </div>
           
-          {/* Tabs Navigation */}
-          <div className="flex border-b border-gray-800 mb-8 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setActiveTab('about')}
-              className={`px-6 py-3 font-medium text-sm transition-colors ${
-                activeTab === 'about' 
-                  ? 'text-blue-400 border-b-2 border-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              About
-            </button>
-            <button
-              onClick={() => setActiveTab('experience')}
-              className={`px-6 py-3 font-medium text-sm transition-colors ${
-                activeTab === 'experience' 
-                  ? 'text-blue-400 border-b-2 border-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Experience
-            </button>
-            <button
-              onClick={() => setActiveTab('education')}
-              className={`px-6 py-3 font-medium text-sm transition-colors ${
-                activeTab === 'education' 
-                  ? 'text-blue-400 border-b-2 border-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Education
-            </button>
-            <button
-              onClick={() => setActiveTab('certificates')}
-              className={`px-6 py-3 font-medium text-sm transition-colors ${
-                activeTab === 'certificates' 
-                  ? 'text-blue-400 border-b-2 border-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Certificates
-            </button>
-            <button
-              onClick={() => setActiveTab('skills')}
-              className={`px-6 py-3 font-medium text-sm transition-colors ${
-                activeTab === 'skills' 
-                  ? 'text-blue-400 border-b-2 border-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Skills
-            </button>
-            <button
-              onClick={() => setActiveTab('projects')}
-              className={`px-6 py-3 font-medium text-sm transition-colors ${
-                activeTab === 'projects' 
-                  ? 'text-blue-400 border-b-2 border-blue-400' 
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Projects
-            </button>
-          </div>
+          {/* Keyframe Animation for Tab Slide-In */}
+          <style jsx>{`
+            @keyframes slide-in {
+              from {
+                opacity: 0;
+                transform: scaleX(0);
+              }
+              to {
+                opacity: 1;
+                transform: scaleX(1);
+              }
+            }
+          `}</style>
           
-          {/* Tab Content */}
-          <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8">
+          {/* Tab Content Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 min-h-[500px] overflow-hidden">
             {/* About Tab */}
             {activeTab === 'about' && (
-              <AboutSection 
-                initialAbout={profile.about}
-                onSave={handleUpdateAbout}
-                experiences={formattedExperiences}
-                skills={formattedSkills}
-                education={formattedEducation}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <AboutSection 
+                  initialAbout={profile.about}
+                  onSave={handleUpdateAbout}
+                  experiences={formattedExperiences}
+                  skills={formattedSkills}
+                  education={formattedEducation}
+                />
+              </div>
             )}
             
             {/* Experience Tab */}
             {activeTab === 'experience' && (
-              <ExperienceSection 
-                experiences={profile.experiences}
-                onAdd={handleAddExperience}
-                onUpdate={handleUpdateExperience}
-                onDelete={handleDeleteExperience}
-                onReorder={handleReorderExperiences}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <ExperienceSection 
+                  experiences={profile.experiences}
+                  onAdd={handleAddExperience}
+                  onUpdate={handleUpdateExperience}
+                  onDelete={handleDeleteExperience}
+                  onReorder={handleReorderExperiences}
+                />
+              </div>
             )}
             
             {/* Education Tab */}
             {activeTab === 'education' && (
-              <EducationSection 
-                educations={profile.education}
-                onAdd={handleAddEducation}
-                onUpdate={handleUpdateEducation}
-                onDelete={handleDeleteEducation}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <EducationSection 
+                  educations={profile.education}
+                  onAdd={handleAddEducation}
+                  onUpdate={handleUpdateEducation}
+                  onDelete={handleDeleteEducation}
+                />
+              </div>
             )}
             
             {/* Certificates Tab */}
             {activeTab === 'certificates' && (
-              <CertificatesSection
-                certificates={profile.certificates}
-                onAdd={handleAddCertificate}
-                onUpdate={handleUpdateCertificate}
-                onDelete={handleDeleteCertificate}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <CertificatesSection
+                  certificates={profile.certificates}
+                  onAdd={handleAddCertificate}
+                  onUpdate={handleUpdateCertificate}
+                  onDelete={handleDeleteCertificate}
+                />
+              </div>
             )}
             
             {/* Skills Tab */}
             {activeTab === 'skills' && (
-              <SkillsSection 
-                skills={profile.skills}
-                onAdd={handleAddSkill}
-                onUpdate={handleUpdateSkill}
-                onDelete={handleDeleteSkill}
-                onAddBatch={handleAddSkillsBatch}
-                onReorder={handleReorderSkills}
-                experiences={formattedExperiences}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <SkillsSection 
+                  skills={profile.skills}
+                  onAdd={handleAddSkill}
+                  onUpdate={handleUpdateSkill}
+                  onDelete={handleDeleteSkill}
+                  onAddBatch={handleAddSkillsBatch}
+                  onReorder={handleReorderSkills}
+                  experiences={formattedExperiences}
+                />
+              </div>
             )}
             
             {/* Projects Tab */}
             {activeTab === 'projects' && (
-              <ProjectsSection 
-                projects={profile.projects}
-                onAdd={handleAddProject}
-                onUpdate={handleUpdateProject}
-                onDelete={handleDeleteProject}
-                onReorder={handleReorderProjects}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <ProjectsSection 
+                  projects={profile.projects}
+                  onAdd={handleAddProject}
+                  onUpdate={handleUpdateProject}
+                  onDelete={handleDeleteProject}
+                  onReorder={handleReorderProjects}
+                />
+              </div>
             )}
           </div>
         </div>
+
+        {/* Floating ChatBot Button */}
+        <button
+          onClick={() => setIsChatBotOpen(!isChatBotOpen)}
+          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 flex items-center justify-center group"
+        >
+          {isChatBotOpen ? (
+            <X className="h-7 w-7 group-hover:rotate-90 transition-transform duration-300" />
+          ) : (
+            <MessageSquare className="h-7 w-7 group-hover:scale-110 transition-transform duration-300" />
+          )}
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+        </button>
 
         {/* PDF Viewer */}
         <PdfViewer 

@@ -15,7 +15,11 @@ import {
   Briefcase,
   BarChart3,
   Plus,
-  Search
+  Search,
+  Home,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import logo from "@/app/images/logo-no-background.png";
 import { useAuth } from '@/app/context/AuthContext';
@@ -71,93 +75,119 @@ export default function Navbar({ saveStatus }: NavbarProps) {
     setIsProfileDropdownOpen(false);
   };
 
+  const isActivePath = (path: string) => pathname === path;
+
   return (
-    <header className={`sticky top-0 z-50 w-full border-b transition-all duration-200 ${
+    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
       isScrolled 
-        ? 'bg-gray-900/95 backdrop-blur-lg border-gray-700/50 shadow-lg' 
-        : 'bg-gray-900 border-gray-800'
+        ? 'bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-lg shadow-gray-200/50' 
+        : 'bg-white border-b border-gray-100'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <Image 
-              src={logo} 
-              alt="Boron" 
-              width={120} 
-              height={32} 
-              className="h-8 w-auto"
-            />
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="relative">
+              <Image 
+                src={logo} 
+                alt="Boron" 
+                width={140} 
+                height={36} 
+                className="h-9 w-auto object-contain brightness-0 transition-all duration-300 group-hover:scale-105"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <Link href="/search">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+          <nav className="hidden lg:flex items-center space-x-2">
+            <Link href="/">
+              <button
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActivePath('/') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
-                <Search className="h-4 w-4 mr-2" />
+                <Home className="h-4 w-4" />
+                Home
+              </button>
+            </Link>
+
+            <Link href="/search">
+              <button
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActivePath('/search') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <Search className="h-4 w-4" />
                 Search
-              </Button>
+              </button>
             </Link>
             
             <Link href="/resume-generator">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+              <button
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActivePath('/resume-generator') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4" />
                 Resume
-              </Button>
+              </button>
             </Link>
 
             <Link href="/profile/recruiter">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+              <button
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActivePath('/profile/recruiter') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
                 Post Job
-              </Button>
+              </button>
             </Link>
 
             <Link href="/dashboard">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+              <button
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActivePath('/dashboard') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
-                <BarChart3 className="h-4 w-4 mr-2" />
+                <BarChart3 className="h-4 w-4" />
                 Dashboard
-              </Button>
+              </button>
             </Link>
           </nav>
 
           {/* Right Side: Save Status + Profile */}
           <div className="flex items-center space-x-4">
-            {/* Save Status Indicator */}
+            {/* Save Status Indicator - Enhanced */}
             {saveStatus && saveStatus !== 'idle' && (
-              <div className="hidden sm:block">
+              <div className="hidden sm:flex items-center">
                 {saveStatus === 'saving' && (
-                  <div className="flex items-center text-sm text-amber-400">
-                    <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-                    <span className="text-xs">Saving...</span>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-200">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm font-semibold">Saving...</span>
                   </div>
                 )}
                 {saveStatus === 'success' && (
-                  <div className="flex items-center text-sm text-green-400">
-                    <div className="h-2 w-2 bg-green-400 rounded-full mr-1.5"></div>
-                    <span className="text-xs">Saved</span>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl border border-green-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Saved</span>
                   </div>
                 )}
                 {saveStatus === 'error' && (
-                  <div className="flex items-center text-sm text-red-400">
-                    <div className="h-2 w-2 bg-red-400 rounded-full mr-1.5"></div>
-                    <span className="text-xs">Error</span>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl border border-red-200">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Error</span>
                   </div>
                 )}
               </div>
@@ -165,80 +195,119 @@ export default function Navbar({ saveStatus }: NavbarProps) {
 
             {/* Profile Dropdown */}
             <div className="relative" ref={dropdownRef}>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center space-x-2 text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+                className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-gray-100 transition-all duration-200 group"
               >
-                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                  {user?.photoURL ? (
-                    <Image
-                      src={user.photoURL}
-                      alt="Profile"
-                      width={28}
-                      height={28}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <User className="h-4 w-4 text-white" />
-                  )}
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-0.5 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-purple-500/30">
+                    <div className="h-full w-full rounded-[10px] bg-white flex items-center justify-center overflow-hidden">
+                      {user?.photoURL ? (
+                        <Image
+                          src={user.photoURL}
+                          alt="Profile"
+                          width={40}
+                          height={40}
+                          className="rounded-[10px] object-cover"
+                        />
+                      ) : (
+                        <User className="h-5 w-5 text-gray-600" />
+                      )}
+                    </div>
+                  </div>
+                  {/* Online indicator */}
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
-                <span className="hidden sm:block text-sm font-medium">
-                  {user?.displayName?.split(' ')[0] || 'Profile'}
-                </span>
-                <ChevronDown className="h-3 w-3" />
-              </Button>
+                <div className="hidden md:flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {user?.displayName?.split(' ')[0] || 'Profile'}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+                    isProfileDropdownOpen ? 'rotate-180' : ''
+                  }`} />
+                </div>
+              </button>
 
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu - Enhanced */}
               {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-700">
-                    <p className="text-sm font-medium text-white">{user?.displayName || 'User'}</p>
-                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                <div className="absolute right-0 mt-3 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-gray-300/50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* User Info Header */}
+                  <div className="px-5 py-4 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-0.5">
+                        <div className="h-full w-full rounded-[11px] bg-white flex items-center justify-center overflow-hidden">
+                          {user?.photoURL ? (
+                            <Image
+                              src={user.photoURL}
+                              alt="Profile"
+                              width={48}
+                              height={48}
+                              className="rounded-[11px] object-cover"
+                            />
+                          ) : (
+                            <User className="h-6 w-6 text-gray-600" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{user?.displayName || 'User'}</p>
+                        <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="py-1">
+                  {/* Menu Items */}
+                  <div className="py-2">
                     <button
                       onClick={() => handleNavigation('/profile')}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                      className="flex items-center gap-3 w-full px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
                     >
-                      <User className="h-4 w-4 mr-3" />
-                      Your Profile
+                      <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <User className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <span>Your Profile</span>
                     </button>
                     
                     <button
                       onClick={() => handleNavigation('/dashboard')}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors md:hidden"
+                      className="flex items-center gap-3 w-full px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 lg:hidden"
                     >
-                      <BarChart3 className="h-4 w-4 mr-3" />
-                      Dashboard
+                      <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <BarChart3 className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <span>Dashboard</span>
                     </button>
                     
                     <button
                       onClick={() => handleNavigation('/profile/recruiter')}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors md:hidden"
+                      className="flex items-center gap-3 w-full px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 lg:hidden"
                     >
-                      <Plus className="h-4 w-4 mr-3" />
-                      Post Job
+                      <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                        <Plus className="h-4 w-4 text-green-600" />
+                      </div>
+                      <span>Post Job</span>
                     </button>
                     
                     <button
                       onClick={() => handleNavigation('/resume-generator')}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors md:hidden"
+                      className="flex items-center gap-3 w-full px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-all duration-200 lg:hidden"
                     >
-                      <FileText className="h-4 w-4 mr-3" />
-                      Resume Generator
+                      <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                        <FileText className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <span>Resume Generator</span>
                     </button>
                     
-                    <div className="border-t border-gray-700 my-1"></div>
+                    <div className="my-2 mx-4 border-t border-gray-200"></div>
                     
                     <button
                       onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors"
+                      className="flex items-center gap-3 w-full px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-all duration-200"
                     >
-                      <LogOut className="h-4 w-4 mr-3" />
-                      Sign Out
+                      <div className="h-8 w-8 rounded-lg bg-red-100 flex items-center justify-center">
+                        <LogOut className="h-4 w-4 text-red-600" />
+                      </div>
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 </div>
@@ -248,59 +317,85 @@ export default function Navbar({ saveStatus }: NavbarProps) {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="lg:hidden p-2.5 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-200"
             >
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Enhanced */}
         {isOpen && (
-          <div className="md:hidden border-t border-gray-700 bg-gray-900">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link href="/search">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800"
+          <div className="lg:hidden border-t border-gray-200 bg-white py-4 animate-in slide-in-from-top duration-200">
+            <div className="space-y-2">
+              <Link href="/">
+                <button
                   onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    isActivePath('/') 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  <Search className="h-4 w-4 mr-3" />
+                  <Home className="h-5 w-5" />
+                  Home
+                </button>
+              </Link>
+
+              <Link href="/search">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    isActivePath('/search') 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Search className="h-5 w-5" />
                   Search Profiles
-                </Button>
+                </button>
               </Link>
               
               <Link href="/resume-generator">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800"
+                <button
                   onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    isActivePath('/resume-generator') 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  <FileText className="h-4 w-4 mr-3" />
+                  <FileText className="h-5 w-5" />
                   Resume Generator
-                </Button>
+                </button>
               </Link>
 
               <Link href="/profile/recruiter">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800"
+                <button
                   onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    isActivePath('/profile/recruiter') 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  <Plus className="h-4 w-4 mr-3" />
+                  <Plus className="h-5 w-5" />
                   Post Job
-                </Button>
+                </button>
               </Link>
 
               <Link href="/dashboard">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800"
+                <button
                   onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                    isActivePath('/dashboard') 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  <BarChart3 className="h-4 w-4 mr-3" />
+                  <BarChart3 className="h-5 w-5" />
                   Dashboard
-                </Button>
+                </button>
               </Link>
             </div>
           </div>

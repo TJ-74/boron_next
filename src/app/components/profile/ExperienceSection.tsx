@@ -273,161 +273,186 @@ export default function ExperienceSection({
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-200">Experience</h2>
-        <Button 
-          variant="outline" 
-          size="sm"
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 via-blue-500 to-purple-500 flex items-center justify-center">
+            <Briefcase className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Work Experience</h2>
+            <p className="text-sm text-gray-500">Showcase your career journey</p>
+          </div>
+        </div>
+
+        <button
           onClick={() => setIsAdding(true)}
           disabled={isAdding || isLoading}
-          className="text-gray-300 border-gray-700 hover:bg-gray-800"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4" />
           Add Experience
-        </Button>
+        </button>
       </div>
 
       {/* Add Experience Form */}
       {isAdding && (
-        <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">Add New Experience</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Position
-              </label>
-              <input
-                type="text"
-                value={newExperience.position}
-                onChange={(e) => setNewExperience({...newExperience, position: e.target.value})}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="Senior Software Engineer"
-                disabled={isLoading}
-              />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-green-600" />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Company
-              </label>
-              <input
-                type="text"
-                value={newExperience.company}
-                onChange={(e) => setNewExperience({...newExperience, company: e.target.value})}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="Tech Corp"
-                disabled={isLoading}
-              />
+            Add New Experience
+          </h3>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Position
+                </label>
+                <input
+                  type="text"
+                  value={newExperience.position}
+                  onChange={(e) => setNewExperience({...newExperience, position: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Senior Software Engineer"
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Company
+                </label>
+                <input
+                  type="text"
+                  value={newExperience.company}
+                  onChange={(e) => setNewExperience({...newExperience, company: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  placeholder="Tech Corp"
+                  disabled={isLoading}
+                />
+              </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Location
               </label>
               <input
                 type="text"
                 value={newExperience.location}
                 onChange={(e) => setNewExperience({...newExperience, location: e.target.value})}
-                className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                placeholder="New York, NY"
+                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                placeholder="New York, NY (or Remote)"
                 disabled={isLoading}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Start Date
                 </label>
                 <input
                   type="month"
                   value={newExperience.startDate}
                   onChange={(e) => setNewExperience({...newExperience, startDate: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="2022-01"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  End Date (leave empty for present)
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  End Date <span className="text-gray-500 font-normal">(leave empty for current)</span>
                 </label>
                 <input
                   type="month"
                   value={newExperience.endDate}
                   onChange={(e) => setNewExperience({...newExperience, endDate: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                  placeholder="Present"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900"
                   disabled={isLoading}
                 />
               </div>
             </div>
+
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-300">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-gray-700">
                   Description
                 </label>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => generateAIDescription(false)}
-                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
                   disabled={isLoading || isGeneratingDescription || !newExperience.position || !newExperience.company}
                 >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
-                </Button>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
+                </button>
               </div>
               <textarea
                 value={newExperience.description}
                 onChange={(e) => handleDescriptionChange(e, false)}
-                className="w-full min-h-[100px] px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white resize-none overflow-hidden"
+                className="w-full h-32 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500 resize-none"
                 placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
                 disabled={isLoading || isGeneratingDescription}
               />
-              <p className="text-xs text-gray-400 mt-1">Use a new line for each bullet point</p>
+              <p className="text-xs text-gray-500 mt-2">Use a new line for each bullet point</p>
             </div>
+
             <div className="flex items-center">
               <input
                 type="checkbox"
                 id="newIncludeInResume"
                 checked={newExperience.includeInResume !== false}
                 onChange={(e) => setNewExperience({...newExperience, includeInResume: e.target.checked})}
-                className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                className="h-4 w-4 rounded border-2 border-gray-300 text-green-600 focus:ring-green-500 bg-white"
                 disabled={isLoading}
               />
-              <label htmlFor="newIncludeInResume" className="ml-2 block text-sm text-gray-300">
+              <label htmlFor="newIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-700">
                 Include in Resume
               </label>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <button
                 onClick={cancelAdding}
-                className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
                 disabled={isLoading}
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4" />
                 Cancel
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm" 
+              </button>
+              <button
                 onClick={handleAdd}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                 disabled={isLoading || !newExperience.company || !newExperience.position}
               >
-                <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
+                <Save className="h-4 w-4" />
+                {isLoading ? 'Saving...' : 'Save Experience'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* Experience List */}
-      <div className="space-y-8 mt-6">
+      <div className="space-y-6">
         {experiences.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            No experience added yet. Click the "Add Experience" button to add your work history.
+          <div className="text-center py-12">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="h-8 w-8 text-green-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Work Experience Yet</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              Start building your professional story by adding your work experience. This helps showcase your career journey to potential employers.
+            </p>
+            <button
+              onClick={() => setIsAdding(true)}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all font-semibold shadow-sm hover:shadow-md"
+            >
+              <Briefcase className="h-5 w-5" />
+              Add Your First Experience
+            </button>
           </div>
         ) : (
           <div className="space-y-6">
@@ -437,205 +462,244 @@ export default function ExperienceSection({
                 className={`${experience.includeInResume === false ? 'opacity-60' : ''}`}
               >
                 {editingId === experience.id && editExperience ? (
-                  <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 mb-6">
-                    <h3 className="text-lg font-medium text-white mb-4">Edit Experience</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                          Position
-                        </label>
-                        <input
-                          type="text"
-                          value={editExperience.position}
-                          onChange={(e) => setEditExperience({...editExperience, position: e.target.value})}
-                          className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                          disabled={isLoading}
-                        />
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                        <PenSquare className="h-4 w-4 text-blue-600" />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                          Company
-                        </label>
-                        <input
-                          type="text"
-                          value={editExperience.company}
-                          onChange={(e) => setEditExperience({...editExperience, company: e.target.value})}
-                          className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
-                          disabled={isLoading}
-                        />
+                      Edit Experience
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Position
+                          </label>
+                          <input
+                            type="text"
+                            value={editExperience.position}
+                            onChange={(e) => setEditExperience({...editExperience, position: e.target.value})}
+                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                            disabled={isLoading}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Company
+                          </label>
+                          <input
+                            type="text"
+                            value={editExperience.company}
+                            onChange={(e) => setEditExperience({...editExperience, company: e.target.value})}
+                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                            disabled={isLoading}
+                          />
+                        </div>
                       </div>
+
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Location
                         </label>
                         <input
                           type="text"
                           value={editExperience.location}
                           onChange={(e) => setEditExperience({...editExperience, location: e.target.value})}
-                          className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                          className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
                           placeholder="e.g., New York, NY (or Remote)"
                           disabled={isLoading}
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Start Date
                           </label>
                           <input
                             type="month"
                             value={editExperience.startDate}
                             onChange={(e) => setEditExperience({...editExperience, startDate: e.target.value})}
-                            className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900"
                             disabled={isLoading}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1">
-                            End Date (leave empty if current)
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            End Date <span className="text-gray-500 font-normal">(leave empty if current)</span>
                           </label>
                           <input
                             type="month"
                             value={editExperience.endDate}
                             onChange={(e) => setEditExperience({...editExperience, endDate: e.target.value})}
-                            className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white"
+                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900"
                             disabled={isLoading}
                           />
                         </div>
                       </div>
+
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="block text-sm font-medium text-gray-300">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-semibold text-gray-700">
                             Description
                           </label>
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
                             onClick={() => generateAIDescription(true)}
-                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs"
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
                             disabled={isLoading || isGeneratingDescription || !editExperience.position || !editExperience.company}
                           >
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
-                          </Button>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
+                          </button>
                         </div>
                         <textarea
                           value={editExperience.description}
                           onChange={(e) => handleDescriptionChange(e, true)}
-                          className="w-full min-h-[100px] px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-white resize-none overflow-hidden"
+                          className="w-full h-32 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500 resize-none"
                           placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
                           disabled={isLoading || isGeneratingDescription}
                         />
-                        <p className="text-xs text-gray-400 mt-1">Use a new line for each bullet point</p>
+                        <p className="text-xs text-gray-500 mt-2">Use a new line for each bullet point</p>
                       </div>
+
                       <div className="flex items-center">
                         <input
                           type="checkbox"
                           id="editIncludeInResume"
                           checked={editExperience.includeInResume !== false}
                           onChange={(e) => setEditExperience({...editExperience, includeInResume: e.target.checked})}
-                          className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                          className="h-4 w-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 bg-white"
                           disabled={isLoading}
                         />
-                        <label htmlFor="editIncludeInResume" className="ml-2 block text-sm text-gray-300">
+                        <label htmlFor="editIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-700">
                           Include in Resume
                         </label>
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+
+                      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button
                           onClick={cancelEditing}
-                          className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
                           disabled={isLoading}
                         >
-                          <X className="h-4 w-4 mr-2" />
+                          <X className="h-4 w-4" />
                           Cancel
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm" 
+                        </button>
+                        <button
                           onClick={handleUpdate}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                           disabled={isLoading || !editExperience.company || !editExperience.position}
                         >
-                          <Save className="h-4 w-4 mr-2" />
-                          {isLoading ? 'Saving...' : 'Save'}
-                        </Button>
+                          <Save className="h-4 w-4" />
+                          {isLoading ? 'Saving...' : 'Update Experience'}
+                        </button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-800/70 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors group">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMoveExperience(index, 'up')}
-                            disabled={index === 0 || isLoading}
-                            className="p-1 hover:bg-gray-700/50"
-                          >
-                            <ChevronUp className="h-4 w-4 text-gray-400" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMoveExperience(index, 'down')}
-                            disabled={index === sortedExperiences.length - 1 || isLoading}
-                            className="p-1 hover:bg-gray-700/50"
-                          >
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                          </Button>
-                        </div>
-                        <div className="bg-blue-500/20 p-3 rounded-lg">
-                          <Briefcase className="h-6 w-6 text-blue-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold text-white">{experience.position}</h3>
-                          <p className="text-gray-300">{experience.company}</p>
-                          <p className="text-gray-400 text-sm mt-1">{experience.location}</p>
-                          <p className="text-gray-400 text-sm">{formatDateRange(experience.startDate, experience.endDate)}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleToggleIncludeInResume(experience)}
-                          className={`p-2 rounded-full ${experience.includeInResume !== false ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-300'} hover:bg-gray-700/50`}
-                          disabled={isLoading}
-                          title={experience.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
-                        >
-                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => startEditing(experience)}
-                          className="p-2 rounded-full text-gray-400 hover:text-blue-400 hover:bg-gray-700/50"
-                          disabled={isLoading}
-                        >
-                          <PenSquare className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(experience.id)}
-                          className="p-2 rounded-full text-gray-400 hover:text-red-400 hover:bg-gray-700/50"
-                          disabled={isLoading}
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 space-y-1">
-                      {experience.description.split('\n').map((line, i) => (
-                        line.trim() ? (
-                          <div key={i} className="flex items-start text-gray-300">
-                            <span className="mr-2 mt-1.5 text-blue-400">•</span>
-                            <p>{line.trim()}</p>
+                  <div className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 hover:shadow-md group ${
+                    experience.includeInResume === false ? 'border-gray-300 opacity-75' : 'border-gray-200 hover:border-green-300'
+                  }`}>
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="relative">
+                            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-3 rounded-xl">
+                              <Briefcase className="h-6 w-6 text-green-600" />
+                            </div>
+                            {experience.includeInResume !== false && (
+                              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            )}
                           </div>
-                        ) : null
-                      ))}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">{experience.position}</h3>
+                            <p className="text-lg text-gray-700 font-medium mb-2">{experience.company}</p>
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {experience.location}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h6a2 2 0 012 2v4m-6 4v10m-4-4h8" />
+                                </svg>
+                                {formatDateRange(experience.startDate, experience.endDate)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Reorder buttons */}
+                          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleMoveExperience(index, 'up')}
+                              disabled={index === 0 || isLoading}
+                              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleMoveExperience(index, 'down')}
+                              disabled={index === sortedExperiences.length - 1 || isLoading}
+                              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleToggleIncludeInResume(experience)}
+                              className={`p-2 rounded-lg transition-all ${
+                                experience.includeInResume !== false
+                                  ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                                  : 'text-gray-400 bg-gray-50 hover:bg-gray-100'
+                              }`}
+                              disabled={isLoading}
+                              title={experience.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => startEditing(experience)}
+                              className="p-2 rounded-lg text-gray-400 bg-gray-50 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                              disabled={isLoading}
+                            >
+                              <PenSquare className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(experience.id)}
+                              className="p-2 rounded-lg text-gray-400 bg-gray-50 hover:text-red-600 hover:bg-red-50 transition-all"
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      {experience.description && (
+                        <div className="border-t border-gray-100 pt-4">
+                          <div className="space-y-2">
+                            {experience.description.split('\n').map((line, i) => (
+                              line.trim() ? (
+                                <div key={i} className="flex items-start text-gray-700">
+                                  <span className="mr-3 mt-1 text-green-500 font-bold">•</span>
+                                  <p className="flex-1 leading-relaxed">{line.trim()}</p>
+                                </div>
+                              ) : null
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

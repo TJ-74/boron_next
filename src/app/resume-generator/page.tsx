@@ -45,10 +45,11 @@ interface ResumeData {
   }>;
   projects: Array<{
     title: string;
- 
     startDate: string;
     endDate: string;
-   
+    technologies?: string;
+    projectUrl?: string;
+    githubUrl?: string;
     highlights: string[];
   }>;
   certificates: Array<{
@@ -69,6 +70,121 @@ interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+// Helper function to render markdown in messages
+const renderMarkdown = (text: string) => {
+  // Split by code blocks first
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  
+  return parts.map((part, partIndex) => {
+    // Handle code blocks
+    if (part.startsWith('```') && part.endsWith('```')) {
+      const code = part.slice(3, -3).trim();
+      return (
+        <pre key={partIndex} className="bg-gray-100 rounded-lg p-3 my-2 overflow-x-auto">
+          <code className="text-sm font-mono">{code}</code>
+        </pre>
+      );
+    }
+    
+    // Split by newlines to handle lists
+    const lines = part.split('\n');
+    return lines.map((line, lineIndex) => {
+      // Handle bullet points (• or -)
+      if (line.trim().match(/^[•\-\*]\s/)) {
+        const content = line.trim().replace(/^[•\-\*]\s/, '');
+        return (
+          <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 my-1">
+            <span className="text-blue-500 mt-1">•</span>
+            <span>{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
+          </div>
+        );
+      }
+      
+      // Handle numbered lists
+      if (line.trim().match(/^\d+\.\s/)) {
+        const match = line.trim().match(/^(\d+)\.\s(.+)$/);
+        if (match) {
+          return (
+            <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 my-1">
+              <span className="text-blue-500 font-medium">{match[1]}.</span>
+              <span>{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
+            </div>
+          );
+        }
+      }
+      
+      // Regular line with inline formatting
+      return (
+        <div key={`${partIndex}-${lineIndex}`}>
+          {processInlineFormatting(line, `${partIndex}-${lineIndex}`)}
+        </div>
+      );
+    });
+  });
+};
+
+// Helper to process inline formatting (bold, italic, code)
+const processInlineFormatting = (text: string, keyPrefix: string) => {
+  const elements: React.ReactNode[] = [];
+  let remaining = text;
+  let index = 0;
+  
+  // Regex patterns
+  const patterns = [
+    { regex: /\*\*(.+?)\*\*/g, render: (match: string, content: string, i: number) => 
+      <strong key={`${keyPrefix}-bold-${i}`} className="font-bold">{content}</strong> },
+    { regex: /__(.+?)__/g, render: (match: string, content: string, i: number) => 
+      <strong key={`${keyPrefix}-bold2-${i}`} className="font-bold">{content}</strong> },
+    { regex: /\*(.+?)\*/g, render: (match: string, content: string, i: number) => 
+      <em key={`${keyPrefix}-italic-${i}`} className="italic">{content}</em> },
+    { regex: /_(.+?)_/g, render: (match: string, content: string, i: number) => 
+      <em key={`${keyPrefix}-italic2-${i}`} className="italic">{content}</em> },
+    { regex: /`(.+?)`/g, render: (match: string, content: string, i: number) => 
+      <code key={`${keyPrefix}-code-${i}`} className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">{content}</code> },
+  ];
+  
+  // Find all matches
+  const matches: Array<{ start: number; end: number; element: React.ReactNode }> = [];
+  
+  patterns.forEach(pattern => {
+    let match;
+    const regex = new RegExp(pattern.regex);
+    while ((match = regex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        element: pattern.render(match[0], match[1], match.index)
+      });
+    }
+  });
+  
+  // Sort matches by start position
+  matches.sort((a, b) => a.start - b.start);
+  
+  // Build elements array
+  let lastEnd = 0;
+  matches.forEach((match, i) => {
+    // Skip overlapping matches
+    if (match.start < lastEnd) return;
+    
+    // Add text before match
+    if (match.start > lastEnd) {
+      elements.push(text.slice(lastEnd, match.start));
+    }
+    
+    // Add formatted element
+    elements.push(match.element);
+    lastEnd = match.end;
+  });
+  
+  // Add remaining text
+  if (lastEnd < text.length) {
+    elements.push(text.slice(lastEnd));
+  }
+  
+  return elements.length > 0 ? <>{elements}</> : text;
+};
 
 // Add this helper function before the ResumeGenerator component
 const formatDate = (dateString?: string): string => {
@@ -110,6 +226,21 @@ const formatDate = (dateString?: string): string => {
 // PDF generation function with selectable text
 const generatePDFWithText = async (resumeData: ResumeData) => {
   try {
+    // Helper to convert markdown to HTML for PDF
+    const markdownToHtmlForPDF = (text: string): string => {
+      if (!text) return '';
+      let html = text;
+      // Bold
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+      // Italic (avoiding conflicts with bold)
+      html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+      html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>');
+      // Inline code
+      html = html.replace(/`(.+?)`/g, '<code style="background-color: #f3f4f6; padding: 2px 4px; border-radius: 2px; font-family: monospace; font-size: 0.9em;">$1</code>');
+      return html;
+    };
+
     // Create a clean, text-based HTML structure for PDF
     const createTextBasedHTML = (data: ResumeData): string => {
       const formatPDFDate = (dateString?: string): string => {
@@ -300,7 +431,7 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
 
   ${data.summary ? `
     <div class="section-title">Summary</div>
-    <div class="section-content">${data.summary}</div>
+    <div class="section-content">${markdownToHtmlForPDF(data.summary)}</div>
   ` : ''}
 
   ${data.skills && Object.keys(data.skills).length > 0 ? `
@@ -324,7 +455,7 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
             <span class="entry-date">${formatPDFDate(exp.startDate)} — ${formatPDFDate(exp.endDate)}</span>
           </div>
           <ul class="bullet-list">
-            ${exp.highlights.map(highlight => `<li>${highlight}</li>`).join('')}
+            ${exp.highlights.map(highlight => `<li>${markdownToHtmlForPDF(highlight)}</li>`).join('')}
           </ul>
         </div>
       `).join('')}
@@ -340,9 +471,15 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
             <span class="entry-title">${project.title}</span>
             <span class="entry-date">${formatPDFDate(project.startDate)} — ${formatPDFDate(project.endDate)}</span>
           </div>
+          ${project.technologies ? `<div style="font-size: 10px; margin-top: 2px; color: #555;"><em>Technologies: ${markdownToHtmlForPDF(project.technologies)}</em></div>` : ''}
           <ul class="bullet-list">
-            ${project.highlights.map(highlight => `<li>${highlight}</li>`).join('')}
+            ${project.highlights.map(highlight => `<li>${markdownToHtmlForPDF(highlight)}</li>`).join('')}
           </ul>
+          ${project.githubUrl || project.projectUrl ? `<div style="font-size: 9px; margin-top: 2px; color: #666;">
+            ${project.githubUrl ? `GitHub: ${project.githubUrl}` : ''}
+            ${project.githubUrl && project.projectUrl ? ' | ' : ''}
+            ${project.projectUrl ? `Live: ${project.projectUrl}` : ''}
+          </div>` : ''}
         </div>
       `).join('')}
     </div>
@@ -999,36 +1136,59 @@ export default function ResumeGenerator() {
     setIsTyping(true);
 
     try {
-      // Call the resume chat API
-      const response = await fetch('/api/resume-chat', {
+      // Use the intelligent chat handler
+      const response = await fetch('/api/resume-chat-handler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: updatedApiMessages,
+          message: inputValue,
           profile,
+          currentResume: resumeData,
+          conversationHistory: updatedApiMessages
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from AI');
+        throw new Error('Failed to process message');
       }
 
-      const data = await response.json();
-      
-      // Add bot response to UI
+      const chatResult = await response.json();
+
+      // Handle different response types
+      if (chatResult.type === 'generate_new_resume' && chatResult.action === 'trigger_coordinator') {
+        // Show todo list message first
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: chatResult.message,
+            sender: 'bot' as const,
+            timestamp: new Date(),
+          },
+        ]);
+        setApiMessages([...updatedApiMessages, {
+          role: 'assistant',
+          content: chatResult.message
+        }]);
+
+        // Extract job description and trigger full generation
+        await handleGenerateResume(userMessage.text);
+        return;
+      }
+
+      // For edits or general answers, show the response
       setMessages((prev) => {
         const updatedMessages = [
           ...prev,
           {
-            text: data.message,
+            text: chatResult.message,
             sender: 'bot' as const,
             timestamp: new Date(),
           },
         ];
 
-        // Save chat periodically (every few messages)
+        // Save chat periodically
         if (updatedMessages.length % 4 === 0 && user?.uid && resumeData) {
           setTimeout(() => {
             saveResumeData(resumeData, updatedMessages);
@@ -1038,16 +1198,26 @@ export default function ResumeGenerator() {
         return updatedMessages;
       });
       
-      // Add bot response to API message history
       setApiMessages([...updatedApiMessages, {
         role: 'assistant',
-        content: data.message
+        content: chatResult.message
       }]);
 
-      // Check if we should generate a resume
-      if (data.generateResume && data.jobDescription) {
-        setJobDescription(data.jobDescription);
-        await handleGenerateResume(data.jobDescription);
+      // If there's an updated resume, apply it
+      if (chatResult.updatedResume) {
+        setResumeData(chatResult.updatedResume);
+        
+        // Save the updated resume
+        if (user?.uid) {
+          await fetch('/api/resume-save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.uid,
+              resumeData: chatResult.updatedResume,
+            }),
+          });
+        }
       }
       
     } catch (error) {
@@ -1101,15 +1271,23 @@ export default function ResumeGenerator() {
 
     setIsGenerating(true);
     setSaveStatus('saving');
+    
+    // Add initial message
+    const initialMessage: Message = {
+      text: '🚀 Starting AI-powered resume generation...',
+      sender: 'bot',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, initialMessage]);
+
     try {
-      // Use the new section coordinator for complete resume generation
-      const response = await fetch('/api/resume-agents/section-coordinator', {
+      // Use the new multi-agent coordinator with streaming
+      const response = await fetch('/api/resume-agents/coordinator', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          section: 'all',
           profile,
           jobDescription: description,
         }),
@@ -1119,55 +1297,75 @@ export default function ResumeGenerator() {
         throw new Error('Failed to generate resume');
       }
 
-      const { result, jobAnalysis, matchAnalysis } = await response.json();
-      
-      // Transform the result into the expected ResumeData format
-      const resumeData: ResumeData = {
-        header: {
-          name: profile.name,
-          title: profile.title || '',
-          contact: {
-            email: profile.email,
-            phone: profile.phone || '',
-            linkedin: profile.linkedinUrl || '',
-            github: profile.githubUrl || '',
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalResumeData: ResumeData | null = null;
+      let finalAgentInsights: any = null;
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const update = JSON.parse(line);
+                
+                if (update.type === 'start') {
+                  // Already added initial message
+                } else if (update.type === 'progress') {
+                  // Add progress message to chat
+                  const progressMessage: Message = {
+                    text: update.message,
+                    sender: 'bot',
+                    timestamp: new Date(),
+                  };
+                  setMessages(prev => [...prev, progressMessage]);
+                } else if (update.type === 'complete') {
+                  // Store final data
+                  finalResumeData = update.data.resumeData;
+                  finalAgentInsights = update.data.agentInsights;
+                } else if (update.type === 'error') {
+                  throw new Error(update.error || 'Unknown error');
+                }
+              } catch (e) {
+                console.error('Error parsing stream update:', e);
+              }
+            }
           }
-        },
-        summary: result.summary,
-        skills: result.skills,
-        experience: result.experience,
-        projects: result.projects,
-        education: profile.education?.filter(edu => edu.includeInResume !== false).map(edu => ({
-          degree: edu.degree,
-          school: edu.school,
-          location: '',
-          startDate: edu.startDate,
-          endDate: edu.endDate,
-          gpa: edu.cgpa
-        })) || [],
-        certificates: profile.certificates?.filter(cert => cert.includeInResume !== false).map(cert => ({
-          name: cert.name,
-          issuer: cert.issuer,
-          date: cert.issueDate
-        })) || []
-      };
+        }
+      }
+
+      if (!finalResumeData || !finalAgentInsights) {
+        throw new Error('No resume data received');
+      }
+
+      console.log('🎉 Resume generated with agent insights:', finalAgentInsights);
+      
+      // Use the generated resume data directly
+      const resumeData: ResumeData = finalResumeData;
 
       setResumeData(resumeData);
 
       // Add success message with insights
       const successMessage = {
-        text: `🎉 Your tailored resume is ready! I used a multi-agent system to optimize it:
+        text: `🎉 Your tailored resume is ready! I used a 6-agent AI system to optimize it:
 
-✅ Job Description Analysis Complete
-✅ Profile Matching Complete  
-✅ Experience Optimization Complete
-✅ Projects Filtering & Enhancement Complete
-✅ Skills Strategic Organization Complete
-✅ Professional Summary Generation Complete
+${finalAgentInsights.processingSteps.map((step: string) => `✅ ${step}`).join('\n')}
 
 The resume has been intelligently optimized with:
-• ${matchAnalysis?.matchScore || 'High'}% job match score
-• Only relevant experience and projects included
+• ${finalAgentInsights.matchAnalysis?.matchScore || 'High'}% job match score
+• Only items marked for resume included
+• ${finalAgentInsights.projectOptimization?.selectedProjects?.length || 0} best projects selected and optimized
+• ${finalAgentInsights.experienceOptimization?.optimizedExperience?.length || 0} experience entries rewritten with keywords
+• ${finalAgentInsights.skillsEnhancement?.addedSkills?.length || 0} critical missing skills added
 • ATS-optimized keywords and formatting
 • Enhanced metrics and achievements
 • Strategic skill positioning
@@ -1208,6 +1406,26 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
     }
   };
 
+  // Helper function to convert markdown to HTML for resume
+  const markdownToHtml = (text: string): string => {
+    if (!text) return '';
+    
+    let html = text;
+    
+    // Bold: **text** or __text__
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    
+    // Italic: *text* or _text_ (but not if it's part of bold)
+    html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+    html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>');
+    
+    // Inline code: `code`
+    html = html.replace(/`(.+?)`/g, '<code style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 0.9em;">$1</code>');
+    
+    return html;
+  };
+
   const renderResume = (data: ResumeData): string => {
     // Helper function to format dates consistently
     const formatResumeDate = (dateString?: string): string => {
@@ -1219,7 +1437,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
       <div class="section">
         <h2 class="section-title">Summary</h2>
         <div class="section-divider"></div>
-        <p class="content-indent">${data.summary}</p>
+        <p class="content-indent">${markdownToHtml(data.summary)}</p>
       </div>
     ` : '';
 
@@ -1246,7 +1464,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             <p class="entry-title"><strong>${exp.title}</strong> - ${exp.company}</p>
             <span class="date-text">${formatResumeDate(exp.startDate)} — ${formatResumeDate(exp.endDate)}</span>
             <ul class="bullet-list">
-              ${exp.highlights.map(highlight => `<li>${highlight}</li>`).join('')}
+              ${exp.highlights.map(highlight => `<li>${markdownToHtml(highlight)}</li>`).join('')}
             </ul>
           </div>
         `).join('')}
@@ -1275,9 +1493,15 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           <div class="content-indent">
             <p class="entry-title"><strong>${project.title}</strong></p>
             <span class="date-text">${formatResumeDate(project.startDate)} — ${formatResumeDate(project.endDate)}</span>
+            ${project.technologies ? `<p style="font-size: 11px; margin-top: 4px; color: #555;"><em>Technologies: ${markdownToHtml(project.technologies)}</em></p>` : ''}
             <ul class="bullet-list">
-              ${project.highlights.map(highlight => `<li>${highlight}</li>`).join('')}
+              ${project.highlights.map(highlight => `<li>${markdownToHtml(highlight)}</li>`).join('')}
             </ul>
+            ${project.githubUrl || project.projectUrl ? `<p style="font-size: 10px; margin-top: 4px;">
+              ${project.githubUrl ? `GitHub: ${project.githubUrl}` : ''}
+              ${project.githubUrl && project.projectUrl ? ' | ' : ''}
+              ${project.projectUrl ? `Live: ${project.projectUrl}` : ''}
+            </p>` : ''}
           </div>
         `).join('')}
       </div>
@@ -1494,82 +1718,64 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-white">
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 text-gray-900 box-border">
         {/* Navbar */}
         <Navbar saveStatus={saveStatus} />
 
-        <div className="grid grid-cols-2 h-[calc(100vh-4rem)] divide-x divide-slate-700/50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-5rem)] divide-y lg:divide-y-0 lg:divide-x divide-gray-200 overflow-hidden m-0 p-0">
           {/* Left Column - Chat Interface */}
-          <div className="bg-gradient-to-b from-slate-900/50 to-slate-800/50 backdrop-blur-sm flex flex-col h-full overflow-hidden">
+          <div className="bg-white flex flex-col h-full overflow-hidden shadow-sm">
             {/* Chat Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-indigo-900/30 flex-shrink-0">
-              <h2 className="text-xl font-bold text-white flex items-center">
-                <div className="relative mr-3">
-                  <Zap className="h-6 w-6 text-yellow-400 animate-pulse" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-500 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-white" />
                 </div>
-                Resume Assistant
-                <span className="ml-2 text-sm font-normal text-blue-300">AI-Powered</span>
-              </h2>
-              
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Resume Assistant</h2>
+                  <p className="text-sm text-gray-500">AI-Powered Resume Generator</p>
+                </div>
+              </div>
+
               {/* Save Status and Manual Save Button */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-3">
                 {saveStatus === 'saving' && (
-                  <div className="flex items-center text-blue-300 text-sm">
+                  <div className="flex items-center text-blue-600 text-sm bg-blue-50 px-3 py-1.5 rounded-lg">
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Saving...
                   </div>
                 )}
                 {saveStatus === 'success' && (
-                  <div className="flex items-center text-green-300 text-sm">
+                  <div className="flex items-center text-green-600 text-sm bg-green-50 px-3 py-1.5 rounded-lg">
                     <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                     Saved
                   </div>
                 )}
                 {saveStatus === 'error' && (
-                  <div className="flex items-center text-red-300 text-sm">
+                  <div className="flex items-center text-red-600 text-sm bg-red-50 px-3 py-1.5 rounded-lg">
                     <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
                     Save Error
                   </div>
                 )}
-                
-                <Button
+
+                <button
                   onClick={() => resumeData && messages.length > 1 && saveResumeData(resumeData, messages)}
                   disabled={!resumeData || saveStatus === 'saving'}
-                  variant="outline"
-                  size="sm"
-                  className="text-blue-300 border-blue-800/50 hover:text-blue-200 hover:bg-blue-900/20 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                 >
                   💾 Save
-                </Button>
+                </button>
               </div>
             </div>
 
             {/* Messages */}
-            <div 
+            <div
               className="messages-container flex-1 overflow-y-scroll p-6 space-y-6 min-h-0"
               style={{
                 scrollbarWidth: 'thin',
-                scrollbarColor: '#475569 #1e293b'
+                scrollbarColor: '#cbd5e1 #f1f5f9'
               }}
             >
-              <style jsx>{`
-                .messages-container::-webkit-scrollbar {
-                  width: 8px;
-                }
-                .messages-container::-webkit-scrollbar-track {
-                  background: #1e293b;
-                  border-radius: 4px;
-                }
-                .messages-container::-webkit-scrollbar-thumb {
-                  background: #475569;
-                  border-radius: 4px;
-                  border: 1px solid #1e293b;
-                }
-                .messages-container::-webkit-scrollbar-thumb:hover {
-                  background: #64748b;
-                }
-              `}</style>
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -1578,19 +1784,23 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                   }`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl p-4 shadow-lg backdrop-blur-sm border transition-all duration-200 hover:scale-[1.02] ${
+                    className={`max-w-[85%] rounded-2xl p-4 shadow-sm border transition-all duration-200 hover:scale-[1.02] ${
                       message.sender === 'user'
                         ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white border-blue-500/30 shadow-blue-500/20'
-                        : 'bg-gradient-to-br from-slate-800 to-slate-700 text-slate-100 border-slate-600/30 shadow-slate-800/50'
+                        : 'bg-white text-gray-900 border-gray-200 shadow-gray-100/50'
                     }`}
                   >
                     <div className="flex items-center mb-2">
                       {message.sender === 'bot' ? (
-                        <Zap className="h-4 w-4 mr-2 text-yellow-400 animate-pulse" />
+                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-2">
+                          <Zap className="h-3 w-3 text-white" />
+                        </div>
                       ) : (
-                        <User className="h-4 w-4 mr-2 text-blue-200" />
+                        <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                          <User className="h-3 w-3 text-gray-600" />
+                        </div>
                       )}
-                      <span className="text-xs font-medium opacity-75">
+                      <span className={`text-xs font-medium ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
                         {message.sender === 'user' ? 'You' : 'Resume Assistant'} •{' '}
                         {message.timestamp.toLocaleTimeString([], {
                           hour: '2-digit',
@@ -1598,20 +1808,22 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                         })}
                       </span>
                     </div>
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
+                    <div className="whitespace-pre-wrap leading-relaxed">{renderMarkdown(message.text)}</div>
                   </div>
                 </div>
               ))}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl p-4 shadow-lg border border-slate-600/30 backdrop-blur-sm">
+                  <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-sm border border-gray-200">
                     <div className="flex items-center space-x-1">
-                      <Zap className="h-4 w-4 text-yellow-400 mr-2" />
-                      <span className="text-xs text-slate-400 mr-3">Resume Assistant is working...</span>
+                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-2">
+                        <Zap className="h-3 w-3 text-white" />
+                      </div>
+                      <span className="text-xs text-gray-500 mr-3">Resume Assistant is working...</span>
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
                     </div>
                   </div>
@@ -1621,8 +1833,8 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm flex-shrink-0">
-              <div className="flex items-end space-x-3">
+            <div className="p-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 flex-shrink-0">
+              <div className="flex items-end gap-3">
                 <div className="flex-1 relative">
                   <textarea
                     ref={textareaRef}
@@ -1630,41 +1842,45 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Paste the job description here, or tell me about the role you're applying for..."
-                    className="w-full px-4 py-3 bg-slate-800/70 backdrop-blur-sm border border-slate-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white placeholder-slate-400 resize-none transition-all duration-200 min-h-[48px] max-h-[120px]"
+                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 resize-none transition-all duration-200 min-h-[48px] max-h-[120px] shadow-sm"
                     rows={1}
-                    style={{ 
+                    style={{
                       height: 'auto',
                       minHeight: '48px'
                     }}
                   />
                 </div>
-                <Button
+                <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700 text-white rounded-xl px-6 py-3 h-12 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl px-6 py-3 h-12 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
                 >
                   <Send className="h-5 w-5" />
-                </Button>
+                </button>
               </div>
             </div>
           </div>
           
           {/* Right Column - Resume Preview */}
-          <div className="bg-slate-900/80 backdrop-blur-sm overflow-hidden flex flex-col h-[calc(100vh-5rem)]">
+          <div className="bg-white overflow-hidden flex flex-col h-full">
             {!resumeData ? (
               <div className="h-full flex flex-col items-center justify-center p-8">
-                <div className="text-center space-y-4">
+                <div className="text-center space-y-6">
                   <div className="relative">
-                    <FileText className="h-24 w-24 text-slate-600 mx-auto" />
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                      <Zap className="h-3 w-3 text-white" />
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mx-auto">
+                      <FileText className="h-12 w-12 text-blue-600" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Zap className="h-4 w-4 text-white" />
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-300">AI Resume Generator Ready</h3>
-                  <p className="text-center text-slate-400 max-w-md">
-                    Share a job description with the Resume Assistant, and I'll create a perfectly tailored resume based on your profile in seconds.
-                  </p>
-                  <div className="flex items-center justify-center space-x-2 text-sm text-slate-500">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Resume Generator Ready</h3>
+                    <p className="text-gray-600 max-w-md">
+                      Share a job description with the Resume Assistant, and I'll create a perfectly tailored resume based on your profile in seconds.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
                     <MessageSquare className="h-4 w-4" />
                     <span>Start chatting to begin</span>
                   </div>
@@ -1682,18 +1898,22 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800/50 flex-shrink-0">
-                  <h2 className="text-xl font-semibold text-white flex items-center">
-                    <FileText className="h-5 w-5 mr-2 text-emerald-400" />
-                    Resume Preview
-                    {resumeData && (
-                      <span className="ml-3 text-xs bg-emerald-900/30 text-emerald-300 px-2 py-1 rounded-full border border-emerald-700/50">
-                        Auto-Saved
-                      </span>
-                    )}
-                  </h2>
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 flex-shrink-0">
                   <div className="flex items-center gap-3">
-                    <Button
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Resume Preview</h2>
+                      {resumeData && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                          Auto-Saved
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
                       onClick={async () => {
                         try {
                           await generatePDFWithText(resumeData);
@@ -1702,22 +1922,18 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                           alert('Failed to generate PDF. Please try again.');
                         }
                       }}
-                      variant="outline"
-                      size="sm"
-                      className="text-blue-400 border-blue-800/50 hover:text-blue-300 hover:bg-blue-900/20 backdrop-blur-sm transition-all duration-200"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm shadow-sm"
                     >
-                      <Download className="h-4 w-4 mr-1" />
-                      Download Resume
-                    </Button>
-                    <Button
+                      <Download className="h-4 w-4" />
+                      Download
+                    </button>
+                    <button
                       onClick={handlePrint}
-                      variant="outline"
-                      size="sm"
-                      className="text-emerald-400 border-emerald-800/50 hover:text-emerald-300 hover:bg-emerald-900/20 backdrop-blur-sm transition-all duration-200"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all font-medium text-sm shadow-sm"
                     >
-                      <Printer className="h-4 w-4 mr-1" />
+                      <Printer className="h-4 w-4" />
                       Print
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1725,6 +1941,37 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           </div>
         </div>
       </div>
+      <style jsx global>{`
+        html, body {
+          overflow: hidden;
+          height: 100%;
+        }
+        /* Hide page-level scrollbar for WebKit-based browsers */
+        body::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+        }
+        /* Hide page-level scrollbar for Firefox */
+        html {
+          scrollbar-width: none;
+        }
+        /* Custom scrollbar for chat messages container */
+        .messages-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .messages-container::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+        .messages-container::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+          border: 1px solid #f1f5f9;
+        }
+        .messages-container::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </ProtectedRoute>
   );
 } 
