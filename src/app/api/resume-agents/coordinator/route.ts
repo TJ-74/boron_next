@@ -120,42 +120,34 @@ export async function POST(request: NextRequest) {
 
           // Step 1: Analyze Job Description
           console.log('📊 Step 1: Analyzing job description...');
-          sendUpdate('progress', '📊 Step 1: Analyzing job description...', { step: 1, total: 7 });
+          sendUpdate('progress', '📊 Step 1: Analyzing job description...', { step: 1, total: 5 });
           const jobAnalysis = await callAnalyzer(jobDescription);
           console.log('✅ Job analysis complete');
-          sendUpdate('progress', '✅ Job analysis complete', { step: 1, total: 7, status: 'complete' });
+          sendUpdate('progress', '✅ Job analysis complete', { step: 1, total: 5, status: 'complete' });
 
           // Step 2: Match Profile to Job Requirements
           console.log('🎯 Step 2: Matching profile to requirements...');
-          sendUpdate('progress', '🎯 Step 2: Matching profile to requirements...', { step: 2, total: 7 });
+          sendUpdate('progress', '🎯 Step 2: Matching profile to requirements...', { step: 2, total: 5 });
           const matchAnalysis = await callMatcher(profile, jobAnalysis);
           console.log('✅ Profile matching complete');
-          sendUpdate('progress', '✅ Profile matching complete', { step: 2, total: 7, status: 'complete' });
+          sendUpdate('progress', '✅ Profile matching complete', { step: 2, total: 5, status: 'complete' });
 
-          // Step 3: Select and Optimize Best Projects
-          console.log('🚀 Step 3: Selecting and optimizing best projects...');
-          sendUpdate('progress', '🚀 Step 3: Selecting and optimizing best projects...', { step: 3, total: 7 });
-          const projectOptimization = await callProjectOptimizer(profile, jobAnalysis, matchAnalysis);
-          console.log('✅ Project optimization complete');
-          sendUpdate('progress', '✅ Project optimization complete', { step: 3, total: 7, status: 'complete' });
+          // Step 3: Run Project, Experience, and Skills optimization in PARALLEL
+          console.log('🚀 Step 3: Optimizing projects, experience, and skills in parallel...');
+          sendUpdate('progress', '🚀 Step 3: Optimizing projects, experience, and skills in parallel...', { step: 3, total: 5 });
+          
+          const [projectOptimization, experienceOptimization, skillsEnhancement] = await Promise.all([
+            callProjectOptimizer(profile, jobAnalysis, matchAnalysis),
+            callExperienceOptimizer(profile, jobAnalysis, matchAnalysis),
+            enhanceSkills(profile, jobAnalysis, matchAnalysis)
+          ]);
+          
+          console.log('✅ Parallel optimization complete');
+          sendUpdate('progress', '✅ Parallel optimization complete', { step: 3, total: 5, status: 'complete' });
 
-          // Step 4: Optimize Experience Descriptions
-          console.log('💼 Step 4: Optimizing experience descriptions...');
-          sendUpdate('progress', '💼 Step 4: Optimizing experience descriptions...', { step: 4, total: 7 });
-          const experienceOptimization = await callExperienceOptimizer(profile, jobAnalysis, matchAnalysis);
-          console.log('✅ Experience optimization complete');
-          sendUpdate('progress', '✅ Experience optimization complete', { step: 4, total: 7, status: 'complete' });
-
-          // Step 5: Generate Missing Skills and Enhance Existing
-          console.log('🎯 Step 5: Analyzing and enhancing skills...');
-          sendUpdate('progress', '🎯 Step 5: Analyzing and enhancing skills...', { step: 5, total: 7 });
-          const skillsEnhancement = await enhanceSkills(profile, jobAnalysis, matchAnalysis);
-          console.log('✅ Skills enhancement complete');
-          sendUpdate('progress', '✅ Skills enhancement complete', { step: 5, total: 7, status: 'complete' });
-
-          // Step 6: Generate Perfect Summary
-          console.log('📝 Step 6: Generating perfect summary...');
-          sendUpdate('progress', '📝 Step 6: Generating perfect summary...', { step: 6, total: 7 });
+          // Step 4: Generate Perfect Summary
+          console.log('📝 Step 4: Generating perfect summary...');
+          sendUpdate('progress', '📝 Step 4: Generating perfect summary...', { step: 4, total: 5 });
           const summaryGeneration = await generatePerfectSummary(
             profile, 
             jobAnalysis, 
@@ -165,11 +157,11 @@ export async function POST(request: NextRequest) {
             skillsEnhancement
           );
           console.log('✅ Summary generation complete');
-          sendUpdate('progress', '✅ Summary generation complete', { step: 6, total: 7, status: 'complete' });
+          sendUpdate('progress', '✅ Summary generation complete', { step: 4, total: 5, status: 'complete' });
 
-          // Step 7: Assemble Final Resume
-          console.log('🔧 Step 7: Assembling final resume...');
-          sendUpdate('progress', '🔧 Step 7: Assembling final resume...', { step: 7, total: 7 });
+          // Step 5: Assemble Final Resume
+          console.log('🔧 Step 5: Assembling final resume...');
+          sendUpdate('progress', '🔧 Step 5: Assembling final resume...', { step: 5, total: 5 });
           const finalResume = assembleResume(
             profile,
             jobAnalysis,
@@ -180,7 +172,7 @@ export async function POST(request: NextRequest) {
             summaryGeneration
           );
           console.log('✅ Final assembly complete');
-          sendUpdate('progress', '✅ Final assembly complete', { step: 7, total: 7, status: 'complete' });
+          sendUpdate('progress', '✅ Final assembly complete', { step: 5, total: 5, status: 'complete' });
 
           console.log('🎉 Multi-Agent Resume Generation Complete!');
           
@@ -197,9 +189,7 @@ export async function POST(request: NextRequest) {
               processingSteps: [
                 'Job Description Analysis',
                 'Profile Matching',
-                'Project Selection & Optimization',
-                'Experience Optimization',
-                'Skills Enhancement',
+                'Parallel Optimization (Projects, Experience, Skills)',
                 'Summary Generation',
                 'Final Assembly'
               ]
@@ -280,6 +270,14 @@ DESCRIPTION WRITING RULES:
 - Use action verbs and technical terminology
 - Keep descriptions concise but impactful (2-4 bullet points per project)
 
+FORMATTING REQUIREMENT:
+- Use markdown bold (**word**) to emphasize important keywords in highlights such as:
+  * Key technologies and frameworks used
+  * Critical metrics and achievements (percentages, numbers)
+  * Important technical methodologies or patterns
+  * Impactful action verbs and outcomes
+- Example: "Built a **real-time chat application** using **React**, **Node.js**, and **WebSocket**, serving **10,000+ users** with **99.9% uptime**"
+
 Return in JSON format:
 
 {
@@ -292,9 +290,9 @@ Return in JSON format:
       "projectUrl": "url if available",
       "githubUrl": "github url if available",
       "highlights": [
-        "Compelling bullet point 1 with relevant keywords",
-        "Compelling bullet point 2 showing impact",
-        "Compelling bullet point 3 demonstrating skills"
+        "Compelling bullet point 1 with **bold** markdown on relevant keywords",
+        "Compelling bullet point 2 showing **impact** with **bold** metrics",
+        "Compelling bullet point 3 demonstrating **skills** in **bold**"
       ],
       "relevanceScore": 95,
       "keywordsMatched": ["keyword1", "keyword2"]
@@ -494,10 +492,19 @@ OPTIMIZATION:
 - Emphasize strengths that address job requirements
 - Create a narrative that positions candidate as ideal fit
 
+FORMATTING REQUIREMENT:
+- Use markdown bold (**word**) to emphasize important keywords such as:
+  * Key technologies and tools
+  * Critical skills from job requirements
+  * Quantifiable achievements
+  * Important certifications or methodologies
+  * Role titles and expertise areas
+- Example: "**5+ years** of experience as a **Full-Stack Developer** specializing in **React**, **Node.js**, and **AWS**"
+
 Return in JSON format:
 
 {
-  "summary": "The perfect 3-4 sentence professional summary",
+  "summary": "The perfect 3-4 sentence professional summary with **bold** markdown formatting on key terms",
   "keywordsIntegrated": ["keyword1", "keyword2", "keyword3"],
   "tone": "professional/technical/dynamic",
   "atsScore": 95
@@ -910,6 +917,15 @@ REWRITING RULES:
 - Highlight team collaboration and leadership
 - Keep 3-5 bullet points per experience
 
+FORMATTING REQUIREMENT:
+- Use markdown bold (**word**) to emphasize important keywords in highlights such as:
+  * Key technologies, frameworks, and tools
+  * Critical metrics and quantifiable achievements
+  * Important methodologies and best practices
+  * Impactful outcomes and business results
+  * Technical leadership and collaboration terms
+- Example: "Led a team of **5 engineers** to develop a **microservices architecture** using **Docker** and **Kubernetes**, reducing deployment time by **60%**"
+
 For each experience entry, you must:
 1. Analyze the original description for core achievements
 2. Map achievements to job requirements
@@ -929,9 +945,9 @@ Return optimized experience in this JSON format:
       "startDate": "start date from original",
       "endDate": "end date from original",
       "highlights": [
-        "Optimized bullet point 1 with keywords and metrics",
-        "Optimized bullet point 2 emphasizing relevant skills",
-        "Optimized bullet point 3 showing measurable impact"
+        "Optimized bullet point 1 with **bold** keywords and **metrics**",
+        "Optimized bullet point 2 emphasizing **relevant skills** in **bold**",
+        "Optimized bullet point 3 showing **measurable impact** with **bold** formatting"
       ],
       "optimizationNotes": {
         "keywordsAdded": ["keyword1", "keyword2"],
