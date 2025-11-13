@@ -81,8 +81,8 @@ const renderMarkdown = (text: string) => {
     if (part.startsWith('```') && part.endsWith('```')) {
       const code = part.slice(3, -3).trim();
       return (
-        <pre key={partIndex} className="bg-gray-100 rounded-lg p-3 my-2 overflow-x-auto">
-          <code className="text-sm font-mono">{code}</code>
+        <pre key={partIndex} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-lg p-3 my-2 overflow-x-auto">
+          <code className="text-sm font-mono text-gray-300">{code}</code>
         </pre>
       );
     }
@@ -95,7 +95,7 @@ const renderMarkdown = (text: string) => {
         const content = line.trim().replace(/^[•\-\*]\s/, '');
         return (
           <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 my-1">
-            <span className="text-blue-500 mt-1">•</span>
+            <span className="text-purple-400 mt-1">•</span>
             <span>{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
           </div>
         );
@@ -107,7 +107,7 @@ const renderMarkdown = (text: string) => {
         if (match) {
           return (
             <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 my-1">
-              <span className="text-blue-500 font-medium">{match[1]}.</span>
+              <span className="text-purple-400 font-medium">{match[1]}.</span>
               <span>{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
             </div>
           );
@@ -141,7 +141,7 @@ const processInlineFormatting = (text: string, keyPrefix: string) => {
     { regex: /_(.+?)_/g, render: (match: string, content: string, i: number) => 
       <em key={`${keyPrefix}-italic2-${i}`} className="italic">{content}</em> },
     { regex: /`(.+?)`/g, render: (match: string, content: string, i: number) => 
-      <code key={`${keyPrefix}-code-${i}`} className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">{content}</code> },
+      <code key={`${keyPrefix}-code-${i}`} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 px-1.5 py-0.5 rounded text-sm font-mono text-purple-400">{content}</code> },
   ];
   
   // Find all matches
@@ -1718,62 +1718,55 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
 
   return (
     <ProtectedRoute>
-      <div className="h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 text-gray-900 box-border">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
         {/* Navbar */}
         <Navbar saveStatus={saveStatus} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-5rem)] divide-y lg:divide-y-0 lg:divide-x divide-gray-200 overflow-hidden m-0 p-0">
+        {/* Grid Background */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        </div>
+
+        <div className="relative z-10 pt-20 h-screen">
+          <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-5rem)] divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden">
           {/* Left Column - Chat Interface */}
-          <div className="bg-white flex flex-col h-full overflow-hidden shadow-sm">
-            {/* Chat Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-500 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-white" />
+          <div className="flex flex-col h-full overflow-hidden relative">
+            {/* Floating Save Button */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              {saveStatus === 'saving' && (
+                <div className="flex items-center text-purple-400 text-xs bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 px-3 py-2 rounded-full shadow-lg">
+                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                  Saving...
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Resume Assistant</h2>
-                  <p className="text-sm text-gray-500">AI-Powered Resume Generator</p>
+              )}
+              {saveStatus === 'success' && (
+                <div className="flex items-center text-green-400 text-xs bg-green-500/10 backdrop-blur-xl border border-green-500/20 px-3 py-2 rounded-full shadow-lg">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1.5 animate-pulse"></div>
+                  Saved
                 </div>
-              </div>
+              )}
+              {saveStatus === 'error' && (
+                <div className="flex items-center text-red-400 text-xs bg-red-500/10 backdrop-blur-xl border border-red-500/20 px-3 py-2 rounded-full shadow-lg">
+                  <div className="w-2 h-2 bg-red-400 rounded-full mr-1.5"></div>
+                  Error
+                </div>
+              )}
 
-              {/* Save Status and Manual Save Button */}
-              <div className="flex items-center gap-3">
-                {saveStatus === 'saving' && (
-                  <div className="flex items-center text-blue-600 text-sm bg-blue-50 px-3 py-1.5 rounded-lg">
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </div>
-                )}
-                {saveStatus === 'success' && (
-                  <div className="flex items-center text-green-600 text-sm bg-green-50 px-3 py-1.5 rounded-lg">
-                    <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                    Saved
-                  </div>
-                )}
-                {saveStatus === 'error' && (
-                  <div className="flex items-center text-red-600 text-sm bg-red-50 px-3 py-1.5 rounded-lg">
-                    <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
-                    Save Error
-                  </div>
-                )}
-
-                <button
-                  onClick={() => resumeData && messages.length > 1 && saveResumeData(resumeData, messages)}
-                  disabled={!resumeData || saveStatus === 'saving'}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
-                >
-                  💾 Save
-                </button>
-              </div>
+              <button
+                onClick={() => resumeData && messages.length > 1 && saveResumeData(resumeData, messages)}
+                disabled={!resumeData || saveStatus === 'saving'}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-lg disabled:opacity-50 disabled:hover:shadow-lg"
+              >
+                💾 Save
+              </button>
             </div>
 
             {/* Messages */}
             <div
-              className="messages-container flex-1 overflow-y-scroll p-6 space-y-6 min-h-0"
+              className="messages-container flex-1 overflow-y-scroll px-6 pt-16 pb-6 space-y-4 min-h-0"
               style={{
                 scrollbarWidth: 'thin',
-                scrollbarColor: '#cbd5e1 #f1f5f9'
+                scrollbarColor: '#64748b #1e293b'
               }}
             >
               {messages.map((message, index) => (
@@ -1781,50 +1774,65 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                   key={index}
                   className={`flex ${
                     message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
+                  } animate-in fade-in slide-in-from-bottom-4 duration-300`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl p-4 shadow-sm border transition-all duration-200 hover:scale-[1.02] ${
+                    className={`group relative max-w-[80%] ${
                       message.sender === 'user'
-                        ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white border-blue-500/30 shadow-blue-500/20'
-                        : 'bg-white text-gray-900 border-gray-200 shadow-gray-100/50'
-                    }`}
+                        ? 'rounded-3xl rounded-br-md'
+                        : 'rounded-3xl rounded-bl-md'
+                    } transition-all duration-200 hover:scale-[1.01]`}
                   >
-                    <div className="flex items-center mb-2">
-                      {message.sender === 'bot' ? (
-                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-2">
-                          <Zap className="h-3 w-3 text-white" />
+                    {message.sender === 'bot' && (
+                      <div className="flex items-center gap-2 mb-2 ml-1">
+                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                          <Zap className="h-4 w-4 text-white" />
                         </div>
-                      ) : (
-                        <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                          <User className="h-3 w-3 text-gray-600" />
-                        </div>
-                      )}
-                      <span className={`text-xs font-medium ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {message.sender === 'user' ? 'You' : 'Resume Assistant'} •{' '}
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
+                        <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                      </div>
+                    )}
+                    <div
+                      className={`p-4 ${
+                        message.sender === 'user'
+                          ? 'bg-gradient-to-br from-purple-600 via-fuchsia-500 to-cyan-500 text-white shadow-lg shadow-purple-500/20'
+                          : 'bg-white/5 backdrop-blur-xl text-white border border-white/10 shadow-lg'
+                      } ${
+                        message.sender === 'user'
+                          ? 'rounded-3xl rounded-br-md'
+                          : 'rounded-3xl rounded-bl-md'
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap leading-relaxed text-sm">{renderMarkdown(message.text)}</div>
                     </div>
-                    <div className="whitespace-pre-wrap leading-relaxed">{renderMarkdown(message.text)}</div>
+                    {message.sender === 'user' && (
+                      <div className="flex items-center justify-end gap-2 mt-1 mr-1">
+                        <span className="text-xs text-gray-500">
+                          {message.timestamp.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
               {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-sm border border-gray-200">
-                    <div className="flex items-center space-x-1">
-                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-2">
-                        <Zap className="h-3 w-3 text-white" />
-                      </div>
-                      <span className="text-xs text-gray-500 mr-3">Resume Assistant is working...</span>
+                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center gap-2 mb-2 ml-1">
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <Zap className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl text-white rounded-3xl rounded-bl-md p-4 shadow-lg border border-white/10 ml-9">
+                    <div className="flex items-center gap-2">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
+                      <span className="text-xs text-gray-400">Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -1833,27 +1841,25 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 flex-shrink-0">
-              <div className="flex items-end gap-3">
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Paste the job description here, or tell me about the role you're applying for..."
-                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 resize-none transition-all duration-200 min-h-[48px] max-h-[120px] shadow-sm"
-                    rows={1}
-                    style={{
-                      height: 'auto',
-                      minHeight: '48px'
-                    }}
-                  />
-                </div>
+            <div className="p-4 flex-shrink-0">
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Describe the role or paste a job description..."
+                  className="w-full pl-4 pr-14 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-white placeholder-gray-500 resize-none transition-all duration-200 min-h-[56px] max-h-[120px] shadow-lg hover:bg-white/10"
+                  rows={1}
+                  style={{
+                    height: 'auto',
+                    minHeight: '56px'
+                  }}
+                />
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl px-6 py-3 h-12 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
+                  className="absolute right-2 bottom-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 hover:shadow-lg hover:shadow-purple-500/50 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-xl p-3 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
                 >
                   <Send className="h-5 w-5" />
                 </button>
@@ -1862,25 +1868,25 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           </div>
           
           {/* Right Column - Resume Preview */}
-          <div className="bg-white overflow-hidden flex flex-col h-full">
+          <div className="overflow-hidden flex flex-col h-full">
             {!resumeData ? (
               <div className="h-full flex flex-col items-center justify-center p-8">
                 <div className="text-center space-y-6">
                   <div className="relative">
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mx-auto">
-                      <FileText className="h-12 w-12 text-blue-600" />
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 backdrop-blur-xl flex items-center justify-center mx-auto border border-white/20 shadow-lg">
+                      <FileText className="h-12 w-12 text-purple-400" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50">
                       <Zap className="h-4 w-4 text-white" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Resume Generator Ready</h3>
-                    <p className="text-gray-600 max-w-md">
+                    <h3 className="text-2xl font-bold text-white mb-2">AI Resume Generator Ready</h3>
+                    <p className="text-gray-400 max-w-md">
                       Share a job description with the Resume Assistant, and I'll create a perfectly tailored resume based on your profile in seconds.
                     </p>
                   </div>
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400 bg-white/5 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-lg">
                     <MessageSquare className="h-4 w-4" />
                     <span>Start chatting to begin</span>
                   </div>
@@ -1889,7 +1895,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             ) : (
               <div className="flex flex-col h-full">
                 <div className="flex-1 relative overflow-hidden">
-                  <div className="absolute inset-0 overflow-y-auto">
+                  <div className="absolute inset-0 overflow-y-auto bg-slate-900/60">
                     <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
                     <div className="resume-preview-container">
                       <div id="print-wrapper">
@@ -1898,15 +1904,15 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 flex-shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-t border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
                       <FileText className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Resume Preview</h2>
+                      <h2 className="text-lg font-semibold text-white">Resume Preview</h2>
                       {resumeData && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                        <span className="text-xs bg-green-500/10 backdrop-blur-xl text-green-400 border border-green-500/20 px-2 py-1 rounded-full font-medium">
                           Auto-Saved
                         </span>
                       )}
@@ -1922,14 +1928,14 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                           alert('Failed to generate PDF. Please try again.');
                         }
                       }}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm shadow-sm"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm"
                     >
                       <Download className="h-4 w-4" />
                       Download
                     </button>
                     <button
                       onClick={handlePrint}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all font-medium text-sm shadow-sm"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/50 transition-all font-medium text-sm shadow-sm"
                     >
                       <Printer className="h-4 w-4" />
                       Print
@@ -1938,6 +1944,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
@@ -1960,16 +1967,16 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           width: 8px;
         }
         .messages-container::-webkit-scrollbar-track {
-          background: #f1f5f9;
+          background: rgba(15, 23, 42, 0.5);
           border-radius: 4px;
         }
         .messages-container::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
+          background: rgba(100, 116, 139, 0.5);
           border-radius: 4px;
-          border: 1px solid #f1f5f9;
+          border: 1px solid rgba(15, 23, 42, 0.3);
         }
         .messages-container::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
+          background: rgba(148, 163, 184, 0.7);
         }
       `}</style>
     </ProtectedRoute>

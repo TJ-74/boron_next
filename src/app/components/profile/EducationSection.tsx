@@ -148,19 +148,19 @@ export default function EducationSection({
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center">
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Education</h2>
-            <p className="text-sm text-gray-500">Academic achievements</p>
+            <h2 className="text-xl font-bold text-white">Education</h2>
+            <p className="text-sm text-gray-400">Academic achievements</p>
           </div>
         </div>
 
         <button
           onClick={() => setIsAdding(true)}
           disabled={isAdding || isLoading}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           Add Education
@@ -169,37 +169,37 @@ export default function EducationSection({
 
       {/* Add Education Form */}
       {isAdding && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-              <Plus className="h-4 w-4 text-purple-600" />
+        <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-purple-400" />
             </div>
             Add New Education
           </h3>
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Degree
                 </label>
                 <input
                   type="text"
                   value={newEducation.degree}
                   onChange={(e) => setNewEducation({...newEducation, degree: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                   placeholder="Bachelor of Science in Computer Science"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   School
                 </label>
                 <input
                   type="text"
                   value={newEducation.school}
                   onChange={(e) => setNewEducation({...newEducation, school: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                   placeholder="University of Technology"
                   disabled={isLoading}
                 />
@@ -208,40 +208,40 @@ export default function EducationSection({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Start Date
                 </label>
                 <input
                   type="month"
                   value={newEducation.startDate}
                   onChange={(e) => setNewEducation({...newEducation, startDate: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  End Date <span className="text-gray-500 font-normal">(leave empty for current)</span>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  End Date <span className="text-gray-400 font-normal">(leave empty for current)</span>
                 </label>
                 <input
                   type="month"
                   value={newEducation.endDate}
                   onChange={(e) => setNewEducation({...newEducation, endDate: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                   disabled={isLoading}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                CGPA/GPA <span className="text-gray-500 font-normal">(optional)</span>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                CGPA/GPA <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 value={newEducation.cgpa}
                 onChange={(e) => setNewEducation({...newEducation, cgpa: e.target.value})}
-                className="w-full max-w-xs px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                className="w-full max-w-xs px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                 placeholder="3.8/4.0"
                 disabled={isLoading}
               />
@@ -253,18 +253,18 @@ export default function EducationSection({
                 id="newIncludeInResume"
                 checked={newEducation.includeInResume !== false}
                 onChange={(e) => setNewEducation({...newEducation, includeInResume: e.target.checked})}
-                className="h-4 w-4 rounded border-2 border-gray-300 text-purple-600 focus:ring-purple-500 bg-white"
+                className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 "
                 disabled={isLoading}
               />
-              <label htmlFor="newIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-700">
+              <label htmlFor="newIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-300">
                 Include in Resume
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
               <button
                 onClick={cancelAdding}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
                 disabled={isLoading}
               >
                 <X className="h-4 w-4" />
@@ -272,7 +272,7 @@ export default function EducationSection({
               </button>
               <button
                 onClick={handleAdd}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                 disabled={isLoading || !newEducation.school || !newEducation.degree}
               >
                 <Save className="h-4 w-4" />
@@ -287,16 +287,16 @@ export default function EducationSection({
       <div className="space-y-6">
         {educations.length === 0 ? (
           <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
-              <GraduationCap className="h-8 w-8 text-purple-600" />
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mx-auto mb-4">
+              <GraduationCap className="h-8 w-8 text-purple-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Education Added Yet</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <h3 className="text-lg font-semibold text-white mb-2">No Education Added Yet</h3>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">
               Showcase your academic achievements and qualifications. This helps demonstrate your educational background to potential employers.
             </p>
             <button
               onClick={() => setIsAdding(true)}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-semibold shadow-sm hover:shadow-md"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold "
             >
               <GraduationCap className="h-5 w-5" />
               Add Your Education
@@ -304,38 +304,41 @@ export default function EducationSection({
           </div>
         ) : (
           educations.map((edu) => (
-            <div key={edu.id}>
+            <div
+              key={edu.id}
+              className={`${edu.includeInResume === false ? 'opacity-60' : ''}`}
+            >
               {editingId === edu.id && editEducation ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                      <PenSquare className="h-4 w-4 text-purple-600" />
+                <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <PenSquare className="h-4 w-4 text-purple-400" />
                     </div>
                     Edit Education
                   </h3>
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">
                           Degree
                         </label>
                         <input
                           type="text"
                           value={editEducation.degree}
                           onChange={(e) => setEditEducation({...editEducation, degree: e.target.value})}
-                          className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                           disabled={isLoading}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">
                           School
                         </label>
                         <input
                           type="text"
                           value={editEducation.school}
                           onChange={(e) => setEditEducation({...editEducation, school: e.target.value})}
-                          className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                           disabled={isLoading}
                         />
                       </div>
@@ -343,40 +346,40 @@ export default function EducationSection({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">
                           Start Date
                         </label>
                         <input
                           type="month"
                           value={editEducation.startDate}
                           onChange={(e) => setEditEducation({...editEducation, startDate: e.target.value})}
-                          className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900"
+                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                           disabled={isLoading}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          End Date <span className="text-gray-500 font-normal">(leave empty if current)</span>
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">
+                          End Date <span className="text-gray-400 font-normal">(leave empty if current)</span>
                         </label>
                         <input
                           type="month"
                           value={editEducation.endDate}
                           onChange={(e) => setEditEducation({...editEducation, endDate: e.target.value})}
-                          className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900"
+                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                           disabled={isLoading}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        CGPA/GPA <span className="text-gray-500 font-normal">(optional)</span>
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        CGPA/GPA <span className="text-gray-400 font-normal">(optional)</span>
                       </label>
                       <input
                         type="text"
                         value={editEducation.cgpa}
                         onChange={(e) => setEditEducation({...editEducation, cgpa: e.target.value})}
-                        className="w-full max-w-xs px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                        className="w-full max-w-xs px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                         disabled={isLoading}
                       />
                     </div>
@@ -387,18 +390,18 @@ export default function EducationSection({
                         id="editIncludeInResume"
                         checked={editEducation.includeInResume !== false}
                         onChange={(e) => setEditEducation({...editEducation, includeInResume: e.target.checked})}
-                        className="h-4 w-4 rounded border-2 border-gray-300 text-purple-600 focus:ring-purple-500 bg-white"
+                        className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 "
                         disabled={isLoading}
                       />
-                      <label htmlFor="editIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-700">
+                      <label htmlFor="editIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-300">
                         Include in Resume
                       </label>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
                       <button
                         onClick={cancelEditing}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
                         disabled={isLoading}
                       >
                         <X className="h-4 w-4" />
@@ -406,7 +409,7 @@ export default function EducationSection({
                       </button>
                       <button
                         onClick={handleUpdate}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
                         disabled={isLoading || !editEducation.school || !editEducation.degree}
                       >
                         <Save className="h-4 w-4" />
@@ -416,24 +419,24 @@ export default function EducationSection({
                   </div>
                 </div>
               ) : (
-                <div className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 hover:shadow-md group ${
-                  edu.includeInResume === false ? 'border-gray-300 opacity-75' : 'border-gray-200 hover:border-purple-300'
+                <div className={`rounded-2xl shadow-2xl border transition-all duration-200 hover:shadow-2xl group ${
+                  edu.includeInResume === false ? 'border-white/20 opacity-75' : 'border-white/10 hover:border-purple-300'
                 }`}>
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-start gap-4 flex-1">
                         <div className="relative">
-                          <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-3 rounded-xl">
-                            <GraduationCap className="h-6 w-6 text-purple-600" />
+                          <div className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 p-3 rounded-xl">
+                            <GraduationCap className="h-6 w-6 text-purple-400" />
                           </div>
                           {edu.includeInResume !== false && (
                             <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-xl font-bold text-gray-900 mb-1">{edu.degree}</h3>
-                          <p className="text-lg text-gray-700 font-medium mb-2">{edu.school}</p>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                          <h3 className="text-xl font-bold text-white mb-1">{edu.degree}</h3>
+                          <p className="text-lg text-gray-300 font-medium mb-2">{edu.school}</p>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                             <span className="flex items-center gap-1">
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h6a2 2 0 012 2v4m-6 4v10m-4-4h8" />
@@ -458,8 +461,8 @@ export default function EducationSection({
                           onClick={() => handleToggleIncludeInResume(edu)}
                           className={`p-2 rounded-lg transition-all ${
                             edu.includeInResume !== false
-                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                              : 'text-gray-400 bg-gray-50 hover:bg-gray-100'
+                              ? 'text-purple-400 bg-purple-500/10 hover:bg-purple-500/20'
+                              : 'text-gray-400 bg-white/5 backdrop-blur-xl hover:bg-white/20'
                           }`}
                           disabled={isLoading}
                           title={edu.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
@@ -470,14 +473,14 @@ export default function EducationSection({
                         </button>
                         <button
                           onClick={() => startEditing(edu)}
-                          className="p-2 rounded-lg text-gray-400 bg-gray-50 hover:text-purple-600 hover:bg-purple-50 transition-all"
+                          className="p-2 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all"
                           disabled={isLoading}
                         >
                           <PenSquare className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(edu.id)}
-                          className="p-2 rounded-lg text-gray-400 bg-gray-50 hover:text-red-600 hover:bg-red-50 transition-all"
+                          className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
                           disabled={isLoading}
                         >
                           <Trash2 className="h-4 w-4" />

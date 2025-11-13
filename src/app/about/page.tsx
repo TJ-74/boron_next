@@ -11,7 +11,7 @@ export default function AboutPage() {
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-600/20 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8">
+        <div className="relative max-w-7xl mx-auto pt-32 pb-24 px-4 sm:pt-40 sm:pb-32 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
               About Boron Atom
@@ -142,7 +142,7 @@ export default function AboutPage() {
             Join thousands of professionals who trust Boron Atom for their resume needs
           </p>
           <a
-            href="/pricing"
+            href="/register"
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 transition-colors"
           >
             Get Started

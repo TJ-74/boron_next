@@ -1279,10 +1279,16 @@ ${projectSection}
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-12 w-12 text-blue-500 animate-spin mb-4" />
-          <div className="text-xl text-gray-300">Loading your profile...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        {/* Grid Background */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        </div>
+        
+        <div className="flex flex-col items-center relative z-10">
+          <Loader2 className="h-16 w-16 text-purple-500 animate-spin mb-4" />
+          <div className="text-2xl font-bold text-white mb-2">Loading your profile...</div>
+          <div className="text-gray-400">Please wait a moment</div>
         </div>
       </div>
     );
@@ -1294,18 +1300,15 @@ ${projectSection}
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
-        <Navbar saveStatus={saveStatus} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <Navbar saveStatus={saveStatus} isChatBotOpen={isChatBotOpen} />
 
-        {/* Hero Background Pattern */}
-        <div className="absolute inset-0 z-0 opacity-30">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle, rgba(59, 130, 246, 0.1) 1px, transparent 1px)`,
-            backgroundSize: '30px 30px'
-          }}></div>
+        {/* Grid Background */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-8 transition-all duration-300 ${isChatBotOpen ? 'mr-[480px]' : ''}`}>
           {/* Profile Header Card */}
           <div className="mb-8">
             <ProfileHeader 
@@ -1331,44 +1334,44 @@ ${projectSection}
           {saveStatus !== 'idle' && (
             <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-right duration-300">
               {saveStatus === 'saving' && (
-                <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-xl shadow-lg border border-blue-200">
-                  <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-                  <span className="text-sm font-semibold text-gray-700">Saving changes...</span>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-3 rounded-xl shadow-2xl border border-white/20">
+                  <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+                  <span className="text-sm font-semibold text-white">Saving changes...</span>
                 </div>
               )}
               {saveStatus === 'success' && (
-                <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-xl shadow-lg border border-green-200">
-                  <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center gap-2 bg-green-500/10 backdrop-blur-xl px-4 py-3 rounded-xl shadow-2xl border border-green-500/30">
+                  <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-sm font-semibold text-gray-700">Saved successfully!</span>
+                  <span className="text-sm font-semibold text-white">Saved successfully!</span>
                 </div>
               )}
               {saveStatus === 'error' && (
-                <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-xl shadow-lg border border-red-200">
-                  <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center gap-2 bg-red-500/10 backdrop-blur-xl px-4 py-3 rounded-xl shadow-2xl border border-red-500/30">
+                  <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="text-sm font-semibold text-gray-700">Error saving</span>
+                  <span className="text-sm font-semibold text-white">Error saving</span>
                 </div>
               )}
             </div>
           )}
           
           {/* Modern Tabs Navigation */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 mb-6">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-2 mb-6">
             <div className="flex gap-2 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab('about')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
                   activeTab === 'about' 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-blue-600'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {activeTab === 'about' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
@@ -1380,15 +1383,15 @@ ${projectSection}
               </button>
               <button
                 onClick={() => setActiveTab('experience')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
                   activeTab === 'experience' 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-blue-600'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {activeTab === 'experience' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
@@ -1400,15 +1403,15 @@ ${projectSection}
               </button>
               <button
                 onClick={() => setActiveTab('education')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
                   activeTab === 'education' 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-blue-600'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {activeTab === 'education' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
@@ -1420,15 +1423,15 @@ ${projectSection}
               </button>
               <button
                 onClick={() => setActiveTab('certificates')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
                   activeTab === 'certificates' 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-blue-600'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {activeTab === 'certificates' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
@@ -1440,15 +1443,15 @@ ${projectSection}
               </button>
               <button
                 onClick={() => setActiveTab('skills')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
                   activeTab === 'skills' 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-blue-600'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {activeTab === 'skills' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
@@ -1460,15 +1463,15 @@ ${projectSection}
               </button>
               <button
                 onClick={() => setActiveTab('projects')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-colors duration-500 ease-out ${
+                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
                   activeTab === 'projects' 
                     ? 'text-white' 
-                    : 'text-gray-600 hover:text-blue-600'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {activeTab === 'projects' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
@@ -1496,7 +1499,7 @@ ${projectSection}
           `}</style>
           
           {/* Tab Content Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 min-h-[500px] overflow-hidden">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8 min-h-[500px] overflow-hidden">
             {/* About Tab */}
             {activeTab === 'about' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1580,14 +1583,14 @@ ${projectSection}
         {/* Floating ChatBot Button */}
         <button
           onClick={() => setIsChatBotOpen(!isChatBotOpen)}
-          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 flex items-center justify-center group"
+          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-full shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-110 flex items-center justify-center group"
         >
           {isChatBotOpen ? (
             <X className="h-7 w-7 group-hover:rotate-90 transition-transform duration-300" />
           ) : (
             <MessageSquare className="h-7 w-7 group-hover:scale-110 transition-transform duration-300" />
           )}
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-slate-900 animate-pulse shadow-lg"></span>
         </button>
 
         {/* PDF Viewer */}

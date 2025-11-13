@@ -276,19 +276,19 @@ export default function ExperienceSection({
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 via-blue-500 to-purple-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center">
             <Briefcase className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Work Experience</h2>
-            <p className="text-sm text-gray-500">Showcase your career journey</p>
+            <h2 className="text-xl font-bold text-white">Work Experience</h2>
+            <p className="text-sm text-gray-400">Showcase your career journey</p>
           </div>
         </div>
 
         <button
           onClick={() => setIsAdding(true)}
           disabled={isAdding || isLoading}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           Add Experience
@@ -297,37 +297,37 @@ export default function ExperienceSection({
 
       {/* Add Experience Form */}
       {isAdding && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
-              <Plus className="h-4 w-4 text-green-600" />
+        <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-purple-400" />
             </div>
             Add New Experience
           </h3>
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Position
                 </label>
                 <input
                   type="text"
                   value={newExperience.position}
                   onChange={(e) => setNewExperience({...newExperience, position: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                   placeholder="Senior Software Engineer"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Company
                 </label>
                 <input
                   type="text"
                   value={newExperience.company}
                   onChange={(e) => setNewExperience({...newExperience, company: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                   placeholder="Tech Corp"
                   disabled={isLoading}
                 />
@@ -335,14 +335,14 @@ export default function ExperienceSection({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
                 Location
               </label>
               <input
                 type="text"
                 value={newExperience.location}
                 onChange={(e) => setNewExperience({...newExperience, location: e.target.value})}
-                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                 placeholder="New York, NY (or Remote)"
                 disabled={isLoading}
               />
@@ -350,26 +350,26 @@ export default function ExperienceSection({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Start Date
                 </label>
                 <input
                   type="month"
                   value={newExperience.startDate}
                   onChange={(e) => setNewExperience({...newExperience, startDate: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  End Date <span className="text-gray-500 font-normal">(leave empty for current)</span>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  End Date <span className="text-gray-400 font-normal">(leave empty for current)</span>
                 </label>
                 <input
                   type="month"
                   value={newExperience.endDate}
                   onChange={(e) => setNewExperience({...newExperience, endDate: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900"
+                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                   disabled={isLoading}
                 />
               </div>
@@ -377,12 +377,12 @@ export default function ExperienceSection({
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className="block text-sm font-semibold text-gray-300">
                   Description
                 </label>
                 <button
                   onClick={() => generateAIDescription(false)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
                   disabled={isLoading || isGeneratingDescription || !newExperience.position || !newExperience.company}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
@@ -392,11 +392,11 @@ export default function ExperienceSection({
               <textarea
                 value={newExperience.description}
                 onChange={(e) => handleDescriptionChange(e, false)}
-                className="w-full h-32 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900 placeholder-gray-500 resize-none"
+                className="w-full h-32 px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 resize-none"
                 placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
                 disabled={isLoading || isGeneratingDescription}
               />
-              <p className="text-xs text-gray-500 mt-2">Use a new line for each bullet point</p>
+              <p className="text-xs text-gray-400 mt-2">Use a new line for each bullet point</p>
             </div>
 
             <div className="flex items-center">
@@ -405,18 +405,18 @@ export default function ExperienceSection({
                 id="newIncludeInResume"
                 checked={newExperience.includeInResume !== false}
                 onChange={(e) => setNewExperience({...newExperience, includeInResume: e.target.checked})}
-                className="h-4 w-4 rounded border-2 border-gray-300 text-green-600 focus:ring-green-500 bg-white"
+                className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
                 disabled={isLoading}
               />
-              <label htmlFor="newIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-700">
+              <label htmlFor="newIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-300">
                 Include in Resume
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
               <button
                 onClick={cancelAdding}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
                 disabled={isLoading}
               >
                 <X className="h-4 w-4" />
@@ -424,7 +424,7 @@ export default function ExperienceSection({
               </button>
               <button
                 onClick={handleAdd}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm disabled:opacity-50"
                 disabled={isLoading || !newExperience.company || !newExperience.position}
               >
                 <Save className="h-4 w-4" />
@@ -439,16 +439,16 @@ export default function ExperienceSection({
       <div className="space-y-6">
         {experiences.length === 0 ? (
           <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="h-8 w-8 text-green-600" />
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="h-8 w-8 text-purple-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Work Experience Yet</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <h3 className="text-lg font-semibold text-white mb-2">No Work Experience Yet</h3>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">
               Start building your professional story by adding your work experience. This helps showcase your career journey to potential employers.
             </p>
             <button
               onClick={() => setIsAdding(true)}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all font-semibold shadow-sm hover:shadow-md"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold"
             >
               <Briefcase className="h-5 w-5" />
               Add Your First Experience
@@ -462,50 +462,50 @@ export default function ExperienceSection({
                 className={`${experience.includeInResume === false ? 'opacity-60' : ''}`}
               >
                 {editingId === experience.id && editExperience ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                        <PenSquare className="h-4 w-4 text-blue-600" />
+                  <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center">
+                        <PenSquare className="h-4 w-4 text-purple-400" />
                       </div>
                       Edit Experience
                     </h3>
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <label className="block text-sm font-semibold text-gray-300 mb-2">
                             Position
                           </label>
                           <input
                             type="text"
                             value={editExperience.position}
                             onChange={(e) => setEditExperience({...editExperience, position: e.target.value})}
-                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                             disabled={isLoading}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <label className="block text-sm font-semibold text-gray-300 mb-2">
                             Company
                           </label>
                           <input
                             type="text"
                             value={editExperience.company}
                             onChange={(e) => setEditExperience({...editExperience, company: e.target.value})}
-                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                             disabled={isLoading}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">
                           Location
                         </label>
                         <input
                           type="text"
                           value={editExperience.location}
                           onChange={(e) => setEditExperience({...editExperience, location: e.target.value})}
-                          className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500"
+                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
                           placeholder="e.g., New York, NY (or Remote)"
                           disabled={isLoading}
                         />
@@ -513,26 +513,26 @@ export default function ExperienceSection({
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <label className="block text-sm font-semibold text-gray-300 mb-2">
                             Start Date
                           </label>
                           <input
                             type="month"
                             value={editExperience.startDate}
                             onChange={(e) => setEditExperience({...editExperience, startDate: e.target.value})}
-                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900"
+                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                             disabled={isLoading}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            End Date <span className="text-gray-500 font-normal">(leave empty if current)</span>
+                          <label className="block text-sm font-semibold text-gray-300 mb-2">
+                            End Date <span className="text-gray-400 font-normal">(leave empty if current)</span>
                           </label>
                           <input
                             type="month"
                             value={editExperience.endDate}
                             onChange={(e) => setEditExperience({...editExperience, endDate: e.target.value})}
-                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900"
+                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
                             disabled={isLoading}
                           />
                         </div>
@@ -540,12 +540,12 @@ export default function ExperienceSection({
 
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-semibold text-gray-700">
+                          <label className="block text-sm font-semibold text-gray-300">
                             Description
                           </label>
                           <button
                             onClick={() => generateAIDescription(true)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
                             disabled={isLoading || isGeneratingDescription || !editExperience.position || !editExperience.company}
                           >
                             <Sparkles className="h-3.5 w-3.5" />
@@ -555,11 +555,11 @@ export default function ExperienceSection({
                         <textarea
                           value={editExperience.description}
                           onChange={(e) => handleDescriptionChange(e, true)}
-                          className="w-full h-32 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500 resize-none"
+                          className="w-full h-32 px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 resize-none"
                           placeholder="Describe your responsibilities and achievements with bullet points (one per line)"
                           disabled={isLoading || isGeneratingDescription}
                         />
-                        <p className="text-xs text-gray-500 mt-2">Use a new line for each bullet point</p>
+                        <p className="text-xs text-gray-400 mt-2">Use a new line for each bullet point</p>
                       </div>
 
                       <div className="flex items-center">
@@ -568,18 +568,18 @@ export default function ExperienceSection({
                           id="editIncludeInResume"
                           checked={editExperience.includeInResume !== false}
                           onChange={(e) => setEditExperience({...editExperience, includeInResume: e.target.checked})}
-                          className="h-4 w-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 bg-white"
+                          className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
                           disabled={isLoading}
                         />
-                        <label htmlFor="editIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-700">
+                        <label htmlFor="editIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-300">
                           Include in Resume
                         </label>
                       </div>
 
-                      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                      <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
                         <button
                           onClick={cancelEditing}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium text-sm"
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
                           disabled={isLoading}
                         >
                           <X className="h-4 w-4" />
@@ -587,7 +587,7 @@ export default function ExperienceSection({
                         </button>
                         <button
                           onClick={handleUpdate}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm disabled:opacity-50"
                           disabled={isLoading || !editExperience.company || !editExperience.position}
                         >
                           <Save className="h-4 w-4" />
@@ -597,24 +597,24 @@ export default function ExperienceSection({
                     </div>
                   </div>
                 ) : (
-                  <div className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 hover:shadow-md group ${
-                    experience.includeInResume === false ? 'border-gray-300 opacity-75' : 'border-gray-200 hover:border-green-300'
+                  <div className={`rounded-2xl shadow-2xl border transition-all duration-200 hover:shadow-2xl group ${
+                    experience.includeInResume === false ? 'border-white/20 opacity-75' : 'border-white/10 hover:border-purple-400/50'
                   }`}>
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start gap-4 flex-1">
                           <div className="relative">
-                            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-3 rounded-xl">
-                              <Briefcase className="h-6 w-6 text-green-600" />
+                            <div className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 p-3 rounded-xl">
+                              <Briefcase className="h-6 w-6 text-purple-400" />
                             </div>
                             {experience.includeInResume !== false && (
                               <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-bold text-gray-900 mb-1">{experience.position}</h3>
-                            <p className="text-lg text-gray-700 font-medium mb-2">{experience.company}</p>
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                            <h3 className="text-xl font-bold text-white mb-1">{experience.position}</h3>
+                            <p className="text-lg text-gray-300 font-medium mb-2">{experience.company}</p>
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                               <span className="flex items-center gap-1">
                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -638,14 +638,14 @@ export default function ExperienceSection({
                             <button
                               onClick={() => handleMoveExperience(index, 'up')}
                               disabled={index === 0 || isLoading}
-                              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <ChevronUp className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleMoveExperience(index, 'down')}
                               disabled={index === sortedExperiences.length - 1 || isLoading}
-                              className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <ChevronDown className="h-4 w-4" />
                             </button>
@@ -657,8 +657,8 @@ export default function ExperienceSection({
                               onClick={() => handleToggleIncludeInResume(experience)}
                               className={`p-2 rounded-lg transition-all ${
                                 experience.includeInResume !== false
-                                  ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                                  : 'text-gray-400 bg-gray-50 hover:bg-gray-100'
+                                  ? 'text-purple-400 bg-purple-500/10 hover:bg-purple-500/20'
+                                  : 'text-gray-400 bg-white/5 backdrop-blur-xl hover:bg-white/20'
                               }`}
                               disabled={isLoading}
                               title={experience.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
@@ -669,14 +669,14 @@ export default function ExperienceSection({
                             </button>
                             <button
                               onClick={() => startEditing(experience)}
-                              className="p-2 rounded-lg text-gray-400 bg-gray-50 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                              className="p-2 rounded-lg text-gray-400 bg-white/5 backdrop-blur-xl hover:text-purple-400 hover:bg-purple-500/10 transition-all"
                               disabled={isLoading}
                             >
                               <PenSquare className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(experience.id)}
-                              className="p-2 rounded-lg text-gray-400 bg-gray-50 hover:text-red-600 hover:bg-red-50 transition-all"
+                              className="p-2 rounded-lg text-gray-400 bg-white/5 backdrop-blur-xl hover:text-red-400 hover:bg-red-500/10 transition-all"
                               disabled={isLoading}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -687,12 +687,12 @@ export default function ExperienceSection({
 
                       {/* Description */}
                       {experience.description && (
-                        <div className="border-t border-gray-100 pt-4">
+                        <div className="border-t border-white/10 pt-4">
                           <div className="space-y-2">
                             {experience.description.split('\n').map((line, i) => (
                               line.trim() ? (
-                                <div key={i} className="flex items-start text-gray-700">
-                                  <span className="mr-3 mt-1 text-green-500 font-bold">•</span>
+                                <div key={i} className="flex items-start text-gray-300">
+                                  <span className="mr-3 mt-1 text-purple-400 font-bold">•</span>
                                   <p className="flex-1 leading-relaxed">{line.trim()}</p>
                                 </div>
                               ) : null

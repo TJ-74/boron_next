@@ -7,7 +7,8 @@ import {
   GoogleAuthProvider, 
   signOut, 
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
@@ -17,6 +18,7 @@ interface AuthContextType {
   signup: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
+  resetPassword: (email: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -159,8 +161,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      console.error('Password reset failed:', error);
+      if (error.code === 'auth/user-not-found') {
+        throw new Error('No account found with this email address');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Invalid email address');
+      } else {
+        throw new Error('Failed to send password reset email');
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, loginWithGoogle, logout, resetPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );

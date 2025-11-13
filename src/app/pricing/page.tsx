@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import CheckoutButton from '../components/CheckoutButton';
 import Navbar from '../components/ui/navbar';
 import { Footer } from '../components/ui/footer';   
@@ -12,7 +13,7 @@ export default function PricingPage() {
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-600/20 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8">
+        <div className="relative max-w-7xl mx-auto pt-40 pb-24 px-4 sm:pt-48 sm:pb-32 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
               Choose Your Path to Success
@@ -70,9 +71,9 @@ export default function PricingPage() {
                 ))}
               </ul>
               <div className="mt-8">
-                <button className="w-full bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors">
+                <Link href="/register" className="block w-full bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors text-center">
                   Get Started
-                </button>
+                </Link>
               </div>
             </div>
           </div>

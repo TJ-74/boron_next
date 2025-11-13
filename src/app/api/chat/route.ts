@@ -35,7 +35,17 @@ ${profile.projects.map((proj, i) =>
 When responding to user queries, focus on providing information about their profile.
 Keep responses professional, concise, and relevant to resume/profile information.
 DO NOT share private contact information like email or phone number.
-Use a friendly, helpful tone and format responses clearly with line breaks where appropriate.`;
+Use a friendly, helpful tone and format responses clearly.
+
+Use markdown formatting where appropriate:
+- Use **bold** for emphasis and section headers
+- Use bullet points (-) for lists (not •)
+- Use numbered lists (1., 2., etc.) when ordering items
+- Use \`code\` formatting for technical terms or specific items
+- Use proper line breaks for readability
+- Keep lists clean and properly indented
+
+Format responses to be visually appealing and easy to scan.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -49,9 +59,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Groq API endpoint
-    const apiEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
-    const apiKey = process.env.GROQ_API_KEY;
+    // OpenAI API endpoint
+    const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
+    const apiKey = process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
       // Fallback to local response if no API key is available
@@ -63,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Create system prompt from profile data
     const systemPrompt = generateSystemPrompt(profile);
     
-    // Prepare messages for Groq API
+    // Prepare messages for OpenAI API
     const apiMessages = [
       {
         role: 'system',
@@ -75,7 +85,7 @@ export async function POST(request: NextRequest) {
       }))
     ];
 
-    // Call Groq API
+    // Call OpenAI API
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
@@ -83,10 +93,13 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192', // Using Llama 3 model from Groq
+        model: 'gpt-3.5-turbo', // Using GPT-3.5-turbo from OpenAI
         messages: apiMessages,
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1000,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
       })
     });
 

@@ -24,10 +24,132 @@ interface ChatMessage {
   content: string;
 }
 
+// Helper function to render markdown in messages
+const renderMarkdown = (text: string) => {
+  // Split by code blocks first
+  const parts = text.split(/(```[\s\S]*?```)/g);
+
+  return parts.map((part, partIndex) => {
+    // Handle code blocks
+    if (part.startsWith('```') && part.endsWith('```')) {
+      const code = part.slice(3, -3).trim();
+      return (
+        <pre key={partIndex} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-lg p-3 my-2 overflow-x-auto">
+          <code className="text-sm font-mono text-gray-300">{code}</code>
+        </pre>
+      );
+    }
+
+    // Split by newlines to handle lists
+    const lines = part.split('\n');
+    return lines.map((line, lineIndex) => {
+      // Handle bullet points (• or -)
+      if (line.trim().match(/^[•\-\*]\s/)) {
+        const content = line.trim().replace(/^[•\-\*]\s/, '');
+        return (
+          <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-3 my-1 pl-1">
+            <span className="text-purple-400 font-bold text-sm leading-5 mt-0.5 flex-shrink-0 w-3 text-center">•</span>
+            <span className="flex-1 leading-relaxed">{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
+          </div>
+        );
+      }
+
+      // Handle numbered lists
+      if (line.trim().match(/^\d+\.\s/)) {
+        const match = line.trim().match(/^(\d+)\.\s(.+)$/);
+        if (match) {
+          return (
+            <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-3 my-1 pl-1">
+              <span className="text-purple-400 font-semibold text-sm leading-5 mt-0.5 flex-shrink-0 w-4 text-right">{match[1]}.</span>
+              <span className="flex-1 leading-relaxed">{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
+            </div>
+          );
+        }
+      }
+
+      // Regular line with inline formatting
+      return (
+        <div key={`${partIndex}-${lineIndex}`}>
+          {processInlineFormatting(line, `${partIndex}-${lineIndex}`)}
+        </div>
+      );
+    });
+  });
+};
+
+// Helper to process inline formatting (bold, italic, code)
+const processInlineFormatting = (text: string, keyPrefix: string) => {
+  const elements: React.ReactNode[] = [];
+  let remaining = text;
+  let index = 0;
+
+  // Regex patterns
+  const patterns = [
+    { regex: /\*\*(.+?)\*\*/g, render: (match: string, content: string, i: number) =>
+      <strong key={`${keyPrefix}-bold-${i}`} className="font-bold">{content}</strong> },
+    { regex: /__(.+?)__/g, render: (match: string, content: string, i: number) =>
+      <strong key={`${keyPrefix}-bold2-${i}`} className="font-bold">{content}</strong> },
+    { regex: /\*(.+?)\*/g, render: (match: string, content: string, i: number) =>
+      <em key={`${keyPrefix}-italic-${i}`} className="italic">{content}</em> },
+    { regex: /_(.+?)_/g, render: (match: string, content: string, i: number) =>
+      <em key={`${keyPrefix}-italic2-${i}`} className="italic">{content}</em> },
+    { regex: /`(.+?)`/g, render: (match: string, content: string, i: number) =>
+      <code key={`${keyPrefix}-code-${i}`} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 px-1.5 py-0.5 rounded text-sm font-mono text-purple-400">{content}</code> },
+  ];
+
+  // Find all matches
+  const matches: Array<{ start: number; end: number; element: React.ReactNode }> = [];
+
+  patterns.forEach(pattern => {
+    let match;
+    const regex = new RegExp(pattern.regex);
+    while ((match = regex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        element: pattern.render(match[0], match[1], match.index)
+      });
+    }
+  });
+
+  // Sort matches by start position
+  matches.sort((a, b) => a.start - b.start);
+
+  // Build elements array
+  let lastEnd = 0;
+  matches.forEach((match, i) => {
+    // Skip overlapping matches
+    if (match.start < lastEnd) return;
+
+    // Add text before match
+    if (match.start > lastEnd) {
+      elements.push(text.slice(lastEnd, match.start));
+    }
+
+    // Add formatted element
+    elements.push(match.element);
+    lastEnd = match.end;
+  });
+
+  // Add remaining text
+  if (lastEnd < text.length) {
+    elements.push(text.slice(lastEnd));
+  }
+
+  return elements.length > 0 ? <>{elements}</> : text;
+};
+
 export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: `Hi ${profile.name}! I'm Boron Bot, your AI profile assistant. I can answer questions about your resume, like "What's in my work experience?" or "List my skills". How can I help you today?`,
+      text: `Hi ${profile.name}! I'm **Boron Bot**, your AI profile assistant. I can answer questions about your resume, like:
+
+- "What's in my work experience?"
+- "List my skills"
+- "Tell me about my projects"
+- "Show me my education"
+
+How can I help you today?`,
       sender: 'bot',
       timestamp: new Date(),
     },
@@ -37,7 +159,14 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
   const [apiMessages, setApiMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: `Hi ${profile.name}! I'm Boron Bot, your AI profile assistant. I can answer questions about your resume, like "What's in my work experience?" or "List my skills". How can I help you today?`,
+      content: `Hi ${profile.name}! I'm **Boron Bot**, your AI profile assistant. I can answer questions about your resume, like:
+
+- "What's in my work experience?"
+- "List my skills"
+- "Tell me about my projects"
+- "Show me my education"
+
+How can I help you today?`,
     }
   ]);
   const [isChatVisible, setIsChatVisible] = useState(true);
@@ -417,45 +546,10 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
     onClose();
   };
 
-  // Tab button to show/hide the chat
-  const ChatTab = () => {
-    if (!isTabVisible) return null;
-    
-    return (
-      <div 
-        className={`fixed left-0 top-1/2 transform -translate-y-1/2 z-50 transition-transform duration-300 ${isChatVisible ? 'translate-x-0' : 'translate-x-12'}`}
-      >
-        <button
-          onClick={() => {
-            if (isChatVisible) {
-              setIsChatVisible(false);
-            } else {
-              setIsChatVisible(true);
-              setIsCoverLetterPanelOpen(false);
-            }
-          }}
-          className="flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-800 text-white p-3 rounded-r-xl shadow-2xl border border-blue-400/20 transition-all duration-200 hover:scale-105"
-          title={isChatVisible ? "Hide Boron Bot" : "Show Boron Bot"}
-        >
-          {isChatVisible ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <div className="flex flex-col items-center">
-              <Zap className="h-6 w-6 text-yellow-400 mb-1 animate-pulse" />
-              <MessageSquare className="h-5 w-5" />
-            </div>
-          )}
-        </button>
-      </div>
-    );
-  };
-
   if (!isOpen) return null;
 
   return (
     <>
-      <ChatTab />
-      
       {/* Cover Letter Panel */}
       <CoverLetterPanel
         isOpen={isCoverLetterPanelOpen}
@@ -475,129 +569,143 @@ export default function BoronBot({ isOpen, onClose, profile }: BoronBotProps) {
         isCoverLetterMode={isCoverLetterMode}
       />
       
-      {/* Shared backdrop for both panels */}
-      {(isChatVisible || isCoverLetterPanelOpen) && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          onClick={handleBackdropClick}
-          aria-hidden="true"
-        />
-      )}
-      
-      {/* Chat Interface - only shown when isChatVisible is true */}
-      {isChatVisible && (
-        <>
-          {/* Chat panel */}
-          <div
-            className={`fixed inset-y-0 right-0 w-full md:w-2/3 lg:w-1/2 xl:w-2/5 bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 shadow-2xl z-50 transition-transform duration-300 ease-in-out transform border-l border-slate-700/50 ${isChatVisible ? 'translate-x-0' : 'translate-x-full'}`}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              animation: 'slide-in 0.3s forwards',
-            }}
-          >
-            <style jsx>{`
-              @keyframes slide-in {
-                from {
-                  transform: translateX(100%);
-                }
-                to {
-                  transform: translateX(0);
-                }
-              }
-            `}</style>
+      {/* Chat Interface - Professional Side Panel */}
+      <div
+        className={`fixed inset-y-0 right-0 w-[480px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl z-50 transition-all duration-300 ease-in-out border-l border-white/10 ${isChatVisible ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {/* Grid Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        </div>
 
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-gradient-to-r from-blue-900/80 via-purple-900/80 to-indigo-900/80 backdrop-blur-sm">
-                <h2 className="text-xl font-bold text-white flex items-center">
-                  Boron Bot
-                  <span className="ml-2 text-sm font-normal text-blue-300">AI Assistant</span>
-                </h2>
+        <div className="relative z-10 flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0 h-20">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+                <Zap className="h-5 w-5 text-white" />
               </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      message.sender === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl p-4 shadow-lg backdrop-blur-sm border transition-all duration-200 hover:scale-[1.02] ${
-                        message.sender === 'user'
-                          ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white border-blue-500/30 shadow-blue-500/20'
-                          : 'bg-gradient-to-br from-slate-800 to-slate-700 text-slate-100 border-slate-600/30 shadow-slate-800/50'
-                      }`}
-                    >
-                      <div className="flex items-center mb-2">
-                        {message.sender === 'bot' ? (
-                          <Zap className="h-4 w-4 mr-2 text-yellow-400 animate-pulse" />
-                        ) : (
-                          <User className="h-4 w-4 mr-2 text-blue-200" />
-                        )}
-                        <span className="text-xs font-medium opacity-75">
-                          {message.sender === 'user' ? 'You' : 'Boron Bot'} •{' '}
-                          {message.timestamp.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                      <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
-                    </div>
-                  </div>
-                ))}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl p-4 shadow-lg border border-slate-600/30 backdrop-blur-sm">
-                      <div className="flex items-center space-x-1">
-                        <Zap className="h-4 w-4 text-yellow-400 mr-2" />
-                        <span className="text-xs text-slate-400 mr-3">Boron Bot is thinking...</span>
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input Area */}
-              <div className="p-6 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm">
-                <div className="flex items-end space-x-3">
-                  <div className="flex-1 relative">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Ask me about your profile or generate a cover letter..."
-                      className="w-full px-4 py-3 bg-slate-800/70 backdrop-blur-sm border border-slate-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white placeholder-slate-400 resize-none transition-all duration-200 min-h-[48px] max-h-[120px]"
-                      rows={1}
-                      style={{ 
-                        height: 'auto',
-                        minHeight: '48px'
-                      }}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isTyping}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700 text-white rounded-xl px-6 py-3 h-12 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100"
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">AI Assistant</h2>
+                <p className="text-xs text-gray-400">Powered by Boron</p>
               </div>
             </div>
+            <button
+              onClick={closeAllPanels}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Close chat"
+            >
+              <X className="h-5 w-5 text-gray-400 hover:text-white" />
+            </button>
           </div>
-        </>
-      )}
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-scroll px-6 pt-6 pb-6 space-y-4 min-h-0"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#64748b #1e293b'
+            }}
+          >
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  message.sender === 'user' ? 'justify-end' : 'justify-start'
+                } animate-in fade-in slide-in-from-bottom-4 duration-300`}
+              >
+                <div
+                  className={`group relative max-w-[85%] ${
+                    message.sender === 'user'
+                      ? 'rounded-3xl rounded-br-md'
+                      : 'rounded-3xl rounded-bl-md'
+                  } transition-all duration-200 hover:scale-[1.01]`}
+                >
+                  {message.sender === 'bot' && (
+                    <div className="flex items-center gap-2 mb-2 ml-1">
+                      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                        <Zap className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                    </div>
+                  )}
+                  <div
+                    className={`p-4 ${
+                      message.sender === 'user'
+                        ? 'bg-gradient-to-br from-purple-600 via-fuchsia-500 to-cyan-500 text-white shadow-lg shadow-purple-500/20'
+                        : 'bg-white/5 backdrop-blur-xl text-white border border-white/10 shadow-lg'
+                    } ${
+                      message.sender === 'user'
+                        ? 'rounded-3xl rounded-br-md'
+                        : 'rounded-3xl rounded-bl-md'
+                    }`}
+                  >
+                    <div className="leading-relaxed text-sm">{renderMarkdown(message.text)}</div>
+                  </div>
+                  {message.sender === 'user' && (
+                    <div className="flex items-center justify-end gap-2 mt-1 mr-1">
+                      <span className="text-xs text-gray-500">
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="flex flex-col gap-2 ml-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <Zap className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-xl text-white rounded-3xl rounded-bl-md p-4 shadow-lg border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                      <span className="text-xs text-gray-400">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="p-4 border-t border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
+            <div className="relative">
+              <textarea
+                ref={textareaRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about your profile or request a cover letter..."
+                className="w-full pl-4 pr-14 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-white placeholder-gray-500 resize-none transition-all duration-200 min-h-[56px] max-h-[120px] shadow-lg hover:bg-white/10"
+                rows={1}
+                style={{
+                  height: 'auto',
+                  minHeight: '56px'
+                }}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isTyping}
+                className="absolute right-2 bottom-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 hover:shadow-lg hover:shadow-purple-500/50 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-xl p-3 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
