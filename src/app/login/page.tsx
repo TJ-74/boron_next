@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { Loader2, Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, CheckCircle, Briefcase, TrendingUp, Award, Users, Quote } from "lucide-react";
@@ -45,7 +45,7 @@ const slides = [
   }
 ];
 
-export default function SignIn() {
+function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, loginWithGoogle } = useAuth();
@@ -444,5 +444,20 @@ export default function SignIn() {
         }
       `}</style>
     </AuthRedirect>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center text-white">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-4" />
+          <p className="text-lg">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 }

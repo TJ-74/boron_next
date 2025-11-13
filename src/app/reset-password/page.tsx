@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,7 +9,7 @@ import { verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import logo from "@/app/images/logo-no-background.png";
 
-export default function ResetPassword() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const oobCode = searchParams.get('oobCode');
@@ -445,6 +445,21 @@ export default function ResetPassword() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center text-white">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-4" />
+          <p className="text-lg">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
 

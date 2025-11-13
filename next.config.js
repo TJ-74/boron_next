@@ -1,6 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     distDir: '.next',
+    // Exclude client-side pages from static export
+    experimental: {
+      serverComponentsExternalPackages: [],
+    },
+    // Exclude pages that use client-side hooks from static export
+    unstable_excludeGlobs: [
+      'src/app/login/**',
+      'src/app/reset-password/**',
+      'src/app/register/**',
+      'src/app/forgot-password/**',
+      'src/app/profile/**',
+      'src/app/resume-generator/**',
+      'src/app/job-scraper/**',
+      'src/app/search/**',
+      'src/app/debug/**',
+      'src/app/success/**'
+    ],
+    trailingSlash: false,
     images: {
       remotePatterns: [
         {
