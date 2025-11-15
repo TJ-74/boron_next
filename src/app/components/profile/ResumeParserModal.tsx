@@ -10,7 +10,7 @@ import {
 } from '@/app/components/ui/dialog';
 import { Button } from '@/app/components/ui/button';
 import { Loader2, FileText, AlertTriangle, Copy, Check, User, Briefcase, GraduationCap, Code, FolderOpen, Lightbulb } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ParsedData {
   name?: string;
@@ -91,6 +91,15 @@ export default function ResumeParserModal({
     'skills',
     'projects'
   ]));
+  
+  // Auto-switch to parsed view when parsedData becomes available
+  useEffect(() => {
+    if (parsedData && viewMode === 'text') {
+      setViewMode('parsed');
+    } else if (!parsedData && extractedText && viewMode === 'parsed') {
+      setViewMode('text');
+    }
+  }, [parsedData, extractedText, viewMode]);
   
   const toggleSection = (section: string) => {
     setSelectedSections(prev => {

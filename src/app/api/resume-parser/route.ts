@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
  * Parse extracted text with LLM to get structured JSON
  * Has a timeout to prevent hanging requests
  */
-async function parseWithLLM(text: string, timeoutMs: number = 8000): Promise<any> {
+async function parseWithLLM(text: string, timeoutMs: number = 25000): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
@@ -19,11 +19,6 @@ async function parseWithLLM(text: string, timeoutMs: number = 8000): Promise<any
   if (contentToSend.length > 15000) {
     contentToSend = contentToSend.substring(0, 15000);
   }
-  
-  // Create a timeout promise
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('LLM parsing timeout')), timeoutMs);
-  });
 
   const prompt = `You are a comprehensive resume parser. Extract ALL information from the resume text provided below and return it as a valid JSON object.
 
@@ -105,136 +100,146 @@ ${contentToSend}
 
 IMPORTANT: Carefully read through the entire resume text and extract ALL information. Do not skip any sections. Parse this resume content into the complete JSON structure above.`;
 
-  // Race between the API call and timeout
-  const apiCall = fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      max_tokens: 4000
-    })
-  });
+  // Use AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  let response: Response;
   try {
-    response = await Promise.race([apiCall, timeoutPromise]) as Response;
-  } catch (error) {
-    // Timeout occurred
-    throw new Error('LLM parsing timeout');
-  }
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        max_tokens: 4000
+      }),
+      signal: controller.signal
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error('OpenAI API Error:', errorData);
-    throw new Error(`OpenAI API error: ${response.statusText}`);
-  }
+    clearTimeout(timeoutId);
 
-  const data = await response.json();
-  const responseContent = data.choices[0]?.message?.content || '';
-  
-  if (!responseContent) {
-    throw new Error("LLM did not return any content");
-  }
-  
-  // Parse the JSON response
-  let parsedResult;
-  try {
-    parsedResult = JSON.parse(responseContent);
-  } catch (e) {
-    // Try to extract JSON from markdown code blocks if present
-    const jsonMatch = responseContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
-    if (jsonMatch) {
-      parsedResult = JSON.parse(jsonMatch[1]);
-    } else {
-      throw new Error("Failed to parse LLM response as JSON");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('OpenAI API Error:', errorData);
+      throw new Error(`OpenAI API error: ${response.statusText}`);
     }
-  }
-  
-  // Handle both 'experience' and 'experiences' from LLM
-  const experiences = parsedResult.experience || parsedResult.experiences || [];
-  
-  // Ensure all required arrays exist
-  if (!Array.isArray(parsedResult.education)) {
-    parsedResult.education = [];
-  }
-  if (!Array.isArray(experiences)) {
-    parsedResult.experiences = [];
-  }
-  if (!Array.isArray(parsedResult.skills)) {
-    parsedResult.skills = [];
-  }
-  if (!Array.isArray(parsedResult.projects)) {
-    parsedResult.projects = [];
-  }
-  
-  // Format the data to match our section structure
-  // Add IDs and ensure proper formatting
-  const formattedData = {
-    ...parsedResult,
-    education: parsedResult.education.map((edu: any, index: number) => ({
-      id: `edu_${Date.now()}_${index}`,
-      school: edu.school || '',
-      degree: edu.degree || '',
-      startDate: edu.startDate || '',
-      endDate: edu.endDate || '',
-      cgpa: edu.cgpa || '',
-      includeInResume: true,
-    })),
-    experiences: (Array.isArray(experiences) ? experiences : []).map((exp: any, index: number) => ({
-      id: `exp_${Date.now()}_${index}`,
-      company: exp.company || '',
-      position: exp.position || exp.title || '', // Handle both 'position' and 'title'
-      location: exp.location || '',
-      startDate: exp.startDate || '',
-      endDate: exp.endDate || '',
-      description: exp.description || (Array.isArray(exp.responsibilities) ? exp.responsibilities.join('\n') : ''),
-      includeInResume: true,
-      order: index,
-    })),
-    skills: parsedResult.skills.map((skill: any, index: number) => {
-      // Handle both object format and string format
-      if (typeof skill === 'string') {
+
+    const data = await response.json();
+    const responseContent = data.choices[0]?.message?.content || '';
+    
+    if (!responseContent) {
+      throw new Error("LLM did not return any content");
+    }
+
+    // Parse the JSON response
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(responseContent);
+    } catch (e) {
+      // Try to extract JSON from markdown code blocks if present
+      const jsonMatch = responseContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      if (jsonMatch) {
+        parsedResult = JSON.parse(jsonMatch[1]);
+      } else {
+        throw new Error("Failed to parse LLM response as JSON");
+      }
+    }
+
+    // Handle both 'experience' and 'experiences' from LLM
+    const experiences = parsedResult.experience || parsedResult.experiences || [];
+
+    // Ensure all required arrays exist
+    if (!Array.isArray(parsedResult.education)) {
+      parsedResult.education = [];
+    }
+    if (!Array.isArray(experiences)) {
+      parsedResult.experiences = [];
+    }
+    if (!Array.isArray(parsedResult.skills)) {
+      parsedResult.skills = [];
+    }
+    if (!Array.isArray(parsedResult.projects)) {
+      parsedResult.projects = [];
+    }
+
+    // Format the data to match our section structure
+    // Add IDs and ensure proper formatting
+    const formattedData = {
+      ...parsedResult,
+      education: parsedResult.education.map((edu: any, index: number) => ({
+        id: `edu_${Date.now()}_${index}`,
+        school: edu.school || '',
+        degree: edu.degree || '',
+        startDate: edu.startDate || '',
+        endDate: edu.endDate || '',
+        cgpa: edu.cgpa || '',
+        includeInResume: true,
+      })),
+      experiences: (Array.isArray(experiences) ? experiences : []).map((exp: any, index: number) => ({
+        id: `exp_${Date.now()}_${index}`,
+        company: exp.company || '',
+        position: exp.position || exp.title || '', // Handle both 'position' and 'title'
+        location: exp.location || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate || '',
+        description: exp.description || (Array.isArray(exp.responsibilities) ? exp.responsibilities.join('\n') : ''),
+        includeInResume: true,
+        order: index,
+      })),
+      skills: parsedResult.skills.map((skill: any, index: number) => {
+        // Handle both object format and string format
+        if (typeof skill === 'string') {
+          return {
+            id: `skill_${Date.now()}_${index}`,
+            name: skill,
+            domain: 'General', // Default domain for string skills
+            includeInResume: true,
+          };
+        }
         return {
           id: `skill_${Date.now()}_${index}`,
-          name: skill,
-          domain: 'General', // Default domain for string skills
+          name: skill.name || skill,
+          domain: skill.domain || 'General',
           includeInResume: true,
         };
-      }
-      return {
-        id: `skill_${Date.now()}_${index}`,
-        name: skill.name || skill,
-        domain: skill.domain || 'General',
+      }),
+      projects: parsedResult.projects.map((project: any, index: number) => ({
+        id: `proj_${Date.now()}_${index}`,
+        title: project.title || project.name || '',
+        description: project.description || '',
+        technologies: Array.isArray(project.technologies) 
+          ? project.technologies.join(', ') 
+          : (project.technologies || ''),
+        startDate: project.startDate || '',
+        endDate: project.endDate || '',
+        githubUrl: project.githubUrl || null,
+        projectUrl: project.projectUrl || null,
         includeInResume: true,
-      };
-    }),
-    projects: parsedResult.projects.map((project: any, index: number) => ({
-      id: `proj_${Date.now()}_${index}`,
-      title: project.title || project.name || '',
-      description: project.description || '',
-      technologies: Array.isArray(project.technologies) 
-        ? project.technologies.join(', ') 
-        : (project.technologies || ''),
-      startDate: project.startDate || '',
-      endDate: project.endDate || '',
-      githubUrl: project.githubUrl || null,
-      projectUrl: project.projectUrl || null,
-      includeInResume: true,
-    })),
-  };
-  
-  return formattedData;
+      })),
+    };
+
+    return formattedData;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    // Check if it's an abort error (timeout)
+    if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+      throw new Error('LLM parsing timeout');
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -327,9 +332,10 @@ export async function POST(request: NextRequest) {
             // Step 8: Final trim
             .trim();
 
-          // Parse with LLM to get structured JSON (with 8 second timeout)
-          // This ensures we return within Vercel's 10s limit even if LLM is slow
-          parseWithLLM(cleanedText, 8000)
+          // Parse with LLM to get structured JSON (with 25 second timeout)
+          // This gives LLM enough time while staying under Vercel's 60s limit (Pro plan)
+          // For Hobby plan (10s), this will timeout but text extraction will still work
+          parseWithLLM(cleanedText, 25000)
             .then((parsedData) => {
               resolve(NextResponse.json({
                 text: cleanedText,

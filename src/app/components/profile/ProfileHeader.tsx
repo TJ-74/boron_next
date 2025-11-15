@@ -212,6 +212,11 @@ export default function ProfileHeader({
           console.log('📊 Parsed data:', result.data);
         } else if (result.error) {
           console.warn('⚠️ LLM parsing failed:', result.error);
+          // Still show the text even if parsing failed
+          setParsedResumeData(null);
+        } else {
+          // No data and no error - parsing might still be in progress or failed silently
+          setParsedResumeData(null);
         }
         
         console.log('✅ Text extraction successful!');
@@ -386,17 +391,17 @@ export default function ProfileHeader({
             console.log(`[${sessionId}] Updating profile header with:`, profileUpdates);
             await onUpdateProfile(profileUpdates);
             console.log(`[${sessionId}] Profile header updated successfully`);
-        
-            savedItems.profile = true;
-        
+      
+          savedItems.profile = true;
+      
             // Update the local edit state
-            setEditProfile(prev => ({
-              ...prev,
+      setEditProfile(prev => ({
+        ...prev,
               ...profileUpdates
-            }));
+      }));
 
             updateProgress(`Updated profile header`);
-          } catch (error) {
+        } catch (error) {
             console.error(`[${sessionId}] Failed to update profile header:`, error);
             updateProgress(`Failed to update profile header`);
           }
@@ -527,8 +532,8 @@ export default function ProfileHeader({
             const skillsToAdd = parsedData.skills.map((skill: any) => ({
               name: typeof skill === 'string' ? skill : (skill.name || ''),
               domain: typeof skill === 'string' ? 'General' : (skill.domain || 'General'),
-              includeInResume: true
-            }));
+            includeInResume: true
+          }));
           
             await onAddSkillsBatch(skillsToAdd);
             console.log(`[${sessionId}] Skills batch added successfully`);
@@ -555,8 +560,8 @@ export default function ProfileHeader({
               const skill = {
                 name: skillName,
                 domain: typeof skillData === 'string' ? 'General' : (skillData.domain || 'General'),
-                includeInResume: true
-              };
+              includeInResume: true
+            };
               
               if (!userId) {
                 await onAddSkill(skill, false);
