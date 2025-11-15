@@ -85,14 +85,75 @@ export default function ProfileHeader({
 
   const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     
-    // Create a temporary URL for the selected image
-    const imageUrl = URL.createObjectURL(file);
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
     
-    // Open the crop modal with the selected image
-    setImageToCrop(imageUrl);
-    setIsCropModalOpen(true);
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image is too large. Please select an image smaller than 10MB.');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+    
+    try {
+      // Create blob URL and verify it works, fallback to base64 if needed
+      const imageUrl = URL.createObjectURL(file);
+      
+      // Verify the blob URL works by creating an image element
+      const testImg = document.createElement('img');
+      testImg.onload = () => {
+        // Set the image URL and open modal after verification
+        setImageToCrop(imageUrl);
+        setTimeout(() => {
+          setIsCropModalOpen(true);
+        }, 50);
+      };
+      testImg.onerror = () => {
+        // Try converting to base64 as fallback
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Url = e.target?.result as string;
+          setImageToCrop(base64Url);
+          setTimeout(() => {
+            setIsCropModalOpen(true);
+          }, 50);
+        };
+        reader.onerror = () => {
+          alert('Failed to load image. Please try again.');
+        };
+        reader.readAsDataURL(file);
+      };
+      testImg.src = imageUrl;
+    } catch (error) {
+      console.error('Error creating object URL:', error);
+      // Fallback to base64
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Url = e.target?.result as string;
+          setImageToCrop(base64Url);
+          setTimeout(() => {
+            setIsCropModalOpen(true);
+          }, 50);
+        };
+        reader.readAsDataURL(file);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        alert('Failed to load image. Please try again.');
+      }
+    }
     
     // Reset the file input value so the same file can be selected again
     if (fileInputRef.current) {
@@ -678,23 +739,21 @@ export default function ProfileHeader({
   return (
     <div className="relative rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
       {/* Image Crop Modal */}
-      {imageToCrop && (
-        <ImageCropModal
-          open={isCropModalOpen}
-          onClose={() => {
-            setIsCropModalOpen(false);
-            // Clean up the URL after a short delay to allow for any animations to complete
-            setTimeout(() => {
-              if (imageToCrop) {
-                URL.revokeObjectURL(imageToCrop);
-                setImageToCrop(null);
-              }
-            }, 300);
-          }}
-          imageUrl={imageToCrop}
-          onCropComplete={handleCropComplete}
-        />
-      )}
+      <ImageCropModal
+        open={isCropModalOpen && !!imageToCrop}
+        onClose={() => {
+          setIsCropModalOpen(false);
+          // Clean up the URL after a short delay to allow for any animations to complete
+          setTimeout(() => {
+            if (imageToCrop) {
+              URL.revokeObjectURL(imageToCrop);
+              setImageToCrop(null);
+            }
+          }, 300);
+        }}
+        imageUrl={imageToCrop || ''}
+        onCropComplete={handleCropComplete}
+      />
       
       {/* Resume Parser Modal */}
       <ResumeParserModal
@@ -712,34 +771,46 @@ export default function ProfileHeader({
       {!isEditing ? (
         <>
           {/* Profile Content - Horizontal Layout */}
-          <div className="p-6 sm:p-8">
+          <div className="p-4 sm:p-6 lg:p-8 relative">
+            {/* Edit Profile Button - Mobile: Top Right Corner, Desktop: Inline */}
+            <button
+              onClick={() => setIsEditing(true)}
+              className="sm:hidden absolute top-4 right-4 inline-flex items-center justify-center gap-1.5 px-2.5 py-1 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-lg hover:bg-white/20 hover:border-white/30 transition-all font-medium text-xs shadow-sm z-10"
+            >
+              <PenSquare className="h-3 w-3" />
+              <span>Edit</span>
+            </button>
+
             {/* Main Content Grid: Left (Details) - Right (Actions) */}
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
+            <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
               {/* Left Side: Profile Details */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 w-full">
                 {/* Profile Image and Basic Info */}
-                <div className="flex items-start gap-6 mb-6">
+                <div className="flex items-start gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
                   <div className="relative flex-shrink-0">
-                    <div className="w-28 h-28 rounded-2xl overflow-hidden bg-white/5 border-4 border-white/10 shadow-xl shadow-purple-500/20">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-xl sm:rounded-2xl overflow-hidden bg-white/5 border-2 sm:border-4 border-white/10 shadow-xl shadow-purple-500/20">
                       {profile.profileImage ? (
                         <ImageFallback
                           src={profile.profileImage}
                           alt="Profile"
-                          width={112}
-                          height={112}
-                          className="object-cover w-full h-full"
+                          fill={true}
+                          className="object-cover"
                           fallback="/user.png"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-cyan-500/20 text-gray-400">
-                          <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-16 md:h-16" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>
                         </div>
                       )}
                     </div>
-                    <label className="absolute -bottom-1 -right-1 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white p-2.5 rounded-xl cursor-pointer hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-110">
+                    <label 
+                      htmlFor="profile-image-upload"
+                      className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white p-1 sm:p-1.5 md:p-2.5 rounded-md sm:rounded-lg md:rounded-xl cursor-pointer hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-110 active:scale-95 z-10"
+                    >
                       <input
+                        id="profile-image-upload"
                         ref={fileInputRef}
                         type="file"
                         className="hidden"
@@ -748,25 +819,25 @@ export default function ProfileHeader({
                         disabled={isImageUploading}
                       />
                       {isImageUploading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 animate-spin" />
                       ) : (
-                        <PenSquare className="h-4 w-4" />
+                        <PenSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4" />
                       )}
                     </label>
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1">
                       {profile.name}
                     </h1>
-                    <p className="text-lg text-gray-400 mb-3">{profile.title || 'Add your title'}</p>
+                    <p className="text-base sm:text-lg text-gray-400 mb-2 sm:mb-3">{profile.title || 'Add your title'}</p>
 
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-lg hover:bg-white/20 hover:border-white/30 transition-all font-medium text-xs shadow-sm"
+                      className="hidden sm:inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-lg hover:bg-white/20 hover:border-white/30 transition-all font-medium text-xs shadow-sm"
                     >
-                      <PenSquare className="h-3.5 w-3.5" />
-                      Edit Profile
+                      <PenSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      <span className="hidden sm:inline">Edit Profile</span>
                     </button>
                   </div>
                 </div>
@@ -808,9 +879,9 @@ export default function ProfileHeader({
                         href={profile.linkedinUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-blue-500/20 backdrop-blur-xl text-blue-400 rounded-lg hover:bg-blue-500/30 border border-blue-500/30 transition-all text-sm font-medium"
+                        className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-blue-500/20 backdrop-blur-xl text-blue-400 rounded-lg hover:bg-blue-500/30 border border-blue-500/30 transition-all text-xs sm:text-sm font-medium"
                       >
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                         </svg>
                         LinkedIn
@@ -822,9 +893,9 @@ export default function ProfileHeader({
                         href={profile.githubUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-gray-500/20 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-gray-500/30 border border-gray-500/30 transition-all text-sm font-medium"
+                        className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-500/20 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-gray-500/30 border border-gray-500/30 transition-all text-xs sm:text-sm font-medium"
                       >
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                         </svg>
                         GitHub
@@ -836,9 +907,9 @@ export default function ProfileHeader({
                         href={profile.portfolioUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-green-500/20 backdrop-blur-xl text-green-400 rounded-lg hover:bg-green-500/30 border border-green-500/30 transition-all text-sm font-medium"
+                        className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-green-500/20 backdrop-blur-xl text-green-400 rounded-lg hover:bg-green-500/30 border border-green-500/30 transition-all text-xs sm:text-sm font-medium"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
                         Portfolio
@@ -849,21 +920,23 @@ export default function ProfileHeader({
               </div>
 
               {/* Right Side: Action Buttons */}
-              <div className="flex-shrink-0">
-                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-lg font-semibold text-white mb-4">Resume Actions</h3>
-                  <div className="space-y-3">
+              <div className="flex-shrink-0 w-full lg:w-auto">
+                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Resume Actions</h3>
+                  <div className="space-y-2 sm:space-y-3">
                     <label className="block">
-                      <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white px-6 py-3 rounded-xl cursor-pointer hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold text-sm">
+                      <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl cursor-pointer hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold text-xs sm:text-sm">
                         {isResumeUploading ? (
                           <>
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                            Uploading...
+                            <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                            <span className="hidden sm:inline">Uploading...</span>
+                            <span className="sm:hidden">Uploading</span>
                           </>
                         ) : (
                           <>
-                            <Upload className="h-5 w-5" />
-                            Upload Resume
+                            <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span className="hidden sm:inline">Upload Resume</span>
+                            <span className="sm:hidden">Upload</span>
                           </>
                         )}
                         <input
@@ -878,19 +951,21 @@ export default function ProfileHeader({
 
                     <button
                       onClick={handleOverleafPreview}
-                      className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-500/20 backdrop-blur-xl border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/30 transition-all font-semibold text-sm"
+                      className="w-full flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-green-500/20 backdrop-blur-xl border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/30 transition-all font-semibold text-xs sm:text-sm"
                     >
-                      <ExternalLink className="h-5 w-5" />
-                      Preview in Overleaf
+                      <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="hidden sm:inline">Preview in Overleaf</span>
+                      <span className="sm:hidden">Overleaf</span>
                     </button>
 
                     {onViewPdf && (
                       <button
                         onClick={handleViewPdfClick}
-                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-500/20 backdrop-blur-xl border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/30 transition-all font-semibold text-sm"
+                        className="w-full flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-red-500/20 backdrop-blur-xl border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/30 transition-all font-semibold text-xs sm:text-sm"
                       >
-                        <FileText className="h-5 w-5" />
-                        View PDF Resume
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="hidden sm:inline">View PDF Resume</span>
+                        <span className="sm:hidden">View PDF</span>
                       </button>
                     )}
                   </div>
@@ -900,10 +975,10 @@ export default function ProfileHeader({
           </div>
         </>
       ) : (
-        <div className="p-8 space-y-6">
-          <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
+        <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Edit Profile</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-300 mb-2">
                 Full Name
@@ -1015,17 +1090,17 @@ export default function ProfileHeader({
             </div>
           </div>
           
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
             <button
               onClick={handleCancel}
-              className="px-6 py-3 bg-white/10 backdrop-blur-xl text-white rounded-xl hover:bg-white/20 transition-all font-semibold"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 backdrop-blur-xl text-white rounded-xl hover:bg-white/20 transition-all font-semibold text-sm sm:text-base"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold disabled:opacity-50"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold disabled:opacity-50 text-sm sm:text-base"
               disabled={isLoading || !editProfile.name || !editProfile.email}
             >
               {isLoading ? (

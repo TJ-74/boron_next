@@ -34,8 +34,8 @@ const renderMarkdown = (text: string) => {
     if (part.startsWith('```') && part.endsWith('```')) {
       const code = part.slice(3, -3).trim();
       return (
-        <pre key={partIndex} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-lg p-3 my-2 overflow-x-auto">
-          <code className="text-sm font-mono text-gray-300">{code}</code>
+        <pre key={partIndex} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-lg p-2 sm:p-3 my-1.5 sm:my-2 overflow-x-auto">
+          <code className="text-xs sm:text-sm font-mono text-gray-300">{code}</code>
         </pre>
       );
     }
@@ -47,9 +47,9 @@ const renderMarkdown = (text: string) => {
       if (line.trim().match(/^[•\-\*]\s/)) {
         const content = line.trim().replace(/^[•\-\*]\s/, '');
         return (
-          <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-3 my-1 pl-1">
-            <span className="text-purple-400 font-bold text-sm leading-5 mt-0.5 flex-shrink-0 w-3 text-center">•</span>
-            <span className="flex-1 leading-relaxed">{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
+          <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 sm:gap-3 my-0.5 sm:my-1 pl-1">
+            <span className="text-purple-400 font-bold text-xs sm:text-sm leading-5 mt-0.5 flex-shrink-0 w-3 text-center">•</span>
+            <span className="flex-1 leading-relaxed text-xs sm:text-sm">{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
           </div>
         );
       }
@@ -59,9 +59,9 @@ const renderMarkdown = (text: string) => {
         const match = line.trim().match(/^(\d+)\.\s(.+)$/);
         if (match) {
           return (
-            <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-3 my-1 pl-1">
-              <span className="text-purple-400 font-semibold text-sm leading-5 mt-0.5 flex-shrink-0 w-4 text-right">{match[1]}.</span>
-              <span className="flex-1 leading-relaxed">{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
+            <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 sm:gap-3 my-0.5 sm:my-1 pl-1">
+              <span className="text-purple-400 font-semibold text-xs sm:text-sm leading-5 mt-0.5 flex-shrink-0 w-4 text-right">{match[1]}.</span>
+              <span className="flex-1 leading-relaxed text-xs sm:text-sm">{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
             </div>
           );
         }
@@ -94,7 +94,7 @@ const processInlineFormatting = (text: string, keyPrefix: string) => {
     { regex: /_(.+?)_/g, render: (match: string, content: string, i: number) =>
       <em key={`${keyPrefix}-italic2-${i}`} className="italic">{content}</em> },
     { regex: /`(.+?)`/g, render: (match: string, content: string, i: number) =>
-      <code key={`${keyPrefix}-code-${i}`} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 px-1.5 py-0.5 rounded text-sm font-mono text-purple-400">{content}</code> },
+      <code key={`${keyPrefix}-code-${i}`} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 px-1 sm:px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono text-purple-400">{content}</code> },
   ];
 
   // Find all matches
@@ -571,7 +571,7 @@ How can I help you today?`,
       
       {/* Chat Interface - Professional Side Panel */}
       <div
-        className={`fixed inset-y-0 right-0 w-[480px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl z-50 transition-all duration-300 ease-in-out border-l border-white/10 ${isChatVisible ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 w-full sm:w-[480px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl z-50 transition-all duration-300 ease-in-out border-l border-white/10 ${isChatVisible ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
@@ -580,27 +580,27 @@ How can I help you today?`,
 
         <div className="relative z-10 flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0 h-20">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-                <Zap className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0 h-16 sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+                <Zap className="h-4 w-4 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">AI Assistant</h2>
-                <p className="text-xs text-gray-400">Powered by Boron</p>
+                <h2 className="text-base sm:text-lg font-bold text-white">AI Assistant</h2>
+                <p className="text-[10px] sm:text-xs text-gray-400">Powered by Boron</p>
               </div>
             </div>
             <button
               onClick={closeAllPanels}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
               aria-label="Close chat"
             >
-              <X className="h-5 w-5 text-gray-400 hover:text-white" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 hover:text-white" />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-scroll px-6 pt-6 pb-6 space-y-4 min-h-0"
+          <div className="flex-1 overflow-y-scroll px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4 min-h-0"
             style={{
               scrollbarWidth: 'thin',
               scrollbarColor: '#64748b #1e293b'
@@ -614,36 +614,36 @@ How can I help you today?`,
                 } animate-in fade-in slide-in-from-bottom-4 duration-300`}
               >
                 <div
-                  className={`group relative max-w-[85%] ${
+                  className={`group relative max-w-[90%] sm:max-w-[85%] ${
                     message.sender === 'user'
-                      ? 'rounded-3xl rounded-br-md'
-                      : 'rounded-3xl rounded-bl-md'
+                      ? 'rounded-2xl sm:rounded-3xl rounded-br-md'
+                      : 'rounded-2xl sm:rounded-3xl rounded-bl-md'
                   } transition-all duration-200 hover:scale-[1.01]`}
                 >
                   {message.sender === 'bot' && (
-                    <div className="flex items-center gap-2 mb-2 ml-1">
-                      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                        <Zap className="h-4 w-4 text-white" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 ml-1">
+                      <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                        <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
-                      <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-400">AI Assistant</span>
                     </div>
                   )}
                   <div
-                    className={`p-4 ${
+                    className={`p-3 sm:p-4 ${
                       message.sender === 'user'
                         ? 'bg-gradient-to-br from-purple-600 via-fuchsia-500 to-cyan-500 text-white shadow-lg shadow-purple-500/20'
                         : 'bg-white/5 backdrop-blur-xl text-white border border-white/10 shadow-lg'
                     } ${
                       message.sender === 'user'
-                        ? 'rounded-3xl rounded-br-md'
-                        : 'rounded-3xl rounded-bl-md'
+                        ? 'rounded-2xl sm:rounded-3xl rounded-br-md'
+                        : 'rounded-2xl sm:rounded-3xl rounded-bl-md'
                     }`}
                   >
-                    <div className="leading-relaxed text-sm">{renderMarkdown(message.text)}</div>
+                    <div className="leading-relaxed text-xs sm:text-sm">{renderMarkdown(message.text)}</div>
                   </div>
                   {message.sender === 'user' && (
                     <div className="flex items-center justify-end gap-2 mt-1 mr-1">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-[10px] sm:text-xs text-gray-500">
                         {message.timestamp.toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -656,21 +656,21 @@ How can I help you today?`,
             ))}
             {isTyping && (
               <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <div className="flex flex-col gap-2 ml-1">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                      <Zap className="h-4 w-4 text-white" />
+                <div className="flex flex-col gap-1.5 sm:gap-2 ml-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                    <span className="text-[10px] sm:text-xs font-semibold text-gray-400">AI Assistant</span>
                   </div>
-                  <div className="bg-white/5 backdrop-blur-xl text-white rounded-3xl rounded-bl-md p-4 shadow-lg border border-white/10">
-                    <div className="flex items-center gap-2">
+                  <div className="bg-white/5 backdrop-blur-xl text-white rounded-2xl sm:rounded-3xl rounded-bl-md p-3 sm:p-4 shadow-lg border border-white/10">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
-                      <span className="text-xs text-gray-400">Thinking...</span>
+                      <span className="text-[10px] sm:text-xs text-gray-400">Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -680,7 +680,7 @@ How can I help you today?`,
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
+          <div className="p-3 sm:p-4 border-t border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
             <div className="relative">
               <textarea
                 ref={textareaRef}
@@ -688,19 +688,19 @@ How can I help you today?`,
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about your profile or request a cover letter..."
-                className="w-full pl-4 pr-14 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-white placeholder-gray-500 resize-none transition-all duration-200 min-h-[56px] max-h-[120px] shadow-lg hover:bg-white/10"
+                className="w-full pl-3 sm:pl-4 pr-12 sm:pr-14 py-3 sm:py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-white placeholder-gray-500 resize-none transition-all duration-200 min-h-[48px] sm:min-h-[56px] max-h-[120px] shadow-lg hover:bg-white/10 text-sm sm:text-base"
                 rows={1}
                 style={{
                   height: 'auto',
-                  minHeight: '56px'
+                  minHeight: '48px'
                 }}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isTyping}
-                className="absolute right-2 bottom-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 hover:shadow-lg hover:shadow-purple-500/50 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-xl p-3 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
+                className="absolute right-1.5 sm:right-2 bottom-1.5 sm:bottom-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 hover:shadow-lg hover:shadow-purple-500/50 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>

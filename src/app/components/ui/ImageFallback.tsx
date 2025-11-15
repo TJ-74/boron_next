@@ -7,10 +7,11 @@ import { Loader2 } from 'lucide-react';
 interface ImageFallbackProps {
   src: string;
   alt: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   className?: string;
   fallback?: string;
+  fill?: boolean;
 }
 
 export default function ImageFallback({
@@ -19,7 +20,8 @@ export default function ImageFallback({
   width,
   height,
   className = '',
-  fallback = '/user.png'
+  fallback = '/user.png',
+  fill = false
 }: ImageFallbackProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -45,16 +47,21 @@ export default function ImageFallback({
     }
   }, [error, imgSrc, src]);
 
+  const containerStyle = fill ? {} : (width && height ? { width, height } : {});
+  const imageProps = fill 
+    ? { fill: true, sizes: '(max-width: 768px) 64px, (max-width: 1024px) 80px, 112px' }
+    : { width: width || 112, height: height || 112 };
+
   return (
-    <div className={`relative ${className}`} style={{ width, height }}>
+    <div className={`relative ${fill ? 'w-full h-full' : ''}`} style={containerStyle}>
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30 z-10">
           <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
         </div>
       )}
       
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30 z-10">
           
         </div>
       )}
@@ -62,9 +69,8 @@ export default function ImageFallback({
       <Image
         src={error ? fallback : imgSrc}
         alt={alt}
-        width={width}
-        height={height}
-        className={`${className} ${error ? 'opacity-70' : ''}`}
+        {...imageProps}
+        className={`${fill ? 'object-cover' : ''} ${className} ${error ? 'opacity-70' : ''}`}
         onLoad={() => setLoading(false)}
         onError={() => {
           if (!error) {
@@ -72,6 +78,7 @@ export default function ImageFallback({
             setLoading(false);
           }
         }}
+        unoptimized={imgSrc.startsWith('/api/')}
       />
     </div>
   );

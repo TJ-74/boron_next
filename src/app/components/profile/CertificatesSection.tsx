@@ -140,105 +140,106 @@ export default function CertificatesSection({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
             <Award className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Certifications & Credentials</h2>
-            <p className="text-sm text-gray-400">Showcase your professional achievements</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Certifications & Credentials</h2>
+            <p className="text-xs sm:text-sm text-gray-400">Showcase your professional achievements</p>
           </div>
         </div>
 
         <button
           onClick={() => setIsAdding(true)}
           disabled={isAdding || isLoading}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
         >
-          <Plus className="h-4 w-4" />
-          Add Certificate
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Add Certificate</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
       {/* Add Certificate Form */}
       {isAdding && (
-        <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
-          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Plus className="h-4 w-4 text-purple-400" />
+        <div className="rounded-2xl shadow-2xl border border-white/10 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-4 sm:mb-6 flex items-center gap-2">
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
             </div>
             Add New Certificate
           </h3>
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                   Certificate Name
                 </label>
                 <input
                   type="text"
                   value={newCertificate.name}
                   onChange={(e) => setNewCertificate({...newCertificate, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                   placeholder="AWS Certified Solutions Architect"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                   Issuing Organization
                 </label>
                 <input
                   type="text"
                   value={newCertificate.issuer}
                   onChange={(e) => setNewCertificate({...newCertificate, issuer: e.target.value})}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                   placeholder="Amazon Web Services"
                   disabled={isLoading}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                   Issue Date
                 </label>
                 <input
                   type="month"
                   value={newCertificate.issueDate}
                   onChange={(e) => setNewCertificate({...newCertificate, issueDate: e.target.value})}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm sm:text-base"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                   Expiry Date (Optional)
                 </label>
                 <input
                   type="month"
                   value={newCertificate.expiryDate}
                   onChange={(e) => setNewCertificate({...newCertificate, expiryDate: e.target.value})}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm sm:text-base"
                   disabled={isLoading}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                 Credential URL (Optional)
               </label>
               <input
                 type="url"
                 value={newCertificate.credentialUrl}
                 onChange={(e) => setNewCertificate({...newCertificate, credentialUrl: e.target.value})}
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                 placeholder="https://www.credly.com/badges/..."
                 disabled={isLoading}
               />
@@ -250,37 +251,39 @@ export default function CertificatesSection({
                 id="includeInResume"
                 checked={newCertificate.includeInResume}
                 onChange={(e) => setNewCertificate({...newCertificate, includeInResume: e.target.checked})}
-                className="h-5 w-5 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
+                className="h-4 w-4 sm:h-5 sm:w-5 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
                 disabled={isLoading}
               />
-              <label htmlFor="includeInResume" className="text-sm font-semibold text-gray-300">
+              <label htmlFor="includeInResume" className="text-xs sm:text-sm font-semibold text-gray-300">
                 Include in Resume
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">
               <button
                 onClick={cancelAdding}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs sm:text-sm w-full sm:w-auto"
                 disabled={isLoading}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Cancel
               </button>
               <button
                 onClick={handleAdd}
                 disabled={!newCertificate.name || !newCertificate.issuer || !newCertificate.issueDate || isLoading}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
               >
                 {isLoading ? (
                   <>
-                    <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-                    Saving...
+                    <div className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span className="hidden sm:inline">Saving...</span>
+                    <span className="sm:hidden">Saving</span>
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4" />
-                    Save Certificate
+                    <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Save Certificate</span>
+                    <span className="sm:hidden">Save</span>
                   </>
                 )}
               </button>
@@ -302,10 +305,11 @@ export default function CertificatesSection({
             </p>
             <button
               onClick={() => setIsAdding(true)}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 transition-all font-semibold shadow-sm hover:shadow-md"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 transition-all font-semibold shadow-sm hover:shadow-md text-sm sm:text-base"
             >
-              <Plus className="h-5 w-5" />
-              Add Your First Certificate
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Add Your First Certificate</span>
+              <span className="sm:hidden">Add Certificate</span>
             </button>
           </div>
         )}
@@ -319,72 +323,72 @@ export default function CertificatesSection({
           >
             {editingId === certificate.id ? (
               // Edit mode
-              <div className="p-6">
-                <h4 className="text-sm font-bold text-white mb-4">Edit Certificate</h4>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 sm:p-6">
+                <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Edit Certificate</h4>
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                         Certificate Name
                       </label>
                       <input
                         type="text"
                         value={editCertificate?.name}
                         onChange={(e) => setEditCertificate(prev => prev ? {...prev, name: e.target.value} : null)}
-                        className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                        className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                         disabled={isLoading}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                         Issuing Organization
                       </label>
                       <input
                         type="text"
                         value={editCertificate?.issuer}
                         onChange={(e) => setEditCertificate(prev => prev ? {...prev, issuer: e.target.value} : null)}
-                        className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                        className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                         disabled={isLoading}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                         Issue Date
                       </label>
                       <input
                         type="month"
                         value={editCertificate?.issueDate}
                         onChange={(e) => setEditCertificate(prev => prev ? {...prev, issueDate: e.target.value} : null)}
-                        className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                        className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                         disabled={isLoading}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                         Expiry Date (Optional)
                       </label>
                       <input
                         type="month"
                         value={editCertificate?.expiryDate}
                         onChange={(e) => setEditCertificate(prev => prev ? {...prev, expiryDate: e.target.value} : null)}
-                        className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                        className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                         disabled={isLoading}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                       Credential URL (Optional)
                     </label>
                     <input
                       type="url"
                       value={editCertificate?.credentialUrl}
                       onChange={(e) => setEditCertificate(prev => prev ? {...prev, credentialUrl: e.target.value} : null)}
-                      className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                      className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                       disabled={isLoading}
                     />
                   </div>
@@ -395,18 +399,18 @@ export default function CertificatesSection({
                       id={`includeInResume-${certificate.id}`}
                       checked={editCertificate?.includeInResume}
                       onChange={(e) => setEditCertificate(prev => prev ? {...prev, includeInResume: e.target.checked} : null)}
-                      className="h-4 w-4 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
                       disabled={isLoading}
                     />
-                    <label htmlFor={`includeInResume-${certificate.id}`} className="text-sm font-semibold text-gray-300">
+                    <label htmlFor={`includeInResume-${certificate.id}`} className="text-xs sm:text-sm font-semibold text-gray-300">
                       Include in Resume
                     </label>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 pt-3 sm:pt-4 border-t border-white/10">
                     <button
                       onClick={cancelEditing}
-                      className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs"
+                      className="inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs w-full sm:w-auto"
                       disabled={isLoading}
                     >
                       <X className="h-3 w-3" />
@@ -415,11 +419,11 @@ export default function CertificatesSection({
                     <button
                       onClick={handleUpdate}
                       disabled={!editCertificate?.name || !editCertificate?.issuer || !editCertificate?.issueDate || isLoading}
-                      className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                      className="inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all font-medium text-xs shadow-sm disabled:opacity-50 w-full sm:w-auto"
                     >
                       {isLoading ? (
                         <>
-                          <div className="animate-spin h-3 w-3 mr-1 border border-white border-t-transparent rounded-full"></div>
+                          <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full"></div>
                           Saving...
                         </>
                       ) : (
@@ -434,21 +438,21 @@ export default function CertificatesSection({
               </div>
             ) : (
               // View mode
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4">
-                    <div className="relative">
-                      <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-3 rounded-xl">
-                        <Award className="h-6 w-6 text-amber-600" />
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-3 sm:gap-0 mb-4">
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                    <div className="relative flex-shrink-0">
+                      <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-2 sm:p-3 rounded-xl">
+                        <Award className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                       </div>
                       {certificate.includeInResume && (
-                        <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500 rounded-full border-2 border-white"></div>
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-white truncate">
+                        <h3 className="text-base sm:text-lg font-bold text-white break-words">
                           {certificate.name}
                         </h3>
                         {certificate.credentialUrl && (
@@ -458,23 +462,23 @@ export default function CertificatesSection({
                             rel="noopener noreferrer"
                             className="flex-shrink-0 p-1.5 rounded-lg text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-all"
                           >
-                            <LinkIcon className="h-4 w-4" />
+                            <LinkIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </a>
                         )}
                       </div>
 
-                      <p className="text-gray-400 font-medium mb-2">
+                      <p className="text-xs sm:text-sm text-gray-400 font-medium mb-2 break-words">
                         Issued by {certificate.issuer}
                       </p>
 
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           <span>{formatDate(certificate.issueDate)}</span>
                         </div>
                         {certificate.expiryDate && (
                           <>
-                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-400 hidden sm:inline">•</span>
                             <span>Expires {formatDate(certificate.expiryDate)}</span>
                           </>
                         )}
@@ -482,8 +486,8 @@ export default function CertificatesSection({
                     </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Action buttons - right side on all screens */}
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity self-start sm:self-auto ml-auto sm:ml-0">
                     <button
                       onClick={() => handleToggleIncludeInResume(certificate)}
                       className={`p-2 rounded-lg transition-all ${

@@ -144,7 +144,7 @@ export default function ResumeParserModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] flex flex-col mx-2 sm:mx-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -241,35 +241,35 @@ export default function ResumeParserModal({
                             </label>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                           {parsedData.name && (
                             <div>
                               <span className="text-gray-400">Name:</span>
-                              <span className="text-white ml-2">{parsedData.name}</span>
+                              <span className="text-white ml-2 break-words">{parsedData.name}</span>
                             </div>
                           )}
                           {parsedData.email && (
                             <div>
                               <span className="text-gray-400">Email:</span>
-                              <span className="text-white ml-2">{parsedData.email}</span>
+                              <span className="text-white ml-2 break-all">{parsedData.email}</span>
                             </div>
                           )}
                           {parsedData.phone && (
                             <div>
                               <span className="text-gray-400">Phone:</span>
-                              <span className="text-white ml-2">{parsedData.phone}</span>
+                              <span className="text-white ml-2 break-words">{parsedData.phone}</span>
                             </div>
                           )}
                           {parsedData.location && (
                             <div>
                               <span className="text-gray-400">Location:</span>
-                              <span className="text-white ml-2">{parsedData.location}</span>
+                              <span className="text-white ml-2 break-words">{parsedData.location}</span>
                             </div>
                           )}
                           {parsedData.title && (
-                            <div className="col-span-2">
+                            <div className="col-span-1 sm:col-span-2">
                               <span className="text-gray-400">Title:</span>
-                              <span className="text-white ml-2">{parsedData.title}</span>
+                              <span className="text-white ml-2 break-words">{parsedData.title}</span>
                             </div>
                           )}
                         </div>
@@ -519,22 +519,23 @@ export default function ResumeParserModal({
           )}
         </div>
 
-        <DialogFooter className="flex items-center justify-between">
-          <div className="flex-1">
+        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-2">
+          <div className="flex-1 min-w-0">
             {isApplying && applyProgress && (
-              <p className="text-sm text-gray-400">{applyProgress}</p>
+              <p className="text-xs sm:text-sm text-gray-400 break-words">{applyProgress}</p>
             )}
             {!isApplying && parsedData && onApply && (
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500">
                 {selectedSections.size} section{selectedSections.size !== 1 ? 's' : ''} selected
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               onClick={onClose}
               disabled={isLoading || isApplying}
+              className="w-full sm:w-auto"
             >
               Close
             </Button>
@@ -542,15 +543,19 @@ export default function ResumeParserModal({
               <Button
                 onClick={() => onApply(parsedData, Array.from(selectedSections))}
                 disabled={isLoading || isApplying || selectedSections.size === 0}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 {isApplying ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Applying...
+                    <span className="hidden sm:inline">Applying...</span>
+                    <span className="sm:hidden">Applying</span>
                   </>
                 ) : (
-                  `Apply Selected (${selectedSections.size})`
+                  <>
+                    <span className="hidden sm:inline">Apply Selected ({selectedSections.size})</span>
+                    <span className="sm:hidden">Apply ({selectedSections.size})</span>
+                  </>
                 )}
               </Button>
             )}

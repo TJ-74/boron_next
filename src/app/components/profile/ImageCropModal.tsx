@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
 import { Button } from '@/app/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -157,6 +158,15 @@ export default function ImageCropModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Reset state when modal opens/closes or imageUrl changes
+  useEffect(() => {
+    if (open && imageUrl) {
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    }
+  }, [open, imageUrl]);
+
   const onCropChange = useCallback((location: Point) => {
     setCrop(location);
   }, []);
@@ -173,7 +183,10 @@ export default function ImageCropModal({
   );
 
   const handleSave = useCallback(async () => {
-    if (!croppedAreaPixels) return;
+    if (!croppedAreaPixels) {
+      console.warn('No cropped area selected');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -182,35 +195,55 @@ export default function ImageCropModal({
       onClose();
     } catch (e) {
       console.error('Error cropping image:', e);
+      alert('Failed to crop image. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }, [croppedAreaPixels, imageUrl, onCropComplete, onClose]);
 
+
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        onClose();
+      }
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Crop Profile Image</DialogTitle>
         </DialogHeader>
 
-        <div className="relative w-full h-80 bg-gray-900 overflow-hidden rounded-md">
-          {imageUrl && (
-            <Cropper
-              image={imageUrl}
-              crop={crop}
-              zoom={zoom}
-              aspect={1}
-              onCropChange={onCropChange}
-              onZoomChange={onZoomChange}
-              onCropComplete={onCropCompleteCallback}
-              cropShape="round"
-              showGrid={false}
-              classes={{
-                containerClassName: 'w-full h-full',
-                cropAreaClassName: 'border-2 border-white',
+        <div className="relative w-full h-80 bg-gray-900 overflow-hidden rounded-md" style={{ minHeight: '320px' }}>
+          {!imageUrl || imageUrl === '' ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-gray-400">No image selected</p>
+            </div>
+          ) : (
+            <div 
+              className="relative" 
+              style={{ 
+                position: 'relative', 
+                width: '100%', 
+                height: '100%',
+                minHeight: '320px'
               }}
-            />
+            >
+              <Cropper
+                image={imageUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={onCropChange}
+                onZoomChange={onZoomChange}
+                onCropComplete={onCropCompleteCallback}
+                cropShape="round"
+                showGrid={false}
+                classes={{
+                  containerClassName: 'w-full h-full',
+                  cropAreaClassName: 'border-2 border-white',
+                }}
+              />
+            </div>
           )}
         </div>
 

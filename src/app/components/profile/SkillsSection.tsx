@@ -303,54 +303,56 @@ export default function SkillsSection({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
             <Code className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Skills & Technologies</h2>
-            <p className="text-sm text-gray-400">Showcase your technical expertise</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Skills & Technologies</h2>
+            <p className="text-xs sm:text-sm text-gray-400">Showcase your technical expertise</p>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleGenerateSkills}
             disabled={isAdding || isLoading || !!editingSkill || isGeneratingSkills}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
           >
-            <Sparkles className="h-4 w-4" />
-            {isGeneratingSkills ? 'Generating...' : 'AI Generate'}
+            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">{isGeneratingSkills ? 'Generating...' : 'AI Generate'}</span>
+            <span className="sm:hidden">{isGeneratingSkills ? 'Generating' : 'AI'}</span>
           </button>
           <button
             onClick={() => setIsAdding(true)}
             disabled={isAdding || isLoading || !!editingSkill || isGeneratingSkills}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
           >
-            <Plus className="h-4 w-4" />
-            Add Skill
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Add Skill</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
 
       {/* Add Skill Form */}
       {isAdding && (
-        <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
-          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center">
-              <Plus className="h-4 w-4 text-purple-400" />
+        <div className="rounded-2xl shadow-2xl border border-white/10 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-4 sm:mb-6 flex items-center gap-2">
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
             </div>
             {generatedSkills.length > 0 ? 'Select Skills to Add' : 'Add New Skill'}
           </h3>
 
           {/* AI Generated Skills */}
           {generatedSkills.length > 0 ? (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300 font-medium">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                <span className="text-xs sm:text-sm text-gray-300 font-medium">
                   Select the skills you want to add to your profile:
                 </span>
                 <button
@@ -362,98 +364,106 @@ export default function SkillsSection({
                     });
                     setSelectedSkills(newSelection);
                   }}
-                  className="text-sm text-purple-400 hover:text-violet-700 font-medium"
+                  className="text-xs sm:text-sm text-purple-400 hover:text-violet-700 font-medium"
                 >
                   {Object.values(selectedSkills).every(Boolean) ? 'Deselect All' : 'Select All'}
                 </button>
               </div>
 
-              <div className="max-h-60 overflow-y-auto border border-white/10 rounded-xl p-4 bg-white/5 backdrop-blur-xl">
+              <div className="max-h-60 overflow-y-auto border border-white/10 rounded-xl p-3 sm:p-4 bg-white/5 backdrop-blur-xl">
                 {generatedSkills.map((skill, index) => (
-                  <div key={index} className="flex items-center py-3 border-b border-white/10 last:border-b-0">
+                  <div key={index} className="flex items-center py-2.5 sm:py-3 border-b border-white/10 last:border-b-0">
                     <input
                       type="checkbox"
                       id={`skill-${index}`}
                       checked={selectedSkills[index] || false}
                       onChange={() => toggleSkillSelection(index)}
-                      className="h-4 w-4 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
+                      className="h-4 w-4 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
                     />
-                    <label htmlFor={`skill-${index}`} className="ml-3 flex-1 flex items-center justify-between">
-                      <span className="text-white font-medium">{skill.name}</span>
-                      <span className="text-gray-400 text-sm bg-white/10 backdrop-blur-xl px-2 py-1 rounded-lg">{skill.domain}</span>
+                    <label htmlFor={`skill-${index}`} className="ml-3 flex-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0 min-w-0">
+                      <span className="text-white font-medium text-sm sm:text-base break-words">{skill.name}</span>
+                      <span className="text-gray-400 text-xs sm:text-sm bg-white/10 backdrop-blur-xl px-2 py-1 rounded-lg whitespace-nowrap">{skill.domain}</span>
                     </label>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">
                 <button
                   onClick={cancelAdding}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
+                  className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs sm:text-sm w-full sm:w-auto"
                   disabled={isLoading}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Cancel
                 </button>
                 <button
                   onClick={addSelectedSkills}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
                   disabled={isLoading || Object.values(selectedSkills).filter(Boolean).length === 0}
                 >
-                  <Save className="h-4 w-4" />
-                  {isLoading
-                    ? (savingProgress || 'Adding...')
-                    : `Add Selected Skills (${Object.values(selectedSkills).filter(Boolean).length})`}
+                  <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">
+                    {isLoading
+                      ? (savingProgress || 'Adding...')
+                      : `Add Selected Skills (${Object.values(selectedSkills).filter(Boolean).length})`}
+                  </span>
+                  <span className="sm:hidden">
+                    {isLoading
+                      ? (savingProgress || 'Adding...')
+                      : `Add (${Object.values(selectedSkills).filter(Boolean).length})`}
+                  </span>
                 </button>
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                     Domain
                   </label>
                   <input
                     type="text"
                     value={newDomain}
                     onChange={(e) => setNewDomain(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                     placeholder="e.g., Web Development, Data Science"
                     disabled={isLoading}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                     Skill Name
                   </label>
                   <input
                     type="text"
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                     placeholder="e.g., JavaScript, Python"
                     disabled={isLoading}
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">
                 <button
                   onClick={cancelAdding}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
+                  className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs sm:text-sm w-full sm:w-auto"
                   disabled={isLoading}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Cancel
                 </button>
                 <button
                   onClick={handleAdd}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
                   disabled={isLoading || !newSkill.trim() || !newDomain.trim()}
                 >
-                  <Save className="h-4 w-4" />
-                  {isLoading ? 'Saving...' : 'Save Skill'}
+                  <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Save Skill'}</span>
+                  <span className="sm:hidden">{isLoading ? 'Saving...' : 'Save'}</span>
                 </button>
               </div>
             </div>
@@ -472,67 +482,67 @@ export default function SkillsSection({
             <p className="text-gray-400 mb-6 max-w-md mx-auto">
               Showcase your technical skills and expertise. Add skills manually or use AI to generate them based on your experience and projects.
             </p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
               <button
                 onClick={() => setIsAdding(true)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold text-sm sm:text-base"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 Add Skill
               </button>
               <button
                 onClick={handleGenerateSkills}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold "
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold text-sm sm:text-base"
               >
-                <Sparkles className="h-5 w-5" />
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
                 AI Generate
               </button>
             </div>
           </div>
         ) : (
           sortedDomains.map((domain, domainIndex) => (
-            <div key={domain} className="rounded-2xl shadow-2xl border border-white/10 p-6 group hover:shadow-2xl transition-all duration-200">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center">
-                    <Layers className="h-4 w-4 text-purple-400" />
+            <div key={domain} className="rounded-2xl shadow-2xl border border-white/10 p-4 sm:p-6 group hover:shadow-2xl transition-all duration-200">
+              <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                    <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">{domain}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-white break-words">{domain}</h3>
                 </div>
 
                 {/* Domain reorder buttons */}
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <button
                     onClick={() => handleMoveDomain(domainIndex, 'up')}
                     disabled={domainIndex === 0 || isLoading}
-                    className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 sm:p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => handleMoveDomain(domainIndex, 'down')}
                     disabled={domainIndex === sortedDomains.length - 1 || isLoading}
-                    className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 sm:p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {groupedSkills[domain].map((skill) => (
                   <div key={skill.id}>
                     {editingSkill && editingSkill.id === skill.id ? (
                       // Edit form in place for this skill
-                      <div className="rounded-xl border-2 border-purple-400/50 p-4 shadow-2xl">
-                        <h4 className="text-sm font-bold text-white mb-3">Edit Skill</h4>
-                        <div className="space-y-3">
+                      <div className="rounded-xl border-2 border-purple-400/50 p-3 sm:p-4 shadow-2xl">
+                        <h4 className="text-xs sm:text-sm font-bold text-white mb-2 sm:mb-3">Edit Skill</h4>
+                        <div className="space-y-2 sm:space-y-3">
                           <div>
                             <label className="block text-xs font-semibold text-gray-300 mb-1">Domain</label>
                             <input
                               type="text"
                               value={editingSkill.domain}
                               onChange={(e) => setEditingSkill({...editingSkill, domain: e.target.value})}
-                              className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                              className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                               disabled={isLoading}
                             />
                           </div>
@@ -542,7 +552,7 @@ export default function SkillsSection({
                               type="text"
                               value={editingSkill.name}
                               onChange={(e) => setEditingSkill({...editingSkill, name: e.target.value})}
-                              className="w-full px-3 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm"
+                              className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-xs sm:text-sm"
                               disabled={isLoading}
                             />
                           </div>
@@ -552,17 +562,17 @@ export default function SkillsSection({
                               id={`includeSkill-${skill.id}`}
                               checked={editingSkill.includeInResume !== false}
                               onChange={(e) => setEditingSkill({...editingSkill, includeInResume: e.target.checked})}
-                              className="h-4 w-4 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
+                              className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
                               disabled={isLoading}
                             />
-                            <label htmlFor={`includeSkill-${skill.id}`} className="ml-2 block text-sm font-semibold text-gray-300">
+                            <label htmlFor={`includeSkill-${skill.id}`} className="ml-2 block text-xs sm:text-sm font-semibold text-gray-300">
                               Include in Resume
                             </label>
                           </div>
-                          <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+                          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2 border-t border-white/10">
                             <button
                               onClick={cancelEditing}
-                              className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs"
+                              className="inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs w-full sm:w-auto"
                               disabled={isLoading}
                             >
                               <X className="h-3 w-3" />
@@ -570,7 +580,7 @@ export default function SkillsSection({
                             </button>
                             <button
                               onClick={handleUpdate}
-                              className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                              className="inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50 w-full sm:w-auto"
                               disabled={isLoading || !editingSkill.name.trim() || !editingSkill.domain.trim()}
                             >
                               <Save className="h-3 w-3" />
@@ -582,27 +592,27 @@ export default function SkillsSection({
                     ) : (
                       // Normal skill display
                       <div
-                        className={`border rounded-xl p-4 transition-all duration-200 hover:shadow-2xl shadow-2xl group cursor-pointer ${
+                        className={`border rounded-xl p-3 sm:p-4 transition-all duration-200 hover:shadow-2xl shadow-2xl group cursor-pointer ${
                           skill.includeInResume === false
                             ? 'border-white/20 opacity-75'
                             : 'border-white/10 hover:border-purple-400/50'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 p-2 rounded-lg">
-                                <Code className="h-4 w-4 text-purple-400" />
+                        <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                            <div className="relative flex-shrink-0">
+                              <div className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 p-1.5 sm:p-2 rounded-lg">
+                                <Code className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
                               </div>
                               {skill.includeInResume !== false && (
-                                <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-green-500 rounded-full border border-white"></div>
+                                <div className="absolute -top-1 -right-1 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-green-500 rounded-full border border-white"></div>
                               )}
                             </div>
-                            <span className="font-semibold text-white">{skill.name}</span>
+                            <span className="font-semibold text-white text-sm sm:text-base break-words">{skill.name}</span>
                           </div>
 
                           {/* Action buttons */}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
                             {onUpdate && (
                               <>
                                 <button
@@ -615,14 +625,14 @@ export default function SkillsSection({
                                   disabled={isLoading}
                                   title={skill.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
                                 >
-                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleEdit(skill)}
                                   className="p-1.5 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-violet-50 transition-all"
                                   disabled={isLoading}
                                 >
-                                  <PenSquare className="h-3.5 w-3.5" />
+                                  <PenSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </button>
                               </>
                             )}
@@ -631,7 +641,7 @@ export default function SkillsSection({
                               className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
                               disabled={isLoading}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             </button>
                           </div>
                         </div>

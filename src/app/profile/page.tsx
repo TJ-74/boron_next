@@ -1308,7 +1308,7 @@ ${projectSection}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
         </div>
 
-        <div className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-8 transition-all duration-300 ${isChatBotOpen ? 'mr-[480px]' : ''}`}>
+        <div className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-32 pb-8 transition-all duration-300 ${isChatBotOpen ? 'lg:mr-[480px]' : ''}`}>
           {/* Profile Header Card */}
           <div className="mb-8">
             <ProfileHeader 
@@ -1332,38 +1332,38 @@ ${projectSection}
           
           {/* Save Status Floating Indicator */}
           {saveStatus !== 'idle' && (
-            <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-right duration-300">
+            <div className="fixed top-16 sm:top-20 right-4 sm:right-6 z-50 animate-in slide-in-from-right duration-300 max-w-[calc(100vw-2rem)]">
               {saveStatus === 'saving' && (
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-3 rounded-xl shadow-2xl border border-white/20">
-                  <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
-                  <span className="text-sm font-semibold text-white">Saving changes...</span>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-3 rounded-xl shadow-2xl border border-white/20">
+                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 animate-spin" />
+                  <span className="text-xs sm:text-sm font-semibold text-white">Saving changes...</span>
                 </div>
               )}
               {saveStatus === 'success' && (
-                <div className="flex items-center gap-2 bg-green-500/10 backdrop-blur-xl px-4 py-3 rounded-xl shadow-2xl border border-green-500/30">
-                  <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center gap-2 bg-green-500/10 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-3 rounded-xl shadow-2xl border border-green-500/30">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-sm font-semibold text-white">Saved successfully!</span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">Saved successfully!</span>
                 </div>
               )}
               {saveStatus === 'error' && (
-                <div className="flex items-center gap-2 bg-red-500/10 backdrop-blur-xl px-4 py-3 rounded-xl shadow-2xl border border-red-500/30">
-                  <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center gap-2 bg-red-500/10 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-3 rounded-xl shadow-2xl border border-red-500/30">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="text-sm font-semibold text-white">Error saving</span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">Error saving</span>
                 </div>
               )}
             </div>
           )}
           
           {/* Modern Tabs Navigation */}
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-2 mb-6">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-1.5 sm:p-2 mb-6">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0 snap-x snap-mandatory">
               <button
                 onClick={() => setActiveTab('about')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 font-semibold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 flex-shrink-0 snap-start min-w-fit ${
                   activeTab === 'about' 
                     ? 'text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1371,19 +1371,19 @@ ${projectSection}
               >
                 {activeTab === 'about' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-lg sm:rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
                     }}
                   />
                 )}
-                <UserCircle className="h-5 w-5 relative z-10" />
+                <UserCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 relative z-10 flex-shrink-0" />
                 <span className="relative z-10">About</span>
               </button>
               <button
                 onClick={() => setActiveTab('experience')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 font-semibold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 flex-shrink-0 snap-start min-w-fit ${
                   activeTab === 'experience' 
                     ? 'text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1391,19 +1391,19 @@ ${projectSection}
               >
                 {activeTab === 'experience' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-lg sm:rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
                     }}
                   />
                 )}
-                <Briefcase className="h-5 w-5 relative z-10" />
+                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 relative z-10 flex-shrink-0" />
                 <span className="relative z-10">Experience</span>
               </button>
               <button
                 onClick={() => setActiveTab('education')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 font-semibold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 flex-shrink-0 snap-start min-w-fit ${
                   activeTab === 'education' 
                     ? 'text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1411,19 +1411,19 @@ ${projectSection}
               >
                 {activeTab === 'education' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-lg sm:rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
                     }}
                   />
                 )}
-                <GraduationCap className="h-5 w-5 relative z-10" />
+                <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 relative z-10 flex-shrink-0" />
                 <span className="relative z-10">Education</span>
               </button>
               <button
                 onClick={() => setActiveTab('certificates')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 font-semibold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 flex-shrink-0 snap-start min-w-fit ${
                   activeTab === 'certificates' 
                     ? 'text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1431,19 +1431,19 @@ ${projectSection}
               >
                 {activeTab === 'certificates' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-lg sm:rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
                     }}
                   />
                 )}
-                <Award className="h-5 w-5 relative z-10" />
+                <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 relative z-10 flex-shrink-0" />
                 <span className="relative z-10">Certificates</span>
               </button>
               <button
                 onClick={() => setActiveTab('skills')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 font-semibold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 flex-shrink-0 snap-start min-w-fit ${
                   activeTab === 'skills' 
                     ? 'text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1451,19 +1451,19 @@ ${projectSection}
               >
                 {activeTab === 'skills' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-lg sm:rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
                     }}
                   />
                 )}
-                <Code className="h-5 w-5 relative z-10" />
+                <Code className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 relative z-10 flex-shrink-0" />
                 <span className="relative z-10">Skills</span>
               </button>
               <button
                 onClick={() => setActiveTab('projects')}
-                className={`relative flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 font-semibold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl whitespace-nowrap overflow-hidden transition-all duration-300 flex-shrink-0 snap-start min-w-fit ${
                   activeTab === 'projects' 
                     ? 'text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1471,14 +1471,14 @@ ${projectSection}
               >
                 {activeTab === 'projects' && (
                   <span 
-                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-xl shadow-lg shadow-purple-500/50"
+                    className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 rounded-lg sm:rounded-xl shadow-lg shadow-purple-500/50"
                     style={{
                       animation: 'slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                       transformOrigin: 'left center'
                     }}
                   />
                 )}
-                <FolderKanban className="h-5 w-5 relative z-10" />
+                <FolderKanban className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 relative z-10 flex-shrink-0" />
                 <span className="relative z-10">Projects</span>
               </button>
             </div>
@@ -1499,7 +1499,7 @@ ${projectSection}
           `}</style>
           
           {/* Tab Content Card */}
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8 min-h-[500px] overflow-hidden">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-4 sm:p-6 lg:p-8 min-h-[400px] sm:min-h-[500px] overflow-hidden">
             {/* About Tab */}
             {activeTab === 'about' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1583,14 +1583,14 @@ ${projectSection}
         {/* Floating ChatBot Button */}
         <button
           onClick={() => setIsChatBotOpen(!isChatBotOpen)}
-          className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-full shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-110 flex items-center justify-center group"
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-full shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-110 flex items-center justify-center group"
         >
           {isChatBotOpen ? (
-            <X className="h-7 w-7 group-hover:rotate-90 transition-transform duration-300" />
+            <X className="h-5 w-5 sm:h-7 sm:w-7 group-hover:rotate-90 transition-transform duration-300" />
           ) : (
-            <MessageSquare className="h-7 w-7 group-hover:scale-110 transition-transform duration-300" />
+            <MessageSquare className="h-5 w-5 sm:h-7 sm:w-7 group-hover:scale-110 transition-transform duration-300" />
           )}
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-slate-900 animate-pulse shadow-lg"></span>
+          <span className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-slate-900 animate-pulse shadow-lg"></span>
         </button>
 
         {/* PDF Viewer */}

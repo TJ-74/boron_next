@@ -5,14 +5,16 @@ import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import Navbar from '../components/ui/navbar';
 import { Button } from "@/app/components/ui/button";
-import { Loader2, FileText, Printer, User, Send, Zap, MessageSquare, Download } from 'lucide-react';
+import { Loader2, FileText, Printer, User, Send, Zap, MessageSquare, Download, X, Menu, Paperclip } from 'lucide-react';
+import ChatHistory from '../components/resume/ChatHistory';
+import ResumeCanvas from '../components/resume/ResumeCanvas';
 import { getUserProfileSummary } from '@/app/lib/userProfileService';
 import type { UserProfile } from '@/app/types/profile';
 import Link from 'next/link';
 import Image from 'next/image';
 import logo from "@/app/images/logo-no-background.png";
 
-interface ResumeData {
+export interface ResumeData {
   header: {
     name: string;
     title: string;
@@ -81,8 +83,8 @@ const renderMarkdown = (text: string) => {
     if (part.startsWith('```') && part.endsWith('```')) {
       const code = part.slice(3, -3).trim();
       return (
-        <pre key={partIndex} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-lg p-3 my-2 overflow-x-auto">
-          <code className="text-sm font-mono text-gray-300">{code}</code>
+        <pre key={partIndex} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-lg p-2 sm:p-3 my-1.5 sm:my-2 overflow-x-auto">
+          <code className="text-xs sm:text-sm font-mono text-gray-300">{code}</code>
         </pre>
       );
     }
@@ -94,9 +96,9 @@ const renderMarkdown = (text: string) => {
       if (line.trim().match(/^[•\-\*]\s/)) {
         const content = line.trim().replace(/^[•\-\*]\s/, '');
         return (
-          <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 my-1">
-            <span className="text-purple-400 mt-1">•</span>
-            <span>{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
+          <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 sm:gap-2 my-0.5 sm:my-1">
+            <span className="text-purple-400 mt-1 text-xs sm:text-sm">•</span>
+            <span className="text-xs sm:text-sm">{processInlineFormatting(content, `${partIndex}-${lineIndex}`)}</span>
           </div>
         );
       }
@@ -106,9 +108,9 @@ const renderMarkdown = (text: string) => {
         const match = line.trim().match(/^(\d+)\.\s(.+)$/);
         if (match) {
           return (
-            <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 my-1">
-              <span className="text-purple-400 font-medium">{match[1]}.</span>
-              <span>{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
+            <div key={`${partIndex}-${lineIndex}`} className="flex items-start gap-2 sm:gap-2 my-0.5 sm:my-1">
+              <span className="text-purple-400 font-medium text-xs sm:text-sm">{match[1]}.</span>
+              <span className="text-xs sm:text-sm">{processInlineFormatting(match[2], `${partIndex}-${lineIndex}`)}</span>
             </div>
           );
         }
@@ -141,7 +143,7 @@ const processInlineFormatting = (text: string, keyPrefix: string) => {
     { regex: /_(.+?)_/g, render: (match: string, content: string, i: number) => 
       <em key={`${keyPrefix}-italic2-${i}`} className="italic">{content}</em> },
     { regex: /`(.+?)`/g, render: (match: string, content: string, i: number) => 
-      <code key={`${keyPrefix}-code-${i}`} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 px-1.5 py-0.5 rounded text-sm font-mono text-purple-400">{content}</code> },
+      <code key={`${keyPrefix}-code-${i}`} className="bg-slate-800/50 backdrop-blur-xl border border-white/10 px-1 sm:px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono text-purple-400">{content}</code> },
   ];
   
   // Find all matches
@@ -267,7 +269,7 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
       color: #000;
       max-width: 8.5in;
       margin: 0 auto;
-      padding: 0.5in;
+      padding: 0.4in;
     }
     
     h1 {
@@ -358,7 +360,7 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
     @media print {
       @page {
         size: letter;
-        margin: 0.5in;
+        margin: 0.4in;
         /* Remove all browser-generated content */
         @top-left { content: ""; }
         @top-center { content: ""; }
@@ -471,7 +473,6 @@ const generatePDFWithText = async (resumeData: ResumeData) => {
             <span class="entry-title">${project.title}</span>
             <span class="entry-date">${formatPDFDate(project.startDate)} — ${formatPDFDate(project.endDate)}</span>
           </div>
-          ${project.technologies ? `<div style="font-size: 10px; margin-top: 2px; color: #555;"><em>Technologies: ${markdownToHtmlForPDF(project.technologies)}</em></div>` : ''}
           <ul class="bullet-list">
             ${project.highlights.map(highlight => `<li>${markdownToHtmlForPDF(highlight)}</li>`).join('')}
           </ul>
@@ -574,6 +575,17 @@ export default function ResumeGenerator() {
       content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
     }
   ]);
+  const [showResumeCanvas, setShowResumeCanvas] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatSessions, setChatSessions] = useState<Array<{
+    id: string;
+    title: string;
+    timestamp: Date;
+    messages: Message[];
+    apiMessages: ChatMessage[];
+    resumeData: ResumeData | null;
+  }>>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -585,6 +597,62 @@ export default function ResumeGenerator() {
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
   };
+
+  // Load chat sessions from localStorage on mount
+  useEffect(() => {
+    if (user?.uid) {
+      const savedSessions = localStorage.getItem(`chat-sessions-${user.uid}`);
+      if (savedSessions) {
+        try {
+          const parsed = JSON.parse(savedSessions);
+          const sessions = parsed.map((s: any) => ({
+            ...s,
+            timestamp: new Date(s.timestamp),
+            messages: s.messages.map((m: any) => ({
+              ...m,
+              timestamp: new Date(m.timestamp)
+            }))
+          }));
+          setChatSessions(sessions);
+          // Set current session to the most recent one
+          if (sessions.length > 0) {
+            const latest = sessions[sessions.length - 1];
+            setCurrentSessionId(latest.id);
+            setMessages(latest.messages);
+            setApiMessages(latest.apiMessages);
+            setResumeData(latest.resumeData);
+          }
+        } catch (error) {
+          console.error('Error loading chat sessions:', error);
+        }
+      } else {
+        // Create initial session
+        const initialSessionId = `session-${Date.now()}`;
+        setCurrentSessionId(initialSessionId);
+      }
+    }
+  }, [user?.uid]);
+
+  // Save current session to localStorage
+  useEffect(() => {
+    if (user?.uid && currentSessionId && messages.length > 1) {
+      const session = {
+        id: currentSessionId,
+        title: messages.find(m => m.sender === 'user')?.text.slice(0, 50) || 'New Chat',
+        timestamp: new Date(),
+        messages,
+        apiMessages,
+        resumeData
+      };
+      
+      setChatSessions(prev => {
+        const updated = prev.filter(s => s.id !== currentSessionId);
+        updated.push(session);
+        localStorage.setItem(`chat-sessions-${user.uid}`, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [messages, apiMessages, resumeData, currentSessionId, user?.uid]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -617,7 +685,7 @@ export default function ResumeGenerator() {
         width: 100%;
         max-width: 8.5in;
         margin: 0 auto;
-        padding: 0.75in;
+        padding: 0.4in;
         background-color: white;
         font-family: 'Times New Roman', Times, serif;
         line-height: 1.2;
@@ -632,7 +700,7 @@ export default function ResumeGenerator() {
         width: 100%;
         max-width: 8.5in;
         margin: 0 auto;
-        padding: 0.5in;
+        padding: 0.4in;
         background-color: white;
         font-family: 'Times New Roman', Times, serif;
         line-height: 1.2;
@@ -1256,6 +1324,61 @@ export default function ResumeGenerator() {
     }
   };
 
+  // Create new chat session
+  const createNewChat = () => {
+    const newSessionId = `session-${Date.now()}`;
+    setCurrentSessionId(newSessionId);
+    setMessages([{
+      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+      sender: 'bot',
+      timestamp: new Date(),
+    }]);
+    setApiMessages([{
+      role: 'assistant',
+      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+    }]);
+    setResumeData(null);
+    setShowResumeCanvas(false);
+  };
+
+  // Switch to a different chat session
+  const switchChatSession = (sessionId: string) => {
+    const session = chatSessions.find(s => s.id === sessionId);
+    if (session) {
+      console.log('Switching to session:', sessionId, session);
+      setCurrentSessionId(session.id);
+      setMessages(session.messages);
+      setApiMessages(session.apiMessages);
+      setResumeData(session.resumeData);
+      setShowResumeCanvas(false);
+      setInputValue('');
+      // Scroll to bottom after loading messages
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  };
+
+  // Delete a chat session
+  const deleteChatSession = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (user?.uid) {
+      const updated = chatSessions.filter(s => s.id !== sessionId);
+      setChatSessions(updated);
+      localStorage.setItem(`chat-sessions-${user.uid}`, JSON.stringify(updated));
+      
+      // If deleted session was current, switch to most recent or create new
+      if (sessionId === currentSessionId) {
+        if (updated.length > 0) {
+          const latest = updated[updated.length - 1];
+          switchChatSession(latest.id);
+        } else {
+          createNewChat();
+        }
+      }
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -1493,7 +1616,6 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           <div class="content-indent">
             <p class="entry-title"><strong>${project.title}</strong></p>
             <span class="date-text">${formatResumeDate(project.startDate)} — ${formatResumeDate(project.endDate)}</span>
-            ${project.technologies ? `<p style="font-size: 11px; margin-top: 4px; color: #555;"><em>Technologies: ${markdownToHtml(project.technologies)}</em></p>` : ''}
             <ul class="bullet-list">
               ${project.highlights.map(highlight => `<li>${markdownToHtml(highlight)}</li>`).join('')}
             </ul>
@@ -1727,48 +1849,79 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
         </div>
 
-        <div className="relative z-10 pt-20 h-screen">
-          <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-5rem)] divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden">
+        <div className="relative z-10 pt-16 sm:pt-20 h-screen flex">
+          {/* Chat History Sidebar */}
+          <ChatHistory
+            isOpen={showChatHistory}
+            sessions={chatSessions}
+            currentSessionId={currentSessionId}
+            onNewChat={createNewChat}
+            onSwitchSession={switchChatSession}
+            onDeleteSession={deleteChatSession}
+            onToggle={() => setShowChatHistory(!showChatHistory)}
+          />
+
+          <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] transition-all duration-500 ease-in-out">
+            <div className={`grid h-full divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden transition-all duration-500 ease-in-out ${
+              showResumeCanvas ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
+            }`}>
           {/* Left Column - Chat Interface */}
-          <div className="flex flex-col h-full overflow-hidden relative">
+          <div className="flex flex-col h-full overflow-hidden relative transition-all duration-500 ease-in-out">
             {/* Floating Save Button */}
-            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+            <div className="absolute top-2 sm:top-3 md:top-4 right-2 sm:right-3 md:right-4 z-20 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {saveStatus === 'saving' && (
-                <div className="flex items-center text-purple-400 text-xs bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 px-3 py-2 rounded-full shadow-lg">
-                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-                  Saving...
+                <div className="flex items-center text-purple-400 text-[10px] sm:text-xs bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full shadow-lg">
+                  <Loader2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 sm:mr-1.5 animate-spin" />
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Saving</span>
                 </div>
               )}
               {saveStatus === 'success' && (
-                <div className="flex items-center text-green-400 text-xs bg-green-500/10 backdrop-blur-xl border border-green-500/20 px-3 py-2 rounded-full shadow-lg">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1.5 animate-pulse"></div>
-                  Saved
+                <div className="flex items-center text-green-400 text-[10px] sm:text-xs bg-green-500/10 backdrop-blur-xl border border-green-500/20 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full shadow-lg">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-1 sm:mr-1.5 animate-pulse"></div>
+                  <span className="hidden sm:inline">Saved</span>
+                  <span className="sm:hidden">Saved</span>
                 </div>
               )}
               {saveStatus === 'error' && (
-                <div className="flex items-center text-red-400 text-xs bg-red-500/10 backdrop-blur-xl border border-red-500/20 px-3 py-2 rounded-full shadow-lg">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mr-1.5"></div>
-                  Error
+                <div className="flex items-center text-red-400 text-[10px] sm:text-xs bg-red-500/10 backdrop-blur-xl border border-red-500/20 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full shadow-lg">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full mr-1 sm:mr-1.5"></div>
+                  <span className="hidden sm:inline">Error</span>
+                  <span className="sm:hidden">Error</span>
                 </div>
+              )}
+
+              {resumeData && (
+                <button
+                  onClick={() => setShowResumeCanvas(!showResumeCanvas)}
+                  className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 text-white rounded-full hover:shadow-lg transition-all font-medium text-[10px] sm:text-xs shadow-lg"
+                  title={showResumeCanvas ? "Hide Resume Canvas" : "Show Resume Canvas"}
+                >
+                  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span className="hidden sm:inline">{showResumeCanvas ? 'Hide' : 'Show'} Canvas</span>
+                  <span className="sm:hidden">{showResumeCanvas ? '✕' : '📄'}</span>
+                </button>
               )}
 
               <button
                 onClick={() => resumeData && messages.length > 1 && saveResumeData(resumeData, messages)}
                 disabled={!resumeData || saveStatus === 'saving'}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-lg disabled:opacity-50 disabled:hover:shadow-lg"
+                className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-[10px] sm:text-xs shadow-lg disabled:opacity-50 disabled:hover:shadow-lg"
               >
-                💾 Save
+                <span className="hidden sm:inline">💾 Save</span>
+                <span className="sm:hidden">💾</span>
               </button>
             </div>
 
             {/* Messages */}
             <div
-              className="messages-container flex-1 overflow-y-scroll px-6 pt-16 pb-6 space-y-4 min-h-0"
+              className="messages-container flex-1 overflow-y-scroll pt-12 sm:pt-14 md:pt-16 pb-4 sm:pb-6 min-h-0 transition-all duration-500 ease-in-out"
               style={{
                 scrollbarWidth: 'thin',
                 scrollbarColor: '#64748b #1e293b'
               }}
             >
+              <div className={`space-y-3 sm:space-y-4 px-3 sm:px-4 md:px-6 transition-all duration-500 ease-in-out ${!showResumeCanvas ? 'max-w-4xl mx-auto' : ''}`}>
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -1777,36 +1930,22 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                   } animate-in fade-in slide-in-from-bottom-4 duration-300`}
                 >
                   <div
-                    className={`group relative max-w-[80%] ${
+                    className={`group relative max-w-[90%] sm:max-w-[85%] md:max-w-[80%] ${
                       message.sender === 'user'
-                        ? 'rounded-3xl rounded-br-md'
-                        : 'rounded-3xl rounded-bl-md'
+                        ? 'rounded-2xl sm:rounded-3xl rounded-br-md'
+                        : ''
                     } transition-all duration-200 hover:scale-[1.01]`}
                   >
-                    {message.sender === 'bot' && (
-                      <div className="flex items-center gap-2 mb-2 ml-1">
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                          <Zap className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
+                    {message.sender === 'user' ? (
+                      <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-600 via-fuchsia-500 to-cyan-500 text-white shadow-lg shadow-purple-500/20 rounded-2xl sm:rounded-3xl rounded-br-md">
+                        <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">{renderMarkdown(message.text)}</div>
                       </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-sm text-white">{renderMarkdown(message.text)}</div>
                     )}
-                    <div
-                      className={`p-4 ${
-                        message.sender === 'user'
-                          ? 'bg-gradient-to-br from-purple-600 via-fuchsia-500 to-cyan-500 text-white shadow-lg shadow-purple-500/20'
-                          : 'bg-white/5 backdrop-blur-xl text-white border border-white/10 shadow-lg'
-                      } ${
-                        message.sender === 'user'
-                          ? 'rounded-3xl rounded-br-md'
-                          : 'rounded-3xl rounded-bl-md'
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap leading-relaxed text-sm">{renderMarkdown(message.text)}</div>
-                    </div>
                     {message.sender === 'user' && (
                       <div className="flex items-center justify-end gap-2 mt-1 mr-1">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-[10px] sm:text-xs text-gray-500">
                           {message.timestamp.toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -1819,132 +1958,83 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
               ))}
               {isTyping && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-300">
-                  <div className="flex items-center gap-2 mb-2 ml-1">
-                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                      <Zap className="h-4 w-4 text-white" />
+                  <div className="flex items-center gap-2">
+                    <div className="flex space-x-1">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
-                    <span className="text-xs font-semibold text-gray-400">AI Assistant</span>
-                  </div>
-                  <div className="bg-white/5 backdrop-blur-xl text-white rounded-3xl rounded-bl-md p-4 shadow-lg border border-white/10 ml-9">
-                    <div className="flex items-center gap-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                      <span className="text-xs text-gray-400">Thinking...</span>
-                    </div>
+                    <span className="text-[10px] sm:text-xs text-gray-400">Thinking...</span>
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
+              </div>
             </div>
 
-            {/* Input Area */}
-            <div className="p-4 flex-shrink-0">
-              <div className="relative">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Describe the role or paste a job description..."
-                  className="w-full pl-4 pr-14 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-white placeholder-gray-500 resize-none transition-all duration-200 min-h-[56px] max-h-[120px] shadow-lg hover:bg-white/10"
-                  rows={1}
-                  style={{
-                    height: 'auto',
-                    minHeight: '56px'
-                  }}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || isTyping}
-                  className="absolute right-2 bottom-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 hover:shadow-lg hover:shadow-purple-500/50 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-xl p-3 shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 disabled:hover:scale-100 flex items-center justify-center"
-                >
-                  <Send className="h-5 w-5" />
-                </button>
+            {/* Input Area - Floating Style */}
+            <div className="flex-shrink-0 pb-4 sm:pb-6 transition-all duration-500 ease-in-out">
+              <div className={`transition-all duration-500 ease-in-out ${!showResumeCanvas ? 'max-w-4xl mx-auto' : ''} px-3 sm:px-4`}>
+                <div className="relative">
+                  <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 px-4 sm:px-5 py-2.5 sm:py-3">
+                    <button
+                      className="flex-shrink-0 p-1.5 hover:bg-white/10 rounded-full transition-all duration-200 text-gray-400 hover:text-white flex items-center justify-center"
+                      title="Attach file"
+                      aria-label="Attach file"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </button>
+                    <textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Message Resume Assistant..."
+                      className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 resize-none transition-all duration-200 min-h-[44px] sm:min-h-[48px] max-h-[200px] text-sm sm:text-base leading-relaxed py-2.5 pr-2 focus:ring-0 focus:outline-none self-center"
+                      rows={1}
+                      style={{
+                        height: 'auto',
+                        minHeight: '44px'
+                      }}
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!inputValue.trim() || isTyping}
+                      className={`flex-shrink-0 p-2 sm:p-2.5 rounded-full transition-all duration-200 disabled:opacity-50 flex items-center justify-center ${
+                        inputValue.trim() && !isTyping
+                          ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 active:scale-95 text-white'
+                          : 'bg-transparent text-gray-400 cursor-not-allowed'
+                      }`}
+                      aria-label="Send message"
+                    >
+                      <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Right Column - Resume Preview */}
-          <div className="overflow-hidden flex flex-col h-full">
-            {!resumeData ? (
-              <div className="h-full flex flex-col items-center justify-center p-8">
-                <div className="text-center space-y-6">
-                  <div className="relative">
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 backdrop-blur-xl flex items-center justify-center mx-auto border border-white/20 shadow-lg">
-                      <FileText className="h-12 w-12 text-purple-400" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50">
-                      <Zap className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-white mb-2">AI Resume Generator Ready</h3>
-                    <p className="text-gray-400 max-w-md">
-                      Share a job description with the Resume Assistant, and I'll create a perfectly tailored resume based on your profile in seconds.
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400 bg-white/5 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-lg">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Start chatting to begin</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 relative overflow-hidden">
-                  <div className="absolute inset-0 overflow-y-auto bg-slate-900/60">
-                    <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
-                    <div className="resume-preview-container">
-                      <div id="print-wrapper">
-                        <div dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between px-6 py-4 border-t border-white/10 bg-white/5 backdrop-blur-xl flex-shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-                      <FileText className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-white">Resume Preview</h2>
-                      {resumeData && (
-                        <span className="text-xs bg-green-500/10 backdrop-blur-xl text-green-400 border border-green-500/20 px-2 py-1 rounded-full font-medium">
-                          Auto-Saved
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={async () => {
-                        try {
-                          await generatePDFWithText(resumeData);
-                        } catch (error) {
-                          console.error('Failed to generate PDF:', error);
-                          alert('Failed to generate PDF. Please try again.');
-                        }
-                      }}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </button>
-                    <button
-                      onClick={handlePrint}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/50 transition-all font-medium text-sm shadow-sm"
-                    >
-                      <Printer className="h-4 w-4" />
-                      Print
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Resume Canvas - Only view for resume */}
+          <ResumeCanvas
+            isOpen={showResumeCanvas}
+            resumeData={resumeData}
+            resumeStyles={resumeStyles}
+            renderResume={renderResume}
+            onClose={() => setShowResumeCanvas(false)}
+            onDownload={async () => {
+              try {
+                if (resumeData) {
+                  await generatePDFWithText(resumeData);
+                }
+              } catch (error) {
+                console.error('Failed to generate PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+              }
+            }}
+            onPrint={handlePrint}
+          />
+            </div>
           </div>
         </div>
       </div>
@@ -1977,6 +2067,45 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
         }
         .messages-container::-webkit-scrollbar-thumb:hover {
           background: rgba(148, 163, 184, 0.7);
+        }
+        /* Hide scrollbar for textarea input */
+        textarea {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE and Edge */
+        }
+        textarea::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+        
+        /* Resume Canvas Animation */
+        .resume-canvas-enter {
+          animation: slideInFromRight 0.5s ease-out;
+        }
+        
+        @keyframes slideInFromRight {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        /* Smooth grid column transitions */
+        .grid {
+          transition: grid-template-columns 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Smooth chat container width transitions */
+        .messages-container > div {
+          transition: max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Smooth input area transitions */
+        .flex-shrink-0 > div {
+          transition: max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
       `}</style>
     </ProtectedRoute>

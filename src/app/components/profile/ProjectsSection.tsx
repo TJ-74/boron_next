@@ -293,42 +293,43 @@ export default function ProjectsSection({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
             <FolderKanban className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Projects</h2>
-            <p className="text-sm text-gray-400">Showcase your work</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Projects</h2>
+            <p className="text-xs sm:text-sm text-gray-400">Showcase your work</p>
           </div>
         </div>
 
         <button
           onClick={() => setIsAdding(true)}
           disabled={isAdding || isEditing || isLoading}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
         >
-          <Plus className="h-4 w-4" />
-          Add Project
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Add Project</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
       {/* Add Project Form */}
       {isAdding && (
-        <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
-          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center">
-              <Plus className="h-4 w-4 text-purple-400" />
+        <div className="rounded-2xl shadow-2xl border border-white/10 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-4 sm:mb-6 flex items-center gap-2">
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
             </div>
             Add New Project
           </h3>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                   Project Title*
                 </label>
                 <input
@@ -336,7 +337,7 @@ export default function ProjectsSection({
                   name="title"
                   value={newProject.title}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                   placeholder="e.g., E-commerce Website, Task Management App"
                   disabled={isLoading}
                 />
@@ -344,24 +345,25 @@ export default function ProjectsSection({
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-gray-300">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300">
                   Description*
                 </label>
                 <button
                   onClick={() => generateAIDescription(false)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50 w-full sm:w-auto"
                   disabled={isLoading || isGeneratingDescription || !newProject.title || !newProject.technologies}
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
+                  <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span className="hidden sm:inline">{isGeneratingDescription ? 'Generating...' : 'AI Generate'}</span>
+                  <span className="sm:hidden">{isGeneratingDescription ? 'Generating' : 'AI'}</span>
                 </button>
               </div>
               <textarea
                 name="description"
                 value={newProject.description}
                 onChange={(e) => handleDescriptionChange(e, false)}
-                className="w-full h-32 px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 resize-none"
+                className="w-full h-32 px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 resize-none text-sm sm:text-base"
                 placeholder="Describe your project with bullet points (one per line) - what you built, key features, technologies used, and impact"
                 disabled={isLoading || isGeneratingDescription}
               />
@@ -369,7 +371,7 @@ export default function ProjectsSection({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                 Technologies Used*
               </label>
               <input
@@ -377,15 +379,15 @@ export default function ProjectsSection({
                 name="technologies"
                 value={newProject.technologies}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                 placeholder="e.g., React, Node.js, MongoDB, TypeScript"
                 disabled={isLoading}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                   Start Date
                 </label>
                 <input
@@ -393,50 +395,50 @@ export default function ProjectsSection({
                   name="startDate"
                   value={newProject.startDate}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm sm:text-base"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  End Date <span className="text-gray-400 font-normal">(leave empty if ongoing)</span>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                  End Date <span className="text-gray-400 font-normal text-xs sm:text-sm">(leave empty if ongoing)</span>
                 </label>
                 <input
                   type="month"
                   name="endDate"
                   value={newProject.endDate}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm sm:text-base"
                   disabled={isLoading}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Project URL <span className="text-gray-400 font-normal">(optional)</span>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                  Project URL <span className="text-gray-400 font-normal text-xs sm:text-sm">(optional)</span>
                 </label>
                 <input
                   type="url"
                   name="projectUrl"
                   value={newProject.projectUrl}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                   placeholder="https://yourproject.com"
                   disabled={isLoading}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  GitHub URL <span className="text-gray-400 font-normal">(optional)</span>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                  GitHub URL <span className="text-gray-400 font-normal text-xs sm:text-sm">(optional)</span>
                 </label>
                 <input
                   type="url"
                   name="githubUrl"
                   value={newProject.githubUrl}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                   placeholder="https://github.com/username/repo"
                   disabled={isLoading}
                 />
@@ -449,30 +451,31 @@ export default function ProjectsSection({
                 id="newIncludeInResume"
                 checked={newProject.includeInResume !== false}
                 onChange={(e) => setNewProject({...newProject, includeInResume: e.target.checked})}
-                className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
+                className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
                 disabled={isLoading}
               />
-              <label htmlFor="newIncludeInResume" className="ml-3 block text-sm font-semibold text-gray-300">
+              <label htmlFor="newIncludeInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
                 Include in Resume
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">
               <button
                 onClick={cancelAdding}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs sm:text-sm w-full sm:w-auto"
                 disabled={isLoading}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Cancel
               </button>
               <button
                 onClick={handleAdd}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
                 disabled={isLoading || !newProject.title.trim() || !newProject.description.trim() || !newProject.technologies.trim()}
               >
-                <Save className="h-4 w-4" />
-                {isLoading ? 'Saving...' : 'Save Project'}
+                <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Save Project'}</span>
+                <span className="sm:hidden">{isLoading ? 'Saving...' : 'Save'}</span>
               </button>
             </div>
           </div>
@@ -506,16 +509,16 @@ export default function ProjectsSection({
                 className={`${project.includeInResume === false ? 'opacity-60' : ''}`}
               >
                 {editingProject && editingProject.id === project.id ? (
-                  <div className="rounded-2xl shadow-2xl border border-white/10 p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center">
-                        <PenSquare className="h-4 w-4 text-purple-400" />
+                  <div className="rounded-2xl shadow-2xl border border-white/10 p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-4 sm:mb-6 flex items-center gap-2">
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                        <PenSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
                       </div>
                       Edit Project
                     </h3>
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                           Project Title*
                         </label>
                         <input
@@ -523,29 +526,30 @@ export default function ProjectsSection({
                           name="title"
                           value={editingProject.title}
                           onChange={handleEditInputChange}
-                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                           disabled={isLoading}
                         />
                       </div>
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-semibold text-gray-300">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-300">
                             Description*
                           </label>
                           <button
                             onClick={() => generateAIDescription(true)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50"
+                            className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs shadow-sm disabled:opacity-50 w-full sm:w-auto"
                             disabled={isLoading || isGeneratingDescription || !editingProject.title || !editingProject.technologies}
                           >
-                            <Sparkles className="h-3.5 w-3.5" />
-                            {isGeneratingDescription ? 'Generating...' : 'AI Generate'}
+                            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span className="hidden sm:inline">{isGeneratingDescription ? 'Generating...' : 'AI Generate'}</span>
+                            <span className="sm:hidden">{isGeneratingDescription ? 'Generating' : 'AI'}</span>
                           </button>
                         </div>
                         <textarea
                           name="description"
                           value={editingProject.description}
                           onChange={(e) => handleDescriptionChange(e, true)}
-                          className="w-full h-32 px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 resize-none"
+                          className="w-full h-32 px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 resize-none text-sm sm:text-base"
                           placeholder="Describe your project with bullet points (one per line)"
                           disabled={isLoading || isGeneratingDescription}
                         />
@@ -553,7 +557,7 @@ export default function ProjectsSection({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                           Technologies Used*
                         </label>
                         <input
@@ -561,14 +565,14 @@ export default function ProjectsSection({
                           name="technologies"
                           value={editingProject.technologies}
                           onChange={handleEditInputChange}
-                          className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                           placeholder="e.g., React, Node.js, MongoDB"
                           disabled={isLoading}
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
                             Start Date
                           </label>
                           <input
@@ -576,50 +580,50 @@ export default function ProjectsSection({
                             name="startDate"
                             value={editingProject.startDate}
                             onChange={handleEditInputChange}
-                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm sm:text-base"
                             disabled={isLoading}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-300 mb-2">
-                            End Date <span className="text-gray-400 font-normal">(leave empty if ongoing)</span>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                            End Date <span className="text-gray-400 font-normal text-xs sm:text-sm">(leave empty if ongoing)</span>
                           </label>
                           <input
                             type="month"
                             name="endDate"
                             value={editingProject.endDate}
                             onChange={handleEditInputChange}
-                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white text-sm sm:text-base"
                             disabled={isLoading}
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-300 mb-2">
-                            Project URL <span className="text-gray-400 font-normal">(optional)</span>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                            Project URL <span className="text-gray-400 font-normal text-xs sm:text-sm">(optional)</span>
                           </label>
                           <input
                             type="url"
                             name="projectUrl"
                             value={editingProject.projectUrl}
                             onChange={handleEditInputChange}
-                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                             placeholder="https://yourproject.com"
                             disabled={isLoading}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-300 mb-2">
-                            GitHub URL <span className="text-gray-400 font-normal">(optional)</span>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                            GitHub URL <span className="text-gray-400 font-normal text-xs sm:text-sm">(optional)</span>
                           </label>
                           <input
                             type="url"
                             name="githubUrl"
                             value={editingProject.githubUrl}
                             onChange={handleEditInputChange}
-                            className="w-full px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white placeholder-gray-500 text-sm sm:text-base"
                             placeholder="https://github.com/username/repo"
                             disabled={isLoading}
                           />
@@ -632,30 +636,31 @@ export default function ProjectsSection({
                           id="includeProjectInResume"
                           checked={editingProject.includeInResume !== false}
                           onChange={(e) => setEditingProject({...editingProject, includeInResume: e.target.checked})}
-                          className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl"
+                          className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
                           disabled={isLoading}
                         />
-                        <label htmlFor="includeProjectInResume" className="ml-3 block text-sm font-semibold text-gray-300">
+                        <label htmlFor="includeProjectInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
                           Include in Resume
                         </label>
                       </div>
 
-                      <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                      <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">
                         <button
                           onClick={cancelEditing}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-sm"
+                          className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-xl text-gray-300 rounded-lg hover:bg-white/30 transition-all font-medium text-xs sm:text-sm w-full sm:w-auto"
                           disabled={isLoading}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           Cancel
                         </button>
                         <button
                           onClick={handleUpdate}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-sm shadow-sm disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all font-medium text-xs sm:text-sm shadow-sm disabled:opacity-50 w-full sm:w-auto"
                           disabled={isLoading || !editingProject.title || !editingProject.description || !editingProject.technologies}
                         >
-                          <Save className="h-4 w-4" />
-                          {isLoading ? 'Saving...' : 'Update Project'}
+                          <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Update Project'}</span>
+                          <span className="sm:hidden">{isLoading ? 'Saving...' : 'Update'}</span>
                         </button>
                       </div>
                     </div>
@@ -664,26 +669,48 @@ export default function ProjectsSection({
                   <div className={`rounded-2xl shadow-2xl border transition-all duration-200 hover:shadow-2xl group ${
                     project.includeInResume === false ? 'border-white/20 opacity-75' : 'border-white/10 hover:border-purple-400/50'
                   }`}>
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-start gap-4 flex-1">
-                          <div className="relative">
-                            <div className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 p-3 rounded-xl">
-                              <FolderKanban className="h-6 w-6 text-purple-400" />
+                    <div className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4">
+                        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                          {/* Icon with reorder buttons below on mobile */}
+                          <div className="relative flex-shrink-0 flex flex-col items-center gap-1.5 sm:gap-0">
+                            <div className="relative">
+                              <div className="bg-gradient-to-br from-purple-500/20 to-cyan-500/20 p-2 sm:p-3 rounded-xl">
+                                <FolderKanban className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" />
+                              </div>
+                              {project.includeInResume !== false && (
+                                <div className="absolute -top-1 -right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500 rounded-full border-2 border-white"></div>
+                              )}
                             </div>
-                            {project.includeInResume !== false && (
-                              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
-                            )}
+                            {/* Reorder buttons - below icon on mobile only */}
+                            <div className="flex flex-row gap-1 sm:hidden opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleMoveProject(index, 'up')}
+                                disabled={index === 0 || isLoading}
+                                className="p-1.5 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveProject(index, 'down')}
+                                disabled={index === sortedProjects.length - 1 || isLoading}
+                                className="p-1.5 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-bold text-white mb-1">{project.title}</h3>
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-3">
+                            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 break-words">{project.title}</h3>
+                            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400 mb-3">
                               {project.startDate && (
                                 <span className="flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  {formatDate(project.startDate)}
-                                  {' - '}
-                                  {project.endDate ? formatDate(project.endDate) : 'Present'}
+                                  <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                                  <span className="break-words">
+                                    {formatDate(project.startDate)}
+                                    {' - '}
+                                    {project.endDate ? formatDate(project.endDate) : 'Present'}
+                                  </span>
                                 </span>
                               )}
 
@@ -694,7 +721,7 @@ export default function ProjectsSection({
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors"
                                 >
-                                  <Github className="h-4 w-4" />
+                                  <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                   GitHub
                                 </a>
                               )}
@@ -706,19 +733,19 @@ export default function ProjectsSection({
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
                                 >
-                                  <ExternalLink className="h-4 w-4" />
+                                  <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                   View Project
                                 </a>
                               )}
                             </div>
 
                             <div className="mb-4">
-                              <p className="text-gray-300 text-sm font-medium mb-2">Technologies:</p>
+                              <p className="text-gray-300 text-xs sm:text-sm font-medium mb-2">Technologies:</p>
                               <div className="flex flex-wrap gap-2">
                                 {project.technologies.split(',').map((tech, index) => (
                                   <span
                                     key={index}
-                                    className="bg-purple-500/10 text-purple-400 px-3 py-1 rounded-lg text-sm font-medium border border-purple-400/30"
+                                    className="bg-purple-500/10 text-purple-400 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium border border-purple-400/30"
                                   >
                                     {tech.trim()}
                                   </span>
@@ -728,56 +755,54 @@ export default function ProjectsSection({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          {/* Reorder buttons */}
-                          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleMoveProject(index, 'up')}
-                              disabled={index === 0 || isLoading}
-                              className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleMoveProject(index, 'down')}
-                              disabled={index === sortedProjects.length - 1 || isLoading}
-                              className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </button>
-                          </div>
+                        {/* Desktop: Reorder buttons - between content and action buttons */}
+                        <div className="hidden sm:flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity mr-4">
+                          <button
+                            onClick={() => handleMoveProject(index, 'up')}
+                            disabled={index === 0 || isLoading}
+                            className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveProject(index, 'down')}
+                            disabled={index === sortedProjects.length - 1 || isLoading}
+                            className="p-1 rounded-md text-gray-400 hover:text-gray-400 hover:bg-white/10 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </button>
+                        </div>
 
-                          {/* Action buttons */}
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleToggleIncludeInResume(project)}
-                              className={`p-2 rounded-lg transition-all ${
-                                project.includeInResume !== false
-                                  ? 'text-purple-400 bg-purple-500/10 hover:bg-purple-500/20'
-                                  : 'text-gray-400 bg-white/5 backdrop-blur-xl hover:bg-white/20'
-                              }`}
-                              disabled={isLoading}
-                              title={project.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleEdit(project)}
-                              className="p-2 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all"
-                              disabled={isLoading}
-                            >
-                              <PenSquare className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(project.id)}
-                              className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                              disabled={isLoading}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                        {/* Action buttons - right side on all screens */}
+                        <div className="flex items-center gap-1 self-start sm:self-auto ml-auto sm:ml-0">
+                          <button
+                            onClick={() => handleToggleIncludeInResume(project)}
+                            className={`p-2 sm:p-2 rounded-lg transition-all ${
+                              project.includeInResume !== false
+                                ? 'text-purple-400 bg-purple-500/10 hover:bg-purple-500/20'
+                                : 'text-gray-400 bg-white/5 backdrop-blur-xl hover:bg-white/20'
+                            }`}
+                            disabled={isLoading}
+                            title={project.includeInResume !== false ? "Included in Resume" : "Not in Resume"}
+                          >
+                            <svg className="h-4 w-4 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleEdit(project)}
+                            className="p-2 sm:p-2 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all"
+                            disabled={isLoading}
+                          >
+                            <PenSquare className="h-4 w-4 sm:h-4 sm:w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(project.id)}
+                            className="p-2 sm:p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
+                          </button>
                         </div>
                       </div>
 
