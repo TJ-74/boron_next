@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Parse extracted text with LLM to get structured JSON
+ * Has a timeout to prevent hanging requests
  */
-async function parseWithLLM(text: string): Promise<any> {
+async function parseWithLLM(text: string, timeoutMs: number = 8000): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
@@ -18,6 +19,11 @@ async function parseWithLLM(text: string): Promise<any> {
   if (contentToSend.length > 15000) {
     contentToSend = contentToSend.substring(0, 15000);
   }
+  
+  // Create a timeout promise
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('LLM parsing timeout')), timeoutMs);
+  });
 
   const prompt = `You are a comprehensive resume parser. Extract ALL information from the resume text provided below and return it as a valid JSON object.
 
@@ -99,7 +105,8 @@ ${contentToSend}
 
 IMPORTANT: Carefully read through the entire resume text and extract ALL information. Do not skip any sections. Parse this resume content into the complete JSON structure above.`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  // Race between the API call and timeout
+  const apiCall = fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -118,6 +125,14 @@ IMPORTANT: Carefully read through the entire resume text and extract ALL informa
       max_tokens: 4000
     })
   });
+
+  let response: Response;
+  try {
+    response = await Promise.race([apiCall, timeoutPromise]) as Response;
+  } catch (error) {
+    // Timeout occurred
+    throw new Error('LLM parsing timeout');
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -312,8 +327,9 @@ export async function POST(request: NextRequest) {
             // Step 8: Final trim
             .trim();
 
-          // Parse with LLM to get structured JSON
-          parseWithLLM(cleanedText)
+          // Parse with LLM to get structured JSON (with 8 second timeout)
+          // This ensures we return within Vercel's 10s limit even if LLM is slow
+          parseWithLLM(cleanedText, 8000)
             .then((parsedData) => {
               resolve(NextResponse.json({
                 text: cleanedText,
@@ -321,12 +337,14 @@ export async function POST(request: NextRequest) {
               }));
             })
             .catch((error) => {
-              // If LLM parsing fails, still return the text
+              // If LLM parsing fails or times out, still return the text
               console.error('LLM parsing error:', error);
               resolve(NextResponse.json({
                 text: cleanedText,
                 data: null,
-                error: 'Failed to parse with LLM, but text extraction succeeded',
+                error: error.message === 'LLM parsing timeout' 
+                  ? 'LLM parsing timed out, but text extraction succeeded'
+                  : 'Failed to parse with LLM, but text extraction succeeded',
               }));
             });
         } catch (error) {
