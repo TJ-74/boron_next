@@ -97,7 +97,12 @@ export async function GET(
   { params }: { params: { uid: string } }
 ) {
   try {
-    const { uid } = params;
+    let { uid } = params;
+    
+    // Remove .tex extension if present (e.g., "abc123.tex" -> "abc123")
+    if (uid.endsWith('.tex')) {
+      uid = uid.slice(0, -4);
+    }
     
     if (!uid) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -116,10 +121,11 @@ export async function GET(
     // Generate LaTeX content
     const latexContent = generateLatexResume(profile as unknown as UserProfile);
     
-    // Return the LaTeX content as plain text
+    // Return the LaTeX content with appropriate headers
     return new NextResponse(latexContent, {
       headers: {
-        'Content-Type': 'text/plain',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `inline; filename="resume.tex"`,
       },
     });
   } catch (error) {

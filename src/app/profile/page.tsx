@@ -318,8 +318,8 @@ export default function Profile() {
     if (!profile || !user?.uid) return;
     
     try {
-      // Directly open the LaTeX API URL in a new tab using path parameters
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}`;
+      // Directly open the LaTeX API URL in a new tab with .tex extension
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}.tex`;
       window.open(apiUrl, '_blank');
     } catch (error) {
       console.error('Error opening LaTeX:', error);
@@ -1319,6 +1319,7 @@ ${projectSection}
               onUploadResume={handleUploadResume}
               onPreviewInOverleaf={handlePreviewInOverleaf}
               onViewPdf={handleViewPdf}
+              onViewLatex={handleViewRawLatex}
               onUpdateAbout={handleUpdateAbout}
               onAddExperience={handleAddExperience}
               onAddEducation={handleAddEducation}

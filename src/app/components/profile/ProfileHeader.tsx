@@ -20,6 +20,7 @@ interface ProfileHeaderProps {
   onUploadResume: (file: File) => Promise<void>;
   onPreviewInOverleaf: () => Promise<void>;
   onViewPdf?: () => Promise<void>;
+  onViewLatex?: () => Promise<void>;
   onUpdateAbout?: (about: string) => Promise<void>;
   onAddExperience?: (experience: any) => Promise<void>;
   onAddEducation?: (education: any) => Promise<void>;
@@ -39,6 +40,7 @@ export default function ProfileHeader({
   onUploadResume,
   onPreviewInOverleaf,
   onViewPdf,
+  onViewLatex,
   onUpdateAbout,
   onAddExperience,
   onAddEducation,
@@ -569,6 +571,16 @@ export default function ProfileHeader({
     }
   };
 
+  const handleViewLatexClick = async () => {
+    try {
+      if (onViewLatex) {
+        await onViewLatex();
+      }
+    } catch (error) {
+      console.error('Failed to view LaTeX code:', error);
+    }
+  };
+
   return (
     <div className="relative rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
       {/* Image Crop Modal */}
@@ -785,6 +797,16 @@ export default function ProfileHeader({
                       >
                         <FileText className="h-5 w-5" />
                         View PDF Resume
+                      </button>
+                    )}
+
+                    {onViewLatex && (
+                      <button
+                        onClick={handleViewLatexClick}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-500/20 backdrop-blur-xl border border-blue-500/30 text-blue-400 rounded-xl hover:bg-blue-500/30 transition-all font-semibold text-sm"
+                      >
+                        <Code className="h-5 w-5" />
+                        View LaTeX Code
                       </button>
                     )}
                   </div>
