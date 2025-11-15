@@ -1,359 +1,347 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { Groq } from 'groq-sdk';
+import { NextRequest, NextResponse } from "next/server";
+import PDFParser from "pdf2json";
 
-// Initialize the Groq client
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || 'your-groq-api-key-here', // Fallback for testing
-});
-
-// Simple in-memory storage for parsed resumes
-// In a production app, you would use a database
-const parsedDataStore = new Map<string, any>();
-
-// Add the dynamic config at the top of the file
 export const dynamic = 'force-dynamic';
 
 /**
- * Extract text from a PDF file
+ * Parse extracted text with LLM to get structured JSON
  */
-async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  try {
-    // Try using pdf-parse if available
-    try {
-      // Dynamic import of pdf-parse
-      // @ts-ignore - Ignoring the missing type declaration
-      const pdfParse = (await import('pdf-parse')).default;
-      const data = await pdfParse(buffer);
-      
-      if (data && data.text && data.text.trim().length > 0) {
-        return data.text;
-      }
-    } catch (pdfParseError) {
-      console.error('Error using pdf-parse:', pdfParseError);
-      // Fall through to backup method
-    }
-    
-    // Backup: Extract text from PDF as a binary file
-    let pdfText = buffer.toString('utf8');
-    
-    // Clean up the text
-    pdfText = pdfText.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\xFF]/g, ' ');
-    pdfText = pdfText.replace(/\s+/g, ' ');
-    
-    // Extract text content
-    const textMatches = pdfText.match(/[A-Za-z0-9\s\.,;:'"!@#$%^&*()_\-+=[\]{}|\\/<>?]+/g);
-    
-    if (textMatches && textMatches.length > 0) {
-      const extractedText = textMatches
-        .filter(match => match.trim().length > 10)
-        .join('\n');
-      
-      if (extractedText.trim().length > 100) {
-        return extractedText;
-      }
-    }
-    
-    throw new Error("Not enough text could be extracted from your PDF.");
-  } catch (error) {
-    console.error('Error extracting text from PDF:', error);
-    throw new Error("Failed to extract text from PDF file.");
+async function parseWithLLM(text: string): Promise<any> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not configured');
   }
+
+  // Limit text to avoid token limits (approximately 15000 characters = ~3750 tokens)
+  let contentToSend = text;
+  if (contentToSend.length > 15000) {
+    contentToSend = contentToSend.substring(0, 15000);
+  }
+
+  const prompt = `You are a comprehensive resume parser. Extract ALL information from the resume text provided below and return it as a valid JSON object.
+
+CRITICAL: You MUST extract ALL sections including:
+- Personal information (name, email, phone, location, title)
+- Professional summary/about section
+- ALL education entries (every degree, certificate, etc.)
+- ALL work experience entries (every job, internship, etc.)
+- ALL skills (technical skills, soft skills, languages, etc.)
+- ALL projects (personal projects, academic projects, etc.)
+- Social links (LinkedIn, GitHub, portfolio, etc.)
+
+Required JSON Structure (you MUST include ALL fields and match EXACT field names):
+{
+  "name": "Full name of the person",
+  "email": "Email address",
+  "phone": "Phone number or null if not found",
+  "location": "City, State, Country or null if not found",
+  "title": "Current job title/role or null if not found",
+  "linkedinUrl": "LinkedIn profile URL or null if not found",
+  "githubUrl": "GitHub profile URL or null if not found",
+  "portfolioUrl": "Personal website or portfolio URL or null if not found",
+  "about": "Professional summary, career objectives, or background paragraph (extract from Summary, About, Objective, or Profile sections)",
+  "education": [
+    {
+      "school": "School or university name",
+      "degree": "Degree obtained (e.g., Bachelor of Science, Master of Arts)",
+      "startDate": "Start date in format 'YYYY' or 'MM/YYYY' or 'Month YYYY'",
+      "endDate": "End/graduation date in format 'YYYY' or 'MM/YYYY' or 'Month YYYY'",
+      "cgpa": "GPA/CGPA as string (e.g., '3.8/4.0' or '3.5') or empty string if not found"
+    }
+  ],
+  "experiences": [
+    {
+      "company": "Company name",
+      "position": "Job title/position (NOT 'title', use 'position')",
+      "location": "Job location (city, state, country) or empty string if not found",
+      "startDate": "Start date in format 'YYYY' or 'MM/YYYY' or 'Month YYYY'",
+      "endDate": "End date in format 'YYYY' or 'MM/YYYY' or 'Month YYYY' or 'Present'",
+      "description": "Full job description including all responsibilities and achievements. Combine all bullet points into a single paragraph separated by newlines or semicolons"
+    }
+  ],
+  "skills": [
+    {
+      "name": "Skill name (e.g., 'React', 'Python', 'Machine Learning')",
+      "domain": "Skill category (e.g., 'Frontend', 'Backend', 'Programming Language', 'Framework', 'Database', 'Cloud', 'Machine Learning', 'Soft Skills')"
+    }
+  ],
+  "projects": [
+    {
+      "title": "Project name (NOT 'name', use 'title')",
+      "description": "Full project description including features and achievements",
+      "technologies": "Comma-separated list of technologies used (e.g., 'React, TypeScript, Node.js, MongoDB')",
+      "startDate": "Start date in format 'YYYY' or 'MM/YYYY' or 'Month YYYY'",
+      "endDate": "End date in format 'YYYY' or 'MM/YYYY' or 'Month YYYY' or 'Present'",
+      "githubUrl": "GitHub repository URL or null if not found",
+      "projectUrl": "Live project URL or null if not found"
+    }
+  ]
 }
 
-/**
- * Extract text from a Word document (placeholder - not implemented)
- */
-async function extractTextFromDocx(buffer: Buffer): Promise<string> {
-  throw new Error("Microsoft Word documents cannot be processed directly. Please upload a PDF or plain text version of your resume.");
-}
+Important Rules:
+1. Return ONLY a valid JSON object - no markdown, no code blocks, no explanations
+2. Extract EVERY education entry you find - do not skip any
+3. Extract EVERY work experience entry you find - do not skip any
+4. Extract ALL skills mentioned anywhere in the resume - categorize them into domains
+5. Extract ALL projects mentioned in the resume
+6. For experience description, combine all bullet points into a single string (use newlines \\n or semicolons to separate points)
+7. For skills, try to categorize them (e.g., React -> Frontend, Python -> Programming Language, AWS -> Cloud)
+8. Use null for missing single fields, use empty arrays [] for missing array fields
+9. All keys and string values must use double quotes
+10. Education, experiences, skills, and projects must always be arrays (even if empty)
+11. Dates should be in consistent format - prefer 'MM/YYYY' or 'Month YYYY' format
+12. For skills domain, use common categories: Frontend, Backend, Programming Language, Framework, Database, Cloud, DevOps, Machine Learning, AI, Soft Skills, etc.
+13. Use "experiences" (plural) as the field name for work experience array
 
-/**
- * Parse text using Groq API
- */
-async function parseWithGroq(text: string): Promise<any> {
-  // Create a prompt for Groq to extract information from the resume
-  const prompt = `
-    You are a resume parser that extracts structured information from resumes.
-    
-    I will provide you with the content of a resume. Your task is to extract key information and format it as JSON.
-    
-    Rules:
-    1. Return ONLY a valid JSON object
-    2. Do not include any explanations, markdown formatting, or code blocks
-    3. Use null for missing fields, not empty strings
-    4. Make sure to use double quotes for all keys and string values
-    5. For education, experience and projects, always return arrays even if there's only one item
-    
-    Extract the following information from the resume:
-    - name: The person's full name
-    - email: Email address
-    - phone: Phone number
-    - location: City and/or state and/or country
-    - title: Current job title/role
-    - linkedinUrl: LinkedIn profile URL
-    - githubUrl: GitHub profile URL
-    - portfolioUrl: Personal website or portfolio URL
-    - about: A short paragraph about the person's professional summary, career objectives or background
-    - education: Array of education entries with
-      - degree: Degree obtained
-      - school: School/university name
-      - graduationDate: Graduation date
-    - experience: Array of work experience entries with
-      - company: Company name
-      - title: Job title
-      - dates: Employment dates
-      - responsibilities: Array of key responsibilities or achievements
-    - skills: Array of skills and technologies
-    - projects: Array of projects with
-      - name: Project name
-      - description: Short description
-      - technologies: Array of technologies used
+Resume text content:
+${contentToSend}
 
-    Resume content:
-    ${text}
-  `;
+IMPORTANT: Carefully read through the entire resume text and extract ALL information. Do not skip any sections. Parse this resume content into the complete JSON structure above.`;
 
-  // Call Groq API
-  const completion = await groq.chat.completions.create({
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    model: 'llama3-8b-8192',
-    temperature: 0.1,  // Low temperature for more predictable JSON
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      max_tokens: 4000
+    })
   });
 
-  // Get the response content
-  const parsedContent = completion.choices[0]?.message?.content;
-  
-  // Process and return the parsed content
-  const sanitizedResult = sanitizeJsonResponse(parsedContent);
-  
-  // Add empty arrays for missing sections to ensure consistent structure
-  if (!sanitizedResult.education) sanitizedResult.education = [];
-  if (!sanitizedResult.experience) sanitizedResult.experience = [];
-  if (!sanitizedResult.skills) sanitizedResult.skills = [];
-  if (!sanitizedResult.projects) sanitizedResult.projects = [];
-  
-  // Ensure about has a default value if missing
-  if (!sanitizedResult.about) sanitizedResult.about = '';
-  
-  return sanitizedResult;
-}
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error('OpenAI API Error:', errorData);
+    throw new Error(`OpenAI API error: ${response.statusText}`);
+  }
 
-/**
- * Ensures the response is valid JSON
- */
-function sanitizeJsonResponse(content: string | null | undefined): any {
-  if (!content) {
-    return {};
+  const data = await response.json();
+  const responseContent = data.choices[0]?.message?.content || '';
+  
+  if (!responseContent) {
+    throw new Error("LLM did not return any content");
   }
   
-  // First check if the string is actually parseable as JSON
+  // Parse the JSON response
+  let parsedResult;
   try {
-    return JSON.parse(content);
+    parsedResult = JSON.parse(responseContent);
   } catch (e) {
-    console.error('Failed to parse response as JSON:', e);
-    
-    try {
-      // If the response has extra characters, try to find and extract just the JSON object
-      let cleanedContent = content;
-      
-      // Remove any markdown code blocks
-      cleanedContent = cleanedContent.replace(/```json|```/g, '');
-      
-      // Remove any text before the first { and after the last }
-      const openBrace = cleanedContent.indexOf('{');
-      const closeBrace = cleanedContent.lastIndexOf('}');
-      
-      if (openBrace !== -1 && closeBrace !== -1 && closeBrace > openBrace) {
-        cleanedContent = cleanedContent.substring(openBrace, closeBrace + 1);
-        
-        // Try to parse again
-        try {
-          return JSON.parse(cleanedContent);
-        } catch (e) {
-          console.error('Failed to parse cleaned content:', e);
-        }
-      }
-      
-      // If we still haven't successfully parsed the JSON,
-      // try to fix common JSON syntax issues
-      
-      // Replace single quotes with double quotes (if not inside double quotes)
-      let inDoubleQuote = false;
-      let fixedContent = '';
-      
-      for (let i = 0; i < cleanedContent.length; i++) {
-        const char = cleanedContent[i];
-        
-        if (char === '"') {
-          inDoubleQuote = !inDoubleQuote;
-          fixedContent += char;
-        } else if (char === "'" && !inDoubleQuote) {
-          fixedContent += '"';
-        } else {
-          fixedContent += char;
-        }
-      }
-      
-      // Try to parse the fixed content
-      try {
-        return JSON.parse(fixedContent);
-      } catch (e) {
-        console.error('Failed to parse fixed content:', e);
-      }
-      
-      // As a last resort, create a basic object by extracting fields with regex
-      const extractField = (fieldName: string): string | null => {
-        const regex = new RegExp(`["']?${fieldName}["']?\\s*:\\s*["']?([^"',}\\n]+)["']?`, 'i');
-        const match = cleanedContent.match(regex);
-        return match ? match[1].trim() : null;
-      };
-      
-      return {
-        name: extractField('name'),
-        email: extractField('email'),
-        phone: extractField('phone'),
-        location: extractField('location'),
-        title: extractField('title'),
-        about: extractField('about') || extractField('summary'),
-        education: [],
-        experience: [],
-        skills: [],
-        projects: []
-      };
-    } catch (finalError) {
-      console.error('All parsing attempts failed:', finalError);
-      return {
-        parseError: 'Could not parse the resume content properly',
-      };
+    // Try to extract JSON from markdown code blocks if present
+    const jsonMatch = responseContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+    if (jsonMatch) {
+      parsedResult = JSON.parse(jsonMatch[1]);
+    } else {
+      throw new Error("Failed to parse LLM response as JSON");
     }
   }
+  
+  // Handle both 'experience' and 'experiences' from LLM
+  const experiences = parsedResult.experience || parsedResult.experiences || [];
+  
+  // Ensure all required arrays exist
+  if (!Array.isArray(parsedResult.education)) {
+    parsedResult.education = [];
+  }
+  if (!Array.isArray(experiences)) {
+    parsedResult.experiences = [];
+  }
+  if (!Array.isArray(parsedResult.skills)) {
+    parsedResult.skills = [];
+  }
+  if (!Array.isArray(parsedResult.projects)) {
+    parsedResult.projects = [];
+  }
+  
+  // Format the data to match our section structure
+  // Add IDs and ensure proper formatting
+  const formattedData = {
+    ...parsedResult,
+    education: parsedResult.education.map((edu: any, index: number) => ({
+      id: `edu_${Date.now()}_${index}`,
+      school: edu.school || '',
+      degree: edu.degree || '',
+      startDate: edu.startDate || '',
+      endDate: edu.endDate || '',
+      cgpa: edu.cgpa || '',
+      includeInResume: true,
+    })),
+    experiences: (Array.isArray(experiences) ? experiences : []).map((exp: any, index: number) => ({
+      id: `exp_${Date.now()}_${index}`,
+      company: exp.company || '',
+      position: exp.position || exp.title || '', // Handle both 'position' and 'title'
+      location: exp.location || '',
+      startDate: exp.startDate || '',
+      endDate: exp.endDate || '',
+      description: exp.description || (Array.isArray(exp.responsibilities) ? exp.responsibilities.join('\n') : ''),
+      includeInResume: true,
+      order: index,
+    })),
+    skills: parsedResult.skills.map((skill: any, index: number) => {
+      // Handle both object format and string format
+      if (typeof skill === 'string') {
+        return {
+          id: `skill_${Date.now()}_${index}`,
+          name: skill,
+          domain: 'General', // Default domain for string skills
+          includeInResume: true,
+        };
+      }
+      return {
+        id: `skill_${Date.now()}_${index}`,
+        name: skill.name || skill,
+        domain: skill.domain || 'General',
+        includeInResume: true,
+      };
+    }),
+    projects: parsedResult.projects.map((project: any, index: number) => ({
+      id: `proj_${Date.now()}_${index}`,
+      title: project.title || project.name || '',
+      description: project.description || '',
+      technologies: Array.isArray(project.technologies) 
+        ? project.technologies.join(', ') 
+        : (project.technologies || ''),
+      startDate: project.startDate || '',
+      endDate: project.endDate || '',
+      githubUrl: project.githubUrl || null,
+      projectUrl: project.projectUrl || null,
+      includeInResume: true,
+    })),
+  };
+  
+  return formattedData;
 }
 
-// POST endpoint to upload and parse a resume
 export async function POST(request: NextRequest) {
   try {
-    // Get the form data with the resume file
-    const formData = await request.formData();
-    const file = formData.get('resume') as File;
-    
-    // Get the user ID from the search parameters or generate a temporary one
-    const userID = request.nextUrl.searchParams.get('userID') || `user_${Date.now()}`;
-    
+    const data = await request.formData();
+    const file = data.get("file") as File;
+
     if (!file) {
-      return NextResponse.json({ error: 'No resume file provided' }, { status: 400 });
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
-    
-    // Get file data
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const fileType = file.type;
-    const fileName = file.name.toLowerCase();
-    
-    // Extract text based on file type
-    let extractedText = '';
-    
-    try {
-      if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        extractedText = await extractTextFromPdf(buffer);
-      } else if (
-        fileType === 'application/msword' || 
-        fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        fileName.endsWith('.doc') || 
-        fileName.endsWith('.docx')
-      ) {
-        extractedText = await extractTextFromDocx(buffer);
-      } else {
-        // For text files and other formats
-        extractedText = await file.text();
-      }
-    } catch (error: any) {
-      return NextResponse.json({ 
-        error: error.message || "Failed to extract text from file",
-        success: false 
-      }, { status: 400 });
-    }
-    
-    if (extractedText.trim().length < 100) {
-      return NextResponse.json({ 
-        error: "Not enough text could be extracted from your file. Please try a different file format.",
-        success: false 
-      }, { status: 400 });
-    }
-    
-    // Log the extracted text for debugging
-    console.log("Extracted text from resume:", extractedText);
-    
-    // Parse the extracted text
-    let parsedData;
-    try {
-      parsedData = await parseWithGroq(extractedText);
-    } catch (error) {
-      console.error('Error parsing resume with Groq:', error);
-      return NextResponse.json({ 
-        error: "Failed to parse resume. API error.",
-        success: false 
-      }, { status: 500 });
-    }
-    
-    // Store the parsed data with the user ID
-    parsedDataStore.set(userID, {
-      data: parsedData,
-      extractedText,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Return the parsed resume data along with the extracted text and user ID
-    return NextResponse.json({ 
-      success: true, 
-      userID,
-      data: parsedData,
-      extractedText: extractedText.substring(0, 1000) + (extractedText.length > 1000 ? '...' : '') // Include first 1000 chars
+
+    // Use pdf2json to parse PDF
+    return new Promise((resolve, reject) => {
+      const pdfParser = new PDFParser();
+      
+      // Collect all text from the PDF
+      let extractedText = '';
+      
+      pdfParser.on("pdfParser_dataError", (errData: any) => {
+        reject(new Error(`PDF parsing error: ${errData.parserError}`));
+      });
+
+      pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+        try {
+          // Extract text from all pages
+          if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
+            pdfData.Pages.forEach((page: any) => {
+              if (page.Texts && Array.isArray(page.Texts)) {
+                page.Texts.forEach((textItem: any) => {
+                  if (textItem.R && Array.isArray(textItem.R)) {
+                    textItem.R.forEach((r: any) => {
+                      if (r.T) {
+                        // Decode URI-encoded text
+                        try {
+                          extractedText += decodeURIComponent(r.T);
+                        } catch {
+                          extractedText += r.T;
+                        }
+                      }
+                    });
+                  }
+                });
+                extractedText += '\n\n'; // Add spacing between pages
+              }
+            });
+          }
+
+          // Clean up the extracted text
+          let cleanedText = extractedText
+            // Step 1: Remove spaces between consecutive letters/numbers that should be together
+            // This handles cases like "T a r u n" -> "Tarun"
+            .replace(/([a-zA-Z0-9])\s+([a-zA-Z0-9])/g, (match, p1, p2) => {
+              // Keep space only if it's a clear word boundary
+              const isWordBoundary = /[a-z][A-Z]/.test(p1 + p2) || 
+                                     /[0-9][A-Za-z]/.test(p1 + p2) || 
+                                     /[A-Za-z][0-9]/.test(p1 + p2);
+              return isWordBoundary ? p1 + ' ' + p2 : p1 + p2;
+            })
+            // Step 2: Add spaces between words that are stuck together
+            // Handle patterns like "PresentFeb" -> "Present Feb", "SUMMARYAsan" -> "SUMMARY Asan"
+            .replace(/([a-z])([A-Z])/g, '$1 $2')  // lowercase followed by uppercase
+            .replace(/([A-Z]{2,})([A-Z][a-z])/g, '$1 $2')  // Multiple caps followed by capitalized word
+            // Step 3: Fix common acronyms and technical terms
+            .replace(/\bC SS\b/g, 'CSS')
+            .replace(/\bA I\b/g, 'AI')
+            .replace(/\bG P A\b/g, 'GPA')
+            .replace(/\bA W S\b/g, 'AWS')
+            .replace(/\bR A G\b/g, 'RAG')
+            .replace(/\bL L M\b/g, 'LLM')
+            .replace(/\bN L P\b/g, 'NLP')
+            .replace(/\bA P I\b/g, 'API')
+            .replace(/\bA P Is\b/g, 'APIs')
+            .replace(/\bS Q L\b/g, 'SQL')
+            .replace(/\bG B\b/g, 'GB')
+            // Step 4: Fix spacing around punctuation
+            .replace(/\s+([.,;:!?])/g, '$1')
+            .replace(/([.,;:!?])\s+/g, '$1 ')
+            // Step 5: Normalize multiple spaces to single space
+            .replace(/\s{2,}/g, ' ')
+            // Step 6: Clean up line breaks
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/\s+\n/g, '\n')
+            .replace(/\n\s+/g, '\n')
+            // Step 7: Fix dates and common patterns
+            .replace(/(\d{4})\s*([A-Z][a-z])/g, '$1 $2')  // "2025Aug" -> "2025 Aug"
+            .replace(/([A-Z][a-z]+)\s*(\d{4})/g, '$1 $2')  // "May2025" -> "May 2025"
+            // Step 8: Final trim
+            .trim();
+
+          // Parse with LLM to get structured JSON
+          parseWithLLM(cleanedText)
+            .then((parsedData) => {
+              resolve(NextResponse.json({
+                text: cleanedText,
+                data: parsedData,
+              }));
+            })
+            .catch((error) => {
+              // If LLM parsing fails, still return the text
+              console.error('LLM parsing error:', error);
+              resolve(NextResponse.json({
+                text: cleanedText,
+                data: null,
+                error: 'Failed to parse with LLM, but text extraction succeeded',
+              }));
+            });
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      // Parse the buffer
+      pdfParser.parseBuffer(buffer);
     });
   } catch (error) {
-    console.error('Resume parsing error:', error);
+    console.error('PDF parse error:', error);
     return NextResponse.json(
-      { error: 'Failed to process resume' },
+      { error: error instanceof Error ? error.message : 'Failed to parse PDF' },
       { status: 500 }
     );
   }
 }
-
-// GET endpoint to retrieve previously parsed resume
-export async function GET(request: NextRequest) {
-  try {
-    const urlParams = request.nextUrl.searchParams;
-    // Get the user ID from the search parameters
-    const userID = urlParams.get('userID');
-    
-    if (!userID) {
-      return NextResponse.json({ error: 'No user ID provided' }, { status: 400 });
-    }
-    
-    // Get the stored data for this user
-    const storedData = parsedDataStore.get(userID);
-    
-    if (!storedData) {
-      return NextResponse.json({ 
-        error: 'No parsed resume data found for this user',
-        success: false 
-      }, { status: 404 });
-    }
-    
-    // Return the stored data
-    return NextResponse.json({ 
-      success: true, 
-      ...storedData
-    });
-  } catch (error) {
-    console.error('Error retrieving parsed resume:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve parsed resume data' },
-      { status: 500 }
-    );
-  }
-} 

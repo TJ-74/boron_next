@@ -1319,7 +1319,6 @@ ${projectSection}
               onUploadResume={handleUploadResume}
               onPreviewInOverleaf={handlePreviewInOverleaf}
               onViewPdf={handleViewPdf}
-              onViewLatex={handleViewRawLatex}
               onUpdateAbout={handleUpdateAbout}
               onAddExperience={handleAddExperience}
               onAddEducation={handleAddEducation}

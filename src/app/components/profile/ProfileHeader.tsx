@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from "@/app/components/ui/button";
-import { PenSquare, Upload, Loader2, ExternalLink, FileText, Code, Zap } from "lucide-react";
+import { PenSquare, Upload, Loader2, ExternalLink, FileText, Zap } from "lucide-react";
 import ResumeParserModal from './ResumeParserModal';
 import { ProfileInfo } from '@/app/types';
 import ImageCropModal from './ImageCropModal';
@@ -20,7 +20,6 @@ interface ProfileHeaderProps {
   onUploadResume: (file: File) => Promise<void>;
   onPreviewInOverleaf: () => Promise<void>;
   onViewPdf?: () => Promise<void>;
-  onViewLatex?: () => Promise<void>;
   onUpdateAbout?: (about: string) => Promise<void>;
   onAddExperience?: (experience: any) => Promise<void>;
   onAddEducation?: (education: any) => Promise<void>;
@@ -32,15 +31,14 @@ interface ProfileHeaderProps {
   onJobScraper?: () => void;
 }
 
-export default function ProfileHeader({ 
-  profile, 
+export default function ProfileHeader({
+  profile,
   userId,
-  onUpdateProfile, 
-  onUploadImage, 
+  onUpdateProfile,
+  onUploadImage,
   onUploadResume,
   onPreviewInOverleaf,
   onViewPdf,
-  onViewLatex,
   onUpdateAbout,
   onAddExperience,
   onAddEducation,
@@ -182,30 +180,52 @@ export default function ProfileHeader({
       // Upload the resume file
       await onUploadResume(file);
       
-      // Parse the resume with Groq
+      // Extract text from PDF
       const formData = new FormData();
-      formData.append('resume', file);
+      formData.append('file', file);
+      
+      console.log('📤 Sending PDF for text extraction...');
       
       const response = await fetch('/api/resume-parser', {
         method: 'POST',
         body: formData,
       });
       
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error:', response.status, errorText);
+        throw new Error(`Failed to extract text: ${response.status} ${response.statusText}`);
+      }
+      
       const result = await response.json();
       
-      if (result.success && result.data) {
-        setParsedResumeData(result.data);
-        // Store the extracted text from the response
-        if (result.extractedText) {
-          setExtractedText(result.extractedText);
+      console.log('📥 Response received:', result);
+      
+      if (result.text) {
+        // Store the extracted text
+        setExtractedText(result.text);
+        
+        // Store parsed data if available
+        if (result.data) {
+          setParsedResumeData(result.data);
+          console.log('✅ LLM parsing successful!');
+          console.log('📊 Parsed data:', result.data);
+        } else if (result.error) {
+          console.warn('⚠️ LLM parsing failed:', result.error);
         }
+        
+        console.log('✅ Text extraction successful!');
+        console.log(`📝 Extracted text (${result.text.length} chars):`, result.text.substring(0, 500));
+        
+        // Modal is already open, no need for alerts
       } else {
-        console.error('Failed to parse resume:', result.error);
-        setParserError(result.error || 'Failed to parse resume. Please try again or upload a different file.');
+        throw new Error('No text found in response');
       }
     } catch (error) {
-      console.error('Failed to process resume:', error);
-      setParserError('An error occurred while processing your resume. Please try again.');
+      console.error('❌ Network/parse error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your PDF. Please try again.';
+      setParserError(errorMessage);
+      // Error is shown in the modal, no need for alert
     } finally {
       setIsResumeUploading(false);
       setIsParsingResume(false);
@@ -239,8 +259,60 @@ export default function ProfileHeader({
     });
   };
 
+  // Normalize date formats from LLM to YYYY-MM format (HTML month input format)
+  const normalizeDate = (dateString: string | null | undefined): string => {
+    if (!dateString || dateString.trim() === '' || dateString.toLowerCase() === 'present') {
+      return '';
+    }
+
+    const date = dateString.trim();
+    
+    // Already in YYYY-MM format
+    if (/^\d{4}-\d{2}$/.test(date)) {
+      return date;
+    }
+    
+    // Handle MM/YYYY format
+    const mmYYYYMatch = date.match(/^(\d{1,2})\/(\d{4})$/);
+    if (mmYYYYMatch) {
+      const month = mmYYYYMatch[1].padStart(2, '0');
+      const year = mmYYYYMatch[2];
+      return `${year}-${month}`;
+    }
+    
+    // Handle Month YYYY format (e.g., "January 2024", "Jan 2024", "Feb 2025")
+    const monthNames = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    const shortMonthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    
+    const monthYearMatch = date.match(/^([a-z]+)\s+(\d{4})$/i);
+    if (monthYearMatch) {
+      const monthName = monthYearMatch[1].toLowerCase();
+      const year = monthYearMatch[2];
+      let monthIndex = monthNames.indexOf(monthName);
+      if (monthIndex === -1) {
+        monthIndex = shortMonthNames.indexOf(monthName);
+      }
+      if (monthIndex !== -1) {
+        const month = String(monthIndex + 1).padStart(2, '0');
+        return `${year}-${month}`;
+      }
+    }
+    
+    // Handle YYYY format only (assume January)
+    if (/^\d{4}$/.test(date)) {
+      return `${date}-01`;
+    }
+    
+    // If we can't parse it, return empty string
+    console.warn(`Could not parse date format: "${dateString}"`);
+    return '';
+  };
+
   // Handle applying parsed resume data to profile
-  const handleApplyParsedData = async (parsedData: any) => {
+  const handleApplyParsedData = async (parsedData: any, selectedSections: string[] = []) => {
     try {
       setIsApplyingResumeData(true);
       setProgressPercentage(0);
@@ -253,7 +325,7 @@ export default function ProfileHeader({
       // Calculate total items to track progress
       const totalItems = 2 + // Basic profile and about section
         (parsedData.education?.length || 0) +
-        (parsedData.experience?.length || 0) +
+        (parsedData.experiences?.length || parsedData.experience?.length || 0) +
         (parsedData.skills?.length || 0) +
         (parsedData.projects?.length || 0);
       
@@ -276,50 +348,70 @@ export default function ProfileHeader({
         projects: 0
       };
       
-      // Step 1: Basic Profile Info
-      if (parsedData.name || parsedData.email || parsedData.phone || parsedData.location || 
-          parsedData.title || parsedData.linkedinUrl || parsedData.githubUrl || parsedData.portfolioUrl) {
+      // Step 1: Basic Profile Info - Update profile header with parsed data
+      if (selectedSections.includes('profile')) {
+        const profileUpdates: Partial<ProfileInfo> = {};
         
-        setApplyProgress(`Updating basic profile information...`);
+        // Only include fields that have actual values (not null, undefined, or empty strings)
+        if (parsedData.name && parsedData.name.trim()) {
+          profileUpdates.name = parsedData.name.trim();
+        }
+        if (parsedData.email && parsedData.email.trim()) {
+          profileUpdates.email = parsedData.email.trim();
+        }
+        if (parsedData.phone && parsedData.phone.trim()) {
+          profileUpdates.phone = parsedData.phone.trim();
+        }
+        if (parsedData.location && parsedData.location.trim()) {
+          profileUpdates.location = parsedData.location.trim();
+        }
+        if (parsedData.title && parsedData.title.trim()) {
+          profileUpdates.title = parsedData.title.trim();
+        }
+        if (parsedData.linkedinUrl && parsedData.linkedinUrl.trim()) {
+          profileUpdates.linkedinUrl = parsedData.linkedinUrl.trim();
+        }
+        if (parsedData.githubUrl && parsedData.githubUrl.trim()) {
+          profileUpdates.githubUrl = parsedData.githubUrl.trim();
+        }
+        if (parsedData.portfolioUrl && parsedData.portfolioUrl.trim()) {
+          profileUpdates.portfolioUrl = parsedData.portfolioUrl.trim();
+        }
         
-        try {
-          console.log(`[${sessionId}] Updating profile basic info`);
-      const profileInfo: Partial<ProfileInfo> = {
-        name: parsedData.name,
-        email: parsedData.email,
-        phone: parsedData.phone,
-        location: parsedData.location,
-        title: parsedData.title,
-        linkedinUrl: parsedData.linkedinUrl,
-        githubUrl: parsedData.githubUrl,
-        portfolioUrl: parsedData.portfolioUrl,
-      };
-      
-          await onUpdateProfile(profileInfo);
-          console.log(`[${sessionId}] Profile info updated successfully`);
-      
-          savedItems.profile = true;
-      
-      // Update the local state
-      setEditProfile(prev => ({
-        ...prev,
-        ...profileInfo
-      }));
+        // Only update if we have at least one field to update
+        if (Object.keys(profileUpdates).length > 0) {
+          setApplyProgress(`Updating profile header...`);
+          
+          try {
+            console.log(`[${sessionId}] Updating profile header with:`, profileUpdates);
+            await onUpdateProfile(profileUpdates);
+            console.log(`[${sessionId}] Profile header updated successfully`);
+        
+            savedItems.profile = true;
+        
+            // Update the local edit state
+            setEditProfile(prev => ({
+              ...prev,
+              ...profileUpdates
+            }));
 
-          updateProgress(`Updated basic profile information`);
-        } catch (error) {
-          console.error(`[${sessionId}] Failed to update profile info:`, error);
-          updateProgress(`Failed to update basic profile information`);
+            updateProgress(`Updated profile header`);
+          } catch (error) {
+            console.error(`[${sessionId}] Failed to update profile header:`, error);
+            updateProgress(`Failed to update profile header`);
+          }
+        } else {
+          console.log(`[${sessionId}] No profile header fields found in parsed resume data`);
         }
       }
 
       // Step 2: About Section
-      if (parsedData.about && onUpdateAbout) {
+      if (selectedSections.includes('about') && parsedData.about && parsedData.about.trim() && onUpdateAbout) {
         setApplyProgress(`Updating about section...`);
         
         try {
-          console.log(`[${sessionId}] Updating about section`);
-        await onUpdateAbout(parsedData.about);
+          console.log(`[${sessionId}] Updating about section with:`, parsedData.about.substring(0, 100) + '...');
+          await onUpdateAbout(parsedData.about.trim());
           console.log(`[${sessionId}] About section updated successfully`);
           
           savedItems.about = true;
@@ -328,10 +420,12 @@ export default function ProfileHeader({
           console.error(`[${sessionId}] Failed to save about section:`, error);
           updateProgress(`Failed to update about section`);
         }
+      } else if (parsedData.about === null || parsedData.about === undefined) {
+        console.log(`[${sessionId}] No about section found in parsed resume data`);
       }
       
       // Step 3: Education (process one item at a time)
-      if (parsedData.education && Array.isArray(parsedData.education) && parsedData.education.length > 0 && onAddEducation) {
+      if (selectedSections.includes('education') && parsedData.education && Array.isArray(parsedData.education) && parsedData.education.length > 0 && onAddEducation) {
         console.log(`[${sessionId}] Processing ${parsedData.education.length} education items`);
         
         for (let i = 0; i < parsedData.education.length; i++) {
@@ -344,9 +438,9 @@ export default function ProfileHeader({
           const education = {
             school: edu.school || '',
             degree: edu.degree || '',
-            startDate: edu.graduationDate ? edu.graduationDate.split(' - ')[0] : '',
-            endDate: edu.graduationDate ? edu.graduationDate.split(' - ')[1] || edu.graduationDate : '',
-            cgpa: '',
+            startDate: normalizeDate(edu.startDate),
+            endDate: normalizeDate(edu.endDate),
+            cgpa: edu.cgpa || '',
             includeInResume: true
           };
           
@@ -373,23 +467,25 @@ export default function ProfileHeader({
       }
       
       // Step 4: Experience (process one item at a time)
-      if (parsedData.experience && Array.isArray(parsedData.experience) && parsedData.experience.length > 0 && onAddExperience) {
-        console.log(`[${sessionId}] Processing ${parsedData.experience.length} experience items`);
+      // Handle both 'experience' and 'experiences' from parsed data
+      const experiences = parsedData.experiences || parsedData.experience || [];
+      if (selectedSections.includes('experiences') && Array.isArray(experiences) && experiences.length > 0 && onAddExperience) {
+        console.log(`[${sessionId}] Processing ${experiences.length} experience items`);
         
-        for (let i = 0; i < parsedData.experience.length; i++) {
-          const exp = parsedData.experience[i];
-          setApplyProgress(`Adding experience ${i+1} of ${parsedData.experience.length}...`);
+        for (let i = 0; i < experiences.length; i++) {
+          const exp = experiences[i];
+          setApplyProgress(`Adding experience ${i+1} of ${experiences.length}...`);
           
           try {
-            console.log(`[${sessionId}] Adding experience item ${i+1}/${parsedData.experience.length}`);
+            console.log(`[${sessionId}] Adding experience item ${i+1}/${experiences.length}`);
             
           const experience = {
             company: exp.company || '',
-            position: exp.title || '',
-            location: '',
-            startDate: exp.dates ? exp.dates.split(' - ')[0] : '',
-            endDate: exp.dates ? exp.dates.split(' - ')[1] || exp.dates : '',
-            description: exp.responsibilities ? exp.responsibilities.join('\n') : '',
+            position: exp.position || exp.title || '',
+            location: exp.location || '',
+            startDate: normalizeDate(exp.startDate),
+            endDate: normalizeDate(exp.endDate),
+            description: exp.description || (Array.isArray(exp.responsibilities) ? exp.responsibilities.join('\n') : ''),
             includeInResume: true
           };
           
@@ -408,7 +504,7 @@ export default function ProfileHeader({
             console.log(`[${sessionId}] Experience item ${i+1} added successfully`);
             
             savedItems.experience++;
-            updateProgress(`Added experience ${i+1} of ${parsedData.experience.length}`);
+            updateProgress(`Added experience ${i+1} of ${experiences.length}`);
             
           } catch (expError) {
             console.error(`[${sessionId}] Failed to add experience item ${i+1}:`, expError);
@@ -418,7 +514,7 @@ export default function ProfileHeader({
       }
       
       // Step 5: Skills
-      if (parsedData.skills && Array.isArray(parsedData.skills) && parsedData.skills.length > 0) {
+      if (selectedSections.includes('skills') && parsedData.skills && Array.isArray(parsedData.skills) && parsedData.skills.length > 0) {
         console.log(`[${sessionId}] Processing ${parsedData.skills.length} skills`);
         
         if (onAddSkillsBatch && !userId) {
@@ -427,11 +523,12 @@ export default function ProfileHeader({
             setApplyProgress(`Adding ${parsedData.skills.length} skills...`);
             console.log(`[${sessionId}] Adding skills batch`);
             
-            const skillsToAdd = parsedData.skills.map((skill: string) => ({
-            name: skill,
-            domain: 'Other',
-            includeInResume: true
-          }));
+            // Handle both object format (with name/domain) and string format
+            const skillsToAdd = parsedData.skills.map((skill: any) => ({
+              name: typeof skill === 'string' ? skill : (skill.name || ''),
+              domain: typeof skill === 'string' ? 'General' : (skill.domain || 'General'),
+              includeInResume: true
+            }));
           
             await onAddSkillsBatch(skillsToAdd);
             console.log(`[${sessionId}] Skills batch added successfully`);
@@ -447,17 +544,19 @@ export default function ProfileHeader({
         else if (onAddSkill) {
           // Process skills one by one
           for (let i = 0; i < parsedData.skills.length; i++) {
-            const skillName = parsedData.skills[i];
+            const skillData = parsedData.skills[i];
             setApplyProgress(`Adding skill ${i+1} of ${parsedData.skills.length}...`);
             
             try {
+              // Handle both object format and string format
+              const skillName = typeof skillData === 'string' ? skillData : (skillData.name || '');
               console.log(`[${sessionId}] Adding skill ${i+1}/${parsedData.skills.length}: ${skillName}`);
               
               const skill = {
                 name: skillName,
-              domain: 'Other',
-              includeInResume: true
-            };
+                domain: typeof skillData === 'string' ? 'General' : (skillData.domain || 'General'),
+                includeInResume: true
+              };
               
               if (!userId) {
                 await onAddSkill(skill, false);
@@ -482,7 +581,7 @@ export default function ProfileHeader({
       }
       
       // Step 6: Projects
-      if (parsedData.projects && Array.isArray(parsedData.projects) && parsedData.projects.length > 0 && onAddProject) {
+      if (selectedSections.includes('projects') && parsedData.projects && Array.isArray(parsedData.projects) && parsedData.projects.length > 0 && onAddProject) {
         console.log(`[${sessionId}] Processing ${parsedData.projects.length} projects`);
         
         for (let i = 0; i < parsedData.projects.length; i++) {
@@ -493,15 +592,15 @@ export default function ProfileHeader({
             console.log(`[${sessionId}] Adding project item ${i+1}/${parsedData.projects.length}`);
             
           const project = {
-            title: proj.name || '',
+            title: proj.title || proj.name || '',
             description: proj.description || '',
-            technologies: Array.isArray(proj.technologies) 
-              ? proj.technologies.join(', ') 
-              : (typeof proj.technologies === 'string' ? proj.technologies : ''),
-            startDate: '',
-            endDate: '',
-            projectUrl: '',
-            githubUrl: '',
+            technologies: typeof proj.technologies === 'string' 
+              ? proj.technologies 
+              : (Array.isArray(proj.technologies) ? proj.technologies.join(', ') : ''),
+            startDate: normalizeDate(proj.startDate),
+            endDate: normalizeDate(proj.endDate),
+            githubUrl: proj.githubUrl || null,
+            projectUrl: proj.projectUrl || null,
             includeInResume: true
           };
           
@@ -571,16 +670,6 @@ export default function ProfileHeader({
     }
   };
 
-  const handleViewLatexClick = async () => {
-    try {
-      if (onViewLatex) {
-        await onViewLatex();
-      }
-    } catch (error) {
-      console.error('Failed to view LaTeX code:', error);
-    }
-  };
-
   return (
     <div className="relative rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
       {/* Image Crop Modal */}
@@ -606,13 +695,13 @@ export default function ProfileHeader({
       <ResumeParserModal
         open={isParserModalOpen}
         onClose={() => setIsParserModalOpen(false)}
-        isLoading={isParsingResume || isApplyingResumeData}
-        parsedData={parsedResumeData}
+        isLoading={isParsingResume}
         error={parserError}
         extractedText={extractedText}
-        onApplyData={handleApplyParsedData}
-        applyProgress={isApplyingResumeData ? applyProgress : undefined}
-        progressPercentage={progressPercentage}
+        parsedData={parsedResumeData}
+        onApply={handleApplyParsedData}
+        isApplying={isApplyingResumeData}
+        applyProgress={applyProgress}
       />
       
       {!isEditing ? (
@@ -797,16 +886,6 @@ export default function ProfileHeader({
                       >
                         <FileText className="h-5 w-5" />
                         View PDF Resume
-                      </button>
-                    )}
-
-                    {onViewLatex && (
-                      <button
-                        onClick={handleViewLatexClick}
-                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-500/20 backdrop-blur-xl border border-blue-500/30 text-blue-400 rounded-xl hover:bg-blue-500/30 transition-all font-semibold text-sm"
-                      >
-                        <Code className="h-5 w-5" />
-                        View LaTeX Code
                       </button>
                     )}
                   </div>

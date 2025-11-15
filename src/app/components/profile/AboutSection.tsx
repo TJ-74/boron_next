@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/app/components/ui/button";
 import { PenSquare, Save, X, Sparkles, User, Quote } from "lucide-react";
 import { generateAbout, AboutGenerationPrompt } from '@/app/services/aboutService';
@@ -32,6 +32,15 @@ export default function AboutSection({
   const [isSaving, setIsSaving] = useState(false);
   const [tempAbout, setTempAbout] = useState(initialAbout);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Update state when initialAbout prop changes (e.g., from parsed resume data)
+  useEffect(() => {
+    setAbout(initialAbout);
+    // Only update tempAbout if not currently editing to avoid overwriting user input
+    if (!isEditing) {
+      setTempAbout(initialAbout);
+    }
+  }, [initialAbout, isEditing]);
 
   const handleEdit = () => {
     setTempAbout(about);

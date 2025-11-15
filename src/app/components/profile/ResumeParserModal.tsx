@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -10,31 +9,10 @@ import {
   DialogFooter
 } from '@/app/components/ui/dialog';
 import { Button } from '@/app/components/ui/button';
-import { Loader2, Check, X, AlertTriangle } from 'lucide-react';
-import { ProfileInfo } from '@/app/types';
-import { Progress } from '@/app/components/ui/progress';
+import { Loader2, FileText, AlertTriangle, Copy, Check, User, Briefcase, GraduationCap, Code, FolderOpen, Lightbulb } from 'lucide-react';
+import { useState } from 'react';
 
-// Define types for parsed resume data
-type EducationItem = {
-  degree: string;
-  school: string;
-  graduationDate: string;
-};
-
-type ExperienceItem = {
-  company: string;
-  title: string;
-  dates: string;
-  responsibilities: string[];
-};
-
-type ProjectItem = {
-  name: string;
-  description: string;
-  technologies?: string[];
-};
-
-interface ParsedResumeData {
+interface ParsedData {
   name?: string;
   email?: string;
   phone?: string;
@@ -43,409 +21,533 @@ interface ParsedResumeData {
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
-  education?: EducationItem[];
-  experience?: ExperienceItem[];
-  skills?: string[];
-  projects?: ProjectItem[];
-  [key: string]: any; // Allow for any additional fields
+  about?: string;
+  education?: Array<{
+    id: string;
+    school: string;
+    degree: string;
+    startDate: string;
+    endDate: string;
+    cgpa: string;
+  }>;
+  experiences?: Array<{
+    id: string;
+    company: string;
+    position: string;
+    location: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  skills?: Array<{
+    id: string;
+    name: string;
+    domain: string;
+  }>;
+  projects?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    technologies: string;
+    startDate: string;
+    endDate: string;
+    githubUrl?: string;
+    projectUrl?: string;
+  }>;
 }
 
 interface ResumeParserModalProps {
   open: boolean;
   onClose: () => void;
-  parsedData: ParsedResumeData | null;
   isLoading: boolean;
   error?: string;
   extractedText?: string;
-  onApplyData: (data: any) => void;
+  parsedData?: ParsedData | null;
+  onApply?: (data: ParsedData, selectedSections: string[]) => void;
+  isApplying?: boolean;
   applyProgress?: string;
-  progressPercentage?: number;
 }
-
-// Define which fields from the parsed data we want to show in the profile
-const PROFILE_FIELDS = [
-  'name', 'email', 'phone', 'location', 'title', 
-  'linkedinUrl', 'githubUrl', 'portfolioUrl'
-] as const;
-
-// Define sections for selection
-const DATA_SECTIONS = {
-  profile: 'Basic Profile',
-  about: 'About',
-  education: 'Education',
-  experience: 'Work Experience',
-  skills: 'Skills',
-  projects: 'Projects'
-};
 
 export default function ResumeParserModal({
   open,
   onClose,
-  parsedData,
   isLoading,
   error,
   extractedText,
-  onApplyData,
+  parsedData,
+  onApply,
+  isApplying = false,
   applyProgress,
-  progressPercentage = 0
 }: ResumeParserModalProps) {
-  const [selectedFields, setSelectedFields] = useState<Record<string, boolean>>({
-    name: true,
-    email: true,
-    phone: true,
-    location: true,
-    title: true,
-    linkedinUrl: true,
-    githubUrl: true,
-    portfolioUrl: true
-  });
+  const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<'parsed' | 'text'>('parsed');
   
-  // Add state for section selection
-  const [selectedSections, setSelectedSections] = useState<Record<string, boolean>>({
-    profile: true,
-    about: true,
-    education: true,
-    experience: true,
-    skills: true,
-    projects: true
-  });
-  
-  // Add state to toggle showing the extracted text
-  const [showExtractedText, setShowExtractedText] = useState(false);
-
-  // Reset the selected fields when new data is loaded
-  useEffect(() => {
-    if (parsedData) {
-      const newSelectedFields = { ...selectedFields };
-      const newSelectedSections = { ...selectedSections };
-      
-      // Set to false any fields that are missing in the parsed data
-      Object.keys(newSelectedFields).forEach(field => {
-        if (!parsedData[field]) {
-          newSelectedFields[field] = false;
-        }
-      });
-      
-      // Set section availability based on parsed data
-      if (!parsedData.education || !Array.isArray(parsedData.education) || parsedData.education.length === 0) {
-        newSelectedSections.education = false;
-      }
-      if (!parsedData.experience || !Array.isArray(parsedData.experience) || parsedData.experience.length === 0) {
-        newSelectedSections.experience = false;
-      }
-      if (!parsedData.skills || !Array.isArray(parsedData.skills) || parsedData.skills.length === 0) {
-        newSelectedSections.skills = false;
-      }
-      if (!parsedData.projects || !Array.isArray(parsedData.projects) || parsedData.projects.length === 0) {
-        newSelectedSections.projects = false;
-      }
-      if (!parsedData.about) {
-        newSelectedSections.about = false;
-      }
-      
-      setSelectedFields(newSelectedFields);
-      setSelectedSections(newSelectedSections);
-    }
-  }, [parsedData]);
-
-  const toggleField = (field: string) => {
-    setSelectedFields(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
+  // Section selection state
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set([
+    'profile',
+    'about',
+    'education',
+    'experiences',
+    'skills',
+    'projects'
+  ]));
   
   const toggleSection = (section: string) => {
-    setSelectedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+    setSelectedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
   };
-
-  const handleApply = () => {
-    if (!parsedData) return;
-
-    // Create a filtered copy of the parsed data with only selected sections
-    const filteredData = { ...parsedData };
-    
-    // Only include basic profile fields that are selected
-    if (!selectedSections.profile) {
-      PROFILE_FIELDS.forEach(field => {
-        delete filteredData[field];
-      });
-    } else {
-      // Filter individual profile fields
-      PROFILE_FIELDS.forEach(field => {
-        if (!selectedFields[field]) {
-          delete filteredData[field];
-        }
-      });
+  
+  const hasSectionData = (section: string): boolean => {
+    if (!parsedData) return false;
+    switch (section) {
+      case 'profile':
+        return !!(parsedData.name || parsedData.email || parsedData.phone || parsedData.location || parsedData.title);
+      case 'about':
+        return !!parsedData.about;
+      case 'education':
+        return !!(parsedData.education && parsedData.education.length > 0);
+      case 'experiences':
+        return !!(parsedData.experiences && parsedData.experiences.length > 0);
+      case 'skills':
+        return !!(parsedData.skills && parsedData.skills.length > 0);
+      case 'projects':
+        return !!(parsedData.projects && parsedData.projects.length > 0);
+      default:
+        return false;
     }
-    
-    // Filter out unselected sections
-    if (!selectedSections.about) delete filteredData.about;
-    if (!selectedSections.education) delete filteredData.education;
-    if (!selectedSections.experience) delete filteredData.experience;
-    if (!selectedSections.skills) delete filteredData.skills;
-    if (!selectedSections.projects) delete filteredData.projects;
-    
-    // Pass the filtered data to onApplyData
-    onApplyData(filteredData);
-    onClose();
   };
 
-  // Check if we encountered a parsing error
-  const hasParsingError = parsedData && 'parseError' in parsedData;
+  const handleCopy = () => {
+    const textToCopy = viewMode === 'text' ? extractedText : JSON.stringify(parsedData, null, 2);
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Resume Parser Results</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Resume Parser Results
+          </DialogTitle>
           <DialogDescription>
-            We've extracted the following information from your resume. 
-            Select the sections and details you'd like to apply to your profile.
+            {isLoading ? 'Extracting and parsing your PDF...' : 
+             error ? 'An error occurred while processing your PDF.' :
+             parsedData ? 'Successfully extracted and parsed your resume into structured data.' :
+             extractedText ? `Extracted ${extractedText.length.toLocaleString()} characters.` :
+             'No data available.'}
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            {applyProgress && (
-              <div className="w-full max-w-md mt-6">
-                <Progress value={progressPercentage} className="h-2 mb-2" />
-                <p className="text-gray-400 text-center">
-                  {applyProgress}
-                </p>
-                <p className="text-gray-500 text-sm text-center mt-1">
-                  {progressPercentage}% Complete
-                </p>
-              </div>
-            )}
-            {!applyProgress && (
-              <p className="mt-4 text-gray-400">
-                Parsing your resume...
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+              <p className="text-gray-400">Processing your PDF...</p>
+              <p className="text-gray-500 text-sm mt-2">Extracting text and parsing with AI...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+              <p className="text-red-400 font-medium mb-2">{error}</p>
+              <p className="text-gray-400 text-sm text-center max-w-md">
+                Make sure your PDF is text-based (not a scanned image) and try again.
               </p>
-            )}
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle className="h-8 w-8 text-yellow-500" />
-            <p className="mt-4 text-gray-200 text-center">{error}</p>
-            <p className="mt-2 text-gray-400 text-center text-sm">
-              Try uploading a different file format or a text-based PDF.
-            </p>
-          </div>
-        ) : !parsedData ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <X className="h-8 w-8 text-red-500" />
-            <p className="mt-4 text-gray-400">No data could be parsed from your resume.</p>
-          </div>
-        ) : hasParsingError ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle className="h-8 w-8 text-yellow-500" />
-            <p className="mt-4 text-gray-200 text-center">We had trouble parsing your resume.</p>
-            <p className="mt-2 text-gray-400 text-center text-sm">
-              Try uploading a different file or a simpler format like plain text.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Show extracted text toggle button */}
-            {extractedText && (
-              <div className="flex justify-end">
+            </div>
+          ) : parsedData || extractedText ? (
+            <>
+              {/* View Mode Toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-2">
+                  <Button
+                    variant={viewMode === 'parsed' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('parsed')}
+                    disabled={!parsedData}
+                  >
+                    Parsed Data
+                  </Button>
+                  <Button
+                    variant={viewMode === 'text' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('text')}
+                    disabled={!extractedText}
+                  >
+                    Raw Text
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowExtractedText(!showExtractedText)}
-                  className="text-blue-400 border-blue-400 hover:bg-blue-900/20"
+                  onClick={handleCopy}
+                  className="gap-2"
                 >
-                  {showExtractedText ? 'Hide Extracted Text' : 'Show Extracted Text'}
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy {viewMode === 'parsed' ? 'JSON' : 'Text'}
+                    </>
+                  )}
                 </Button>
               </div>
-            )}
 
-            {/* Extracted text display area */}
-            {showExtractedText && extractedText && (
-              <div className="p-4 bg-gray-900/50 rounded-md border border-gray-700 mt-2">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">Text Extracted From Resume:</h3>
-                <div className="max-h-[200px] overflow-y-auto">
-                  <pre className="text-xs text-gray-400 whitespace-pre-wrap">{extractedText}</pre>
-                </div>
-              </div>
-            )}
-            
-            {/* Section selection */}
-            <div className="p-4 bg-gray-900/50 rounded-md border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Select Sections to Import:</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {Object.entries(DATA_SECTIONS).map(([key, label]) => (
-                  <div 
-                    key={key}
-                    className={`p-3 rounded-md cursor-pointer flex items-center gap-2 transition-colors ${
-                      selectedSections[key] 
-                        ? 'bg-blue-900/30 border border-blue-500/50 text-blue-300' 
-                        : 'bg-gray-800 border border-gray-700 text-gray-400 hover:bg-gray-700'
-                    } ${!parsedData[key] && key !== 'profile' ? 'opacity-50' : ''}`}
-                    onClick={() => parsedData[key] || key === 'profile' ? toggleSection(key) : null}
-                  >
-                    <div className={`p-1 rounded-md ${
-                      selectedSections[key] ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-500'
-                    }`}>
-                      <Check className="h-4 w-4" />
-                    </div>
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Only show profile fields if profile section is selected */}
-            {selectedSections.profile && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <h3 className="text-lg font-medium text-white mb-1 md:col-span-2">Basic Info</h3>
-                {/* Only render profile fields that are strings */}
-                {PROFILE_FIELDS.map(field => {
-                  const value = parsedData[field];
-                  if (value === undefined || value === null || typeof value !== 'string') {
-                    return null;
-                  }
-                  
-                  return (
-                    <div key={field} className="flex items-start space-x-3 p-3 border border-gray-700 rounded-md bg-gray-800/50">
-                      <div 
-                        className={`p-1.5 rounded-md cursor-pointer ${
-                          selectedFields[field] ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-400'
-                        }`}
-                        onClick={() => toggleField(field)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-300 capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</p>
-                        <p className="text-white break-words">{value}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {selectedSections.education && parsedData.education && Array.isArray(parsedData.education) && parsedData.education.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-medium text-white mb-3">Education</h3>
-                <div className="space-y-3">
-                  {parsedData.education.map((edu, index) => (
-                    <div key={index} className="p-3 border border-gray-700 rounded-md bg-gray-800/50">
-                      <p className="font-medium text-white">{edu.degree}</p>
-                      <p className="text-gray-300">{edu.school}</p>
-                      <p className="text-gray-400 text-sm">{edu.graduationDate}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedSections.skills && parsedData.skills && Array.isArray(parsedData.skills) && parsedData.skills.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-medium text-white mb-3">Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {parsedData.skills.map((skill, index) => (
-                    <span 
-                      key={index} 
-                      className="px-3 py-1 bg-gray-700 text-gray-200 rounded-full text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedSections.experience && parsedData.experience && Array.isArray(parsedData.experience) && parsedData.experience.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-medium text-white mb-3">Experience</h3>
-                <div className="space-y-3">
-                  {parsedData.experience.map((exp, index) => (
-                    <div key={index} className="p-3 border border-gray-700 rounded-md bg-gray-800/50">
-                      <p className="font-medium text-white">{exp.title} at {exp.company}</p>
-                      <p className="text-gray-400 text-sm">{exp.dates}</p>
-                      {exp.responsibilities && Array.isArray(exp.responsibilities) && exp.responsibilities.length > 0 && (
-                        <ul className="mt-2 list-disc list-inside space-y-1">
-                          {exp.responsibilities.map((resp, i) => (
-                            <li key={i} className="text-gray-300 text-sm">{resp}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {selectedSections.projects && parsedData.projects && Array.isArray(parsedData.projects) && parsedData.projects.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-medium text-white mb-3">Projects</h3>
-                <div className="space-y-3">
-                  {parsedData.projects.map((project, index) => (
-                    <div key={index} className="p-3 border border-gray-700 rounded-md bg-gray-800/50">
-                      <p className="font-medium text-white">{project.name}</p>
-                      <p className="text-gray-300 text-sm">{project.description}</p>
-                      {project.technologies && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {Array.isArray(project.technologies) ? project.technologies.map((tech, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs">
-                              {tech}
-                            </span>
-                          )) : (
-                            <span className="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs">
-                              {project.technologies}
-                            </span>
+              {/* Content Area */}
+              <div className="flex-1 overflow-y-auto">
+                {viewMode === 'parsed' && parsedData ? (
+                  <div className="space-y-6">
+                    {/* Personal Information */}
+                    {(parsedData.name || parsedData.email || parsedData.phone || parsedData.location || parsedData.title) && (
+                      <div className={`p-4 bg-gray-900/50 rounded-lg border ${selectedSections.has('profile') ? 'border-blue-500' : 'border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <User className="h-5 w-5 text-blue-400" />
+                            <h3 className="text-lg font-semibold text-white">Personal Information</h3>
+                          </div>
+                          {onApply && !isApplying && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has('profile')}
+                                onChange={() => toggleSection('profile')}
+                                disabled={isApplying}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-400">Apply</span>
+                            </label>
                           )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          {parsedData.name && (
+                            <div>
+                              <span className="text-gray-400">Name:</span>
+                              <span className="text-white ml-2">{parsedData.name}</span>
+                            </div>
+                          )}
+                          {parsedData.email && (
+                            <div>
+                              <span className="text-gray-400">Email:</span>
+                              <span className="text-white ml-2">{parsedData.email}</span>
+                            </div>
+                          )}
+                          {parsedData.phone && (
+                            <div>
+                              <span className="text-gray-400">Phone:</span>
+                              <span className="text-white ml-2">{parsedData.phone}</span>
+                            </div>
+                          )}
+                          {parsedData.location && (
+                            <div>
+                              <span className="text-gray-400">Location:</span>
+                              <span className="text-white ml-2">{parsedData.location}</span>
+                            </div>
+                          )}
+                          {parsedData.title && (
+                            <div className="col-span-2">
+                              <span className="text-gray-400">Title:</span>
+                              <span className="text-white ml-2">{parsedData.title}</span>
+                            </div>
+                          )}
+                        </div>
+                        {(parsedData.linkedinUrl || parsedData.githubUrl || parsedData.portfolioUrl) && (
+                          <div className="mt-3 pt-3 border-t border-gray-700">
+                            <div className="flex flex-wrap gap-3 text-sm">
+                              {parsedData.linkedinUrl && (
+                                <a href={parsedData.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                  LinkedIn
+                                </a>
+                              )}
+                              {parsedData.githubUrl && (
+                                <a href={parsedData.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                  GitHub
+                                </a>
+                              )}
+                              {parsedData.portfolioUrl && (
+                                <a href={parsedData.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                  Portfolio
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-            {/* Show extraction quality message */}
-            {!error && !hasParsingError && (
-              <div className="mt-4 p-3 bg-blue-900/20 text-blue-400 text-sm rounded-md">
-                <p>
-                  Note: The quality of extraction depends on your resume format.
-                  {Object.values(selectedFields).filter(Boolean).length === 0 && (
-                    <span className="block mt-1 text-yellow-400">
-                      We couldn't extract core profile information. Try a simpler format.
-                    </span>
-                  )}
-                </p>
+                    {/* About Section */}
+                    {parsedData.about && (
+                      <div className={`p-4 bg-gray-900/50 rounded-lg border ${selectedSections.has('about') ? 'border-blue-500' : 'border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-white">About</h3>
+                          {onApply && !isApplying && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has('about')}
+                                onChange={() => toggleSection('about')}
+                                disabled={isApplying}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-400">Apply</span>
+                            </label>
+                          )}
+                        </div>
+                        <p className="text-gray-300 text-sm whitespace-pre-wrap">{parsedData.about}</p>
+                      </div>
+                    )}
+
+                    {/* Education */}
+                    {parsedData.education && parsedData.education.length > 0 && (
+                      <div className={`p-4 bg-gray-900/50 rounded-lg border ${selectedSections.has('education') ? 'border-blue-500' : 'border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="h-5 w-5 text-blue-400" />
+                            <h3 className="text-lg font-semibold text-white">Education ({parsedData.education.length})</h3>
+                          </div>
+                          {onApply && !isApplying && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has('education')}
+                                onChange={() => toggleSection('education')}
+                                disabled={isApplying}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-400">Apply</span>
+                            </label>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          {parsedData.education.map((edu, index) => (
+                            <div key={edu.id || index} className="p-3 bg-gray-800/50 rounded border border-gray-700">
+                              <div className="font-medium text-white">{edu.degree}</div>
+                              <div className="text-gray-300 text-sm">{edu.school}</div>
+                              <div className="text-gray-400 text-xs mt-1">
+                                {edu.startDate && edu.endDate && `${edu.startDate} - ${edu.endDate}`}
+                                {edu.cgpa && ` • GPA: ${edu.cgpa}`}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Experience */}
+                    {parsedData.experiences && parsedData.experiences.length > 0 && (
+                      <div className={`p-4 bg-gray-900/50 rounded-lg border ${selectedSections.has('experiences') ? 'border-blue-500' : 'border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="h-5 w-5 text-blue-400" />
+                            <h3 className="text-lg font-semibold text-white">Experience ({parsedData.experiences.length})</h3>
+                          </div>
+                          {onApply && !isApplying && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has('experiences')}
+                                onChange={() => toggleSection('experiences')}
+                                disabled={isApplying}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-400">Apply</span>
+                            </label>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          {parsedData.experiences.map((exp, index) => (
+                            <div key={exp.id || index} className="p-3 bg-gray-800/50 rounded border border-gray-700">
+                              <div className="font-medium text-white">{exp.position} at {exp.company}</div>
+                              {exp.location && <div className="text-gray-400 text-xs">{exp.location}</div>}
+                              <div className="text-gray-400 text-xs">
+                                {exp.startDate && exp.endDate && `${exp.startDate} - ${exp.endDate}`}
+                              </div>
+                              {exp.description && (
+                                <div className="text-gray-300 text-sm mt-2 whitespace-pre-wrap">{exp.description}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Skills */}
+                    {parsedData.skills && parsedData.skills.length > 0 && (
+                      <div className={`p-4 bg-gray-900/50 rounded-lg border ${selectedSections.has('skills') ? 'border-blue-500' : 'border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Code className="h-5 w-5 text-blue-400" />
+                            <h3 className="text-lg font-semibold text-white">Skills ({parsedData.skills.length})</h3>
+                          </div>
+                          {onApply && !isApplying && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has('skills')}
+                                onChange={() => toggleSection('skills')}
+                                disabled={isApplying}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-400">Apply</span>
+                            </label>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {parsedData.skills.map((skill, index) => (
+                            <div
+                              key={skill.id || index}
+                              className="px-3 py-1 bg-gray-800 rounded-full text-sm border border-gray-700"
+                            >
+                              <span className="text-white">{skill.name}</span>
+                              {skill.domain && skill.domain !== 'General' && (
+                                <span className="text-gray-400 text-xs ml-2">({skill.domain})</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Projects */}
+                    {parsedData.projects && parsedData.projects.length > 0 && (
+                      <div className={`p-4 bg-gray-900/50 rounded-lg border ${selectedSections.has('projects') ? 'border-blue-500' : 'border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <FolderOpen className="h-5 w-5 text-blue-400" />
+                            <h3 className="text-lg font-semibold text-white">Projects ({parsedData.projects.length})</h3>
+                          </div>
+                          {onApply && !isApplying && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has('projects')}
+                                onChange={() => toggleSection('projects')}
+                                disabled={isApplying}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-400">Apply</span>
+                            </label>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          {parsedData.projects.map((project, index) => (
+                            <div key={project.id || index} className="p-3 bg-gray-800/50 rounded border border-gray-700">
+                              <div className="font-medium text-white">{project.title}</div>
+                              {project.startDate && project.endDate && (
+                                <div className="text-gray-400 text-xs">
+                                  {project.startDate} - {project.endDate}
+                                </div>
+                              )}
+                              {project.description && (
+                                <div className="text-gray-300 text-sm mt-2">{project.description}</div>
+                              )}
+                              {project.technologies && (
+                                <div className="text-gray-400 text-xs mt-2">
+                                  <span className="font-medium">Technologies:</span> {project.technologies}
+                                </div>
+                              )}
+                              {(project.githubUrl || project.projectUrl) && (
+                                <div className="flex gap-3 mt-2 text-xs">
+                                  {project.githubUrl && (
+                                    <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                      GitHub
+                                    </a>
+                                  )}
+                                  {project.projectUrl && (
+                                    <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                      Live Demo
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* JSON View Toggle */}
+                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                      <details className="cursor-pointer">
+                        <summary className="text-sm text-gray-400 hover:text-gray-300">
+                          View Raw JSON
+                        </summary>
+                        <pre className="mt-3 p-3 bg-gray-950 rounded text-xs text-gray-400 overflow-x-auto">
+                          {JSON.stringify(parsedData, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col">
+                    <div className="flex-1 overflow-y-auto p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                      <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
+                        {extractedText || 'No text available'}
+                      </pre>
+                    </div>
+                  </div>
+                )}
               </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16">
+              <FileText className="h-12 w-12 text-gray-600 mb-4" />
+              <p className="text-gray-400">No data to display</p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="flex items-center justify-between">
+          <div className="flex-1">
+            {isApplying && applyProgress && (
+              <p className="text-sm text-gray-400">{applyProgress}</p>
+            )}
+            {!isApplying && parsedData && onApply && (
+              <p className="text-sm text-gray-500">
+                {selectedSections.size} section{selectedSections.size !== 1 ? 's' : ''} selected
+              </p>
             )}
           </div>
-        )}
-
-        <DialogFooter>
-          <Button 
-            variant="ghost" 
-            onClick={onClose}
-            disabled={!!applyProgress}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleApply}
-            disabled={isLoading || !parsedData || !!error || hasParsingError || 
-              (selectedSections.profile && Object.values(selectedFields).filter(Boolean).length === 0 && 
-               Object.values(selectedSections).filter(Boolean).length <= 1) || 
-              !!applyProgress}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            Apply to Profile
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              disabled={isLoading || isApplying}
+            >
+              Close
+            </Button>
+            {parsedData && onApply && (
+              <Button
+                onClick={() => onApply(parsedData, Array.from(selectedSections))}
+                disabled={isLoading || isApplying || selectedSections.size === 0}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  `Apply Selected (${selectedSections.size})`
+                )}
+              </Button>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-} 
+}
