@@ -298,8 +298,8 @@ export default function Profile() {
     if (!profile || !user?.uid) return;
     
     try {
-      // Use the server API endpoint that generates the LaTeX with path parameters
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}`;
+      // Use the server API endpoint that generates the LaTeX with .tex extension
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}.tex`;
       
       // Create a data URI with the API URL
       const encodedUri = encodeURIComponent(apiUrl);
