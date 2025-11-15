@@ -231,11 +231,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    // Use pdf2json to parse PDF
-    return new Promise((resolve, reject) => {
+      // Use pdf2json to parse PDF
+      return new Promise<NextResponse>((resolve, reject) => {
       const pdfParser = new PDFParser();
       
       // Collect all text from the PDF
