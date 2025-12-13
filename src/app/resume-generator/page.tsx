@@ -225,330 +225,6 @@ const formatDate = (dateString?: string): string => {
   }
 };
 
-// PDF generation function with selectable text
-const generatePDFWithText = async (resumeData: ResumeData) => {
-  try {
-    // Helper to convert markdown to HTML for PDF
-    const markdownToHtmlForPDF = (text: string): string => {
-      if (!text) return '';
-      let html = text;
-      // Bold
-      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-      // Italic (avoiding conflicts with bold)
-      html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
-      html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>');
-      // Inline code
-      html = html.replace(/`(.+?)`/g, '<code style="background-color: #f3f4f6; padding: 2px 4px; border-radius: 2px; font-family: monospace; font-size: 0.9em;">$1</code>');
-      return html;
-    };
-
-    // Create a clean, text-based HTML structure for PDF
-    const createTextBasedHTML = (data: ResumeData): string => {
-      const formatPDFDate = (dateString?: string): string => {
-        return formatDate(dateString);
-      };
-
-      return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title></title>
-  <style>
-    * { 
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box; 
-    }
-    
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 12px;
-      line-height: 1.4;
-      color: #000;
-      max-width: 8.5in;
-      margin: 0 auto;
-      padding: 0.4in;
-    }
-    
-    h1 {
-      font-size: 18px;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 5px;
-    }
-    
-    .title {
-      font-size: 14px;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    
-    .contact {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-      font-size: 10px;
-      margin-bottom: 15px;
-      flex-wrap: nowrap;
-    }
-    
-    .contact-item {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    
-    .section-title {
-      font-size: 12px;
-      font-weight: bold;
-      text-transform: uppercase;
-      margin-top: 15px;
-      margin-bottom: 3px;
-      border-bottom: 1px solid #000;
-      padding-bottom: 2px;
-    }
-    
-    .section-content {
-      margin-bottom: 10px;
-    }
-    
-    .entry {
-      margin-bottom: 10px;
-    }
-    
-    .entry-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      font-weight: bold;
-      margin-bottom: 3px;
-    }
-    
-    .entry-title {
-      font-weight: bold;
-    }
-    
-    .entry-date {
-      font-size: 10px;
-      font-weight: normal;
-    }
-    
-    .bullet-list {
-      margin-left: 15px;
-      margin-top: 3px;
-    }
-    
-    .bullet-list li {
-      margin-bottom: 2px;
-      font-size: 11px;
-    }
-    
-    .skills-category {
-      margin-bottom: 3px;
-      font-size: 11px;
-    }
-    
-    .skills-category strong {
-      font-weight: bold;
-    }
-    
-    @media print {
-      @page {
-        size: letter;
-        margin: 0.4in;
-        /* Remove all browser-generated content */
-        @top-left { content: ""; }
-        @top-center { content: ""; }
-        @top-right { content: ""; }
-        @bottom-left { content: ""; }
-        @bottom-center { content: ""; }
-        @bottom-right { content: ""; }
-      }
-      
-      body {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        padding: 0;
-      }
-      
-      /* Hide any potential browser UI elements */
-      body::before,
-      body::after,
-      html::before,
-      html::after {
-        display: none !important;
-        content: none !important;
-      }
-      
-      /* Ensure text remains selectable */
-      * {
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      
-      /* Hide print-specific elements */
-      .no-print {
-        display: none !important;
-      }
-    }
-  </style>
-</head>
-<body>
-  <h1>${data.header.name}</h1>
-  ${data.header.title ? `<div class="title">${data.header.title}</div>` : ''}
-  
-  <div class="contact">
-    ${data.header.contact.phone ? `
-      <div class="contact-item">
-        <span>📱</span>
-        <span>${data.header.contact.phone}</span>
-      </div>
-    ` : ''}
-    ${data.header.contact.email ? `
-      <div class="contact-item">
-        <span>✉️</span>
-        <span>${data.header.contact.email}</span>
-      </div>
-    ` : ''}
-    ${data.header.contact.linkedin ? `
-      <div class="contact-item">
-        <span>💼</span>
-        <span>${data.header.contact.linkedin.replace('https://www.linkedin.com/in/', 'linkedin.com/in/')}</span>
-      </div>
-    ` : ''}
-    ${data.header.contact.github ? `
-      <div class="contact-item">
-        <span>🔗</span>
-        <span>${data.header.contact.github.replace('https://github.com/', 'github.com/')}</span>
-      </div>
-    ` : ''}
-  </div>
-
-  ${data.summary ? `
-    <div class="section-title">Summary</div>
-    <div class="section-content">${markdownToHtmlForPDF(data.summary)}</div>
-  ` : ''}
-
-  ${data.skills && Object.keys(data.skills).length > 0 ? `
-    <div class="section-title">Skills</div>
-    <div class="section-content">
-      ${Object.entries(data.skills).map(([domain, skills]) => 
-        skills && skills.length > 0 ? 
-          `<div class="skills-category"><strong>${domain}:</strong> ${skills.join(', ')}</div>` 
-          : ''
-      ).join('')}
-    </div>
-  ` : ''}
-
-  ${data.experience && data.experience.length > 0 ? `
-    <div class="section-title">Experience</div>
-    <div class="section-content">
-      ${data.experience.map(exp => `
-        <div class="entry">
-          <div class="entry-header">
-            <span class="entry-title">${exp.title} - ${exp.company}</span>
-            <span class="entry-date">${formatPDFDate(exp.startDate)} — ${formatPDFDate(exp.endDate)}</span>
-          </div>
-          <ul class="bullet-list">
-            ${exp.highlights.map(highlight => `<li>${markdownToHtmlForPDF(highlight)}</li>`).join('')}
-          </ul>
-        </div>
-      `).join('')}
-    </div>
-  ` : ''}
-
-  ${data.projects && data.projects.length > 0 ? `
-    <div class="section-title">Projects</div>
-    <div class="section-content">
-      ${data.projects.map(project => `
-        <div class="entry">
-          <div class="entry-header">
-            <span class="entry-title">${project.title}</span>
-            <span class="entry-date">${formatPDFDate(project.startDate)} — ${formatPDFDate(project.endDate)}</span>
-          </div>
-          <ul class="bullet-list">
-            ${project.highlights.map(highlight => `<li>${markdownToHtmlForPDF(highlight)}</li>`).join('')}
-          </ul>
-          ${project.githubUrl || project.projectUrl ? `<div style="font-size: 9px; margin-top: 2px; color: #666;">
-            ${project.githubUrl ? `GitHub: ${project.githubUrl}` : ''}
-            ${project.githubUrl && project.projectUrl ? ' | ' : ''}
-            ${project.projectUrl ? `Live: ${project.projectUrl}` : ''}
-          </div>` : ''}
-        </div>
-      `).join('')}
-    </div>
-  ` : ''}
-
-  ${data.education && data.education.length > 0 ? `
-    <div class="section-title">Education</div>
-    <div class="section-content">
-      ${data.education.map(edu => `
-        <div class="entry">
-          <div class="entry-header">
-            <span class="entry-title">${edu.school} • ${edu.degree}</span>
-            <span class="entry-date">${formatPDFDate(edu.startDate)} - ${formatPDFDate(edu.endDate)}</span>
-          </div>
-          ${edu.gpa ? `<div style="font-size: 11px; margin-top: 2px;">GPA: ${edu.gpa}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>
-  ` : ''}
-
-  ${data.certificates && data.certificates.length > 0 ? `
-    <div class="section-title">Certifications</div>
-    <div class="section-content">
-      ${data.certificates.map(cert => `
-        <div class="entry">
-          <div class="entry-header">
-            <span class="entry-title">${cert.name} by ${cert.issuer}</span>
-            <span class="entry-date">${formatPDFDate(cert.date)}</span>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  ` : ''}
-</body>
-</html>`;
-    };
-
-    // Generate HTML content
-    const htmlContent = createTextBasedHTML(resumeData);
-    
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Wait for content to load and clear any potential headers
-      setTimeout(() => {
-        // Clear the title to prevent it from showing in headers
-        printWindow.document.title = '';
-        
-        // Show print dialog
-        printWindow.print();
-        
-        // Close window after printing
-        printWindow.onafterprint = () => {
-          printWindow.close();
-        };
-      }, 500);
-    } else {
-      throw new Error('Failed to open print window. Please allow popups for this site.');
-    }
-
-  } catch (error) {
-    console.error('Error generating resume:', error);
-    throw error;
-  }
-};
 
 export default function ResumeGenerator() {
   const { user } = useAuth();
@@ -586,6 +262,8 @@ export default function ResumeGenerator() {
     resumeData: ResumeData | null;
   }>>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -685,10 +363,10 @@ export default function ResumeGenerator() {
         width: 100%;
         max-width: 8.5in;
         margin: 0 auto;
-        padding: 0.4in;
+        padding: 0.3in;
         background-color: white;
         font-family: 'Times New Roman', Times, serif;
-        line-height: 1.2;
+        line-height: 1.15;
         color: #333;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
       }
@@ -700,17 +378,17 @@ export default function ResumeGenerator() {
         width: 100%;
         max-width: 8.5in;
         margin: 0 auto;
-        padding: 0.4in;
+        padding: 0.3in;
         background-color: white;
         font-family: 'Times New Roman', Times, serif;
-        line-height: 1.2;
+        line-height: 1.15;
         color: #333;
       }
       
       /* Each section should have proper spacing for multi-page layout */
       .resume-preview-container .section {
-        margin-bottom: 0.75rem;
-        padding-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.15rem;
         width: 100%;
         break-inside: avoid;
       }
@@ -719,7 +397,7 @@ export default function ResumeGenerator() {
         font-size: 1.5rem;
         font-weight: bold;
         text-align: center;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.35rem;
         color: #000;
       }
       
@@ -744,7 +422,7 @@ export default function ResumeGenerator() {
       
       .resume-preview-container .header {
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.65rem;
         width: 100%;
       }
       
@@ -752,10 +430,10 @@ export default function ResumeGenerator() {
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 0.85rem;
         font-size: 0.75rem;
         color: #666;
-        margin-bottom: 1rem;
+        margin-bottom: 0.65rem;
         width: 100%;
       }
       
@@ -784,8 +462,8 @@ export default function ResumeGenerator() {
       .resume-preview-container .content-indent {
         margin-left: 0.3rem;
         font-size: 0.8rem;
-        line-height: 1.2;
-        margin-bottom: 0.15rem;
+        line-height: 1.15;
+        margin-bottom: 0.12rem;
         color: #000;
         width: 100%;
         break-inside: avoid;
@@ -800,8 +478,8 @@ export default function ResumeGenerator() {
       .resume-preview-container .bullet-list {
         padding-left: 1.2rem;
         list-style-type: disc;
-        margin-top: 0.1rem;
-        line-height: 1.2;
+        margin-top: 0.08rem;
+        line-height: 1.15;
         font-size: 0.8rem;
         width: 100%;
       }
@@ -809,7 +487,7 @@ export default function ResumeGenerator() {
       .resume-preview-container .entry-title {
         font-weight: normal;
         display: inline-block;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.08rem;
         font-size: 0.8rem;
         color: #000;
         width: 70%;
@@ -817,7 +495,7 @@ export default function ResumeGenerator() {
       
       .resume-preview-container .skill-item {
         font-size: 0.75rem;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.08rem;
         color: #000;
       }
       
@@ -840,7 +518,7 @@ export default function ResumeGenerator() {
       @media print {
         @page {
           size: letter;
-          margin: 0.4in;
+          margin: 0.3in;
           /* Hide default browser headers and footers */
           @top-left { content: none; }
           @top-center { content: none; }
@@ -883,10 +561,10 @@ export default function ResumeGenerator() {
 
         .resume-container {
           box-shadow: none !important;
-          padding: 0 0.1in !important;
+          padding: 0 0.08in !important;
           margin: 0 !important;
           width: 100% !important;
-          max-width: 7.7in !important;
+          max-width: 7.9in !important;
           height: auto !important;
           min-height: 0 !important;
         }
@@ -894,26 +572,26 @@ export default function ResumeGenerator() {
         .section {
           page-break-inside: auto !important;
           break-inside: auto !important;
-          margin-bottom: 0.5rem !important;
-          padding-bottom: 0.15rem !important;
+          margin-bottom: 0.4rem !important;
+          padding-bottom: 0.12rem !important;
         }
 
         .content-indent {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
-          margin-bottom: 0.15rem !important;
+          margin-bottom: 0.12rem !important;
         }
 
         .bullet-list {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
-          margin-bottom: 0.15rem !important;
+          margin-bottom: 0.12rem !important;
         }
 
         .header {
           page-break-after: avoid !important;
           break-after: avoid !important;
-          margin-bottom: 0.5rem !important;
+          margin-bottom: 0.4rem !important;
         }
 
         h2, .section-title {
@@ -924,12 +602,12 @@ export default function ResumeGenerator() {
         }
 
         .section-divider {
-          margin: 0.05rem 0 0.15rem 0 !important;
+          margin: 0.05rem 0 0.12rem 0 !important;
         }
 
         /* Optimize spacing between sections */
         .section + .section {
-          margin-top: 0.3rem !important;
+          margin-top: 0.25rem !important;
         }
 
         /* Ensure content flows naturally */
@@ -946,7 +624,7 @@ export default function ResumeGenerator() {
 
         /* Optimize list spacing */
         .bullet-list li {
-          margin-bottom: 0.1rem !important;
+          margin-bottom: 0.08rem !important;
         }
 
         /* Remove any fixed heights */
@@ -1146,6 +824,7 @@ export default function ResumeGenerator() {
         if (savedProfile) {
           // Convert UserProfileSummary to UserProfile by ensuring all required fields have values
           setProfile({
+            uid: user.uid,  // Add user ID for database lookups
             name: savedProfile.name,
             email: savedProfile.email,
             profileImage: savedProfile.profileImage || '',
@@ -1275,16 +954,38 @@ export default function ResumeGenerator() {
       if (chatResult.updatedResume) {
         setResumeData(chatResult.updatedResume);
         
+        // Auto-open resume canvas on edit
+        if (chatResult.requiresAction) {
+          setShowResumeCanvas(true);
+        }
+        
         // Save the updated resume
         if (user?.uid) {
-          await fetch('/api/resume-save', {
+          // Convert messages to chatHistory format
+          const apiChatHistory = [...updatedApiMessages, {
+            role: 'assistant' as const,
+            content: chatResult.message
+          }].map(msg => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date().toISOString()
+          }));
+
+          const saveResponse = await fetch('/api/resume-save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userId: user.uid,
+              uid: user.uid,
+              jobDescription: jobDescription || '',
               resumeData: chatResult.updatedResume,
+              chatHistory: apiChatHistory,
             }),
           });
+
+          if (!saveResponse.ok) {
+            const errorData = await saveResponse.json().catch(() => ({}));
+            console.error('Failed to save resume:', errorData);
+          }
         }
       }
       
@@ -1359,16 +1060,22 @@ export default function ResumeGenerator() {
     }
   };
 
-  // Delete a chat session
+  // Show delete confirmation modal
   const deleteChatSession = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (user?.uid) {
-      const updated = chatSessions.filter(s => s.id !== sessionId);
+    setSessionToDelete(sessionId);
+    setShowDeleteConfirm(true);
+  };
+
+  // Actually delete the chat session after confirmation
+  const confirmDeleteSession = () => {
+    if (user?.uid && sessionToDelete) {
+      const updated = chatSessions.filter(s => s.id !== sessionToDelete);
       setChatSessions(updated);
       localStorage.setItem(`chat-sessions-${user.uid}`, JSON.stringify(updated));
       
       // If deleted session was current, switch to most recent or create new
-      if (sessionId === currentSessionId) {
+      if (sessionToDelete === currentSessionId) {
         if (updated.length > 0) {
           const latest = updated[updated.length - 1];
           switchChatSession(latest.id);
@@ -1377,7 +1084,33 @@ export default function ResumeGenerator() {
         }
       }
     }
+    setShowDeleteConfirm(false);
+    setSessionToDelete(null);
   };
+
+  // Cancel delete operation
+  const cancelDeleteSession = () => {
+    setShowDeleteConfirm(false);
+    setSessionToDelete(null);
+  };
+
+  // Handle keyboard shortcuts for delete confirmation modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showDeleteConfirm) {
+        if (e.key === 'Escape') {
+          cancelDeleteSession();
+        } else if (e.key === 'Enter') {
+          confirmDeleteSession();
+        }
+      }
+    };
+
+    if (showDeleteConfirm) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showDeleteConfirm]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1598,10 +1331,12 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
       <div class="section">
         <h2 class="section-title">Education</h2>
         <div class="section-divider"></div>
-        ${data.education.map(edu => `
+        ${data.education
+          .filter(edu => edu && (edu.school || edu.degree)) // Filter out null/empty entries
+          .map(edu => `
           <p class="content-indent">
-            <strong>${edu.school}</strong> • ${edu.degree}
-            <span class="date-text">${formatResumeDate(edu.startDate)} - ${formatResumeDate(edu.endDate)}</span><br>
+            <strong>${edu.school || 'School'}</strong> • ${edu.degree || 'Degree'}
+            <span class="date-text">${formatResumeDate(edu.startDate)} — ${formatResumeDate(edu.endDate)}</span><br>
             ${edu.gpa ? `GPA: ${edu.gpa}` : ''}
           </p>
         `).join('')}
@@ -1709,6 +1444,137 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
     `;
   };
 
+  // PDF generation function with selectable text - uses same rendering as UI
+  const generatePDFWithText = async (data: ResumeData) => {
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title></title>
+            ${resumeStyles}
+            <style>
+              @page {
+                size: letter;
+                margin: 0.3in;
+                /* Remove all browser-generated content */
+                @top-left { content: ""; }
+                @top-center { content: ""; }
+                @top-right { content: ""; }
+                @bottom-left { content: ""; }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
+              
+              /* Hide any potential browser UI elements */
+              @media print {
+                body::before,
+                body::after,
+                html::before,
+                html::after {
+                  display: none !important;
+                  content: none !important;
+                }
+                
+                /* Ensure no margins for browser headers/footers */
+                @page :first {
+                  margin-top: 0.3in;
+                }
+                
+                @page :left {
+                  margin-left: 0.3in;
+                  margin-right: 0.3in;
+                }
+                
+                @page :right {
+                  margin-left: 0.3in;
+                  margin-right: 0.3in;
+                }
+              }
+              
+              body {
+                width: 8.5in;
+                max-width: 8.5in;
+                margin: 0 auto;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              
+              #print-wrapper {
+                width: 100%;
+                max-width: 8.5in;
+                margin: 0 auto;
+                padding: 0;
+                box-sizing: border-box;
+                position: relative;
+              }
+              
+              .resume-container {
+                width: 100%;
+                max-width: 7.9in;
+                margin: 0 auto;
+                padding: 0 0.08in;
+                box-sizing: border-box;
+              }
+            </style>
+            <script>
+              // Additional JavaScript to ensure clean printing
+              window.onload = function() {
+                // Clear document title to prevent it from showing in headers
+                document.title = '';
+                
+                // Hide potential browser UI elements
+                const style = document.createElement('style');
+                style.textContent = \`
+                  @media print {
+                    @page { 
+                      margin: 0.3in; 
+                      size: letter;
+                    }
+                    body { 
+                      margin: 0 !important; 
+                      padding: 0 !important; 
+                    }
+                  }
+                \`;
+                document.head.appendChild(style);
+              };
+            </script>
+          </head>
+          <body>
+            <div id="print-wrapper">
+              ${renderResume(data)}
+            </div>
+          </body>
+        </html>
+      `;
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        
+        // Wait for content to load and clear any potential headers
+        setTimeout(() => {
+          // Clear the title again just before printing
+          printWindow.document.title = '';
+          printWindow.print();
+          printWindow.onafterprint = () => printWindow.close();
+        }, 500);
+      } else {
+        throw new Error('Failed to open print window. Please allow popups for this site.');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw error;
+    }
+  };
+
   // Function to handle print
   const handlePrint = () => {
     if (!resumeData) return;
@@ -1726,7 +1592,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             <style>
               @page {
                 size: letter;
-                margin: 0.4in;
+                margin: 0.25in;
                 /* Remove all browser-generated content */
                 @top-left { content: ""; }
                 @top-center { content: ""; }
@@ -1735,10 +1601,10 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                 @bottom-center { content: ""; }
                 @bottom-right { content: ""; }
                 /* Additional margin rules to prevent content */
-                margin-top: 0.4in;
-                margin-bottom: 0.4in;
-                margin-left: 0.4in;
-                margin-right: 0.4in;
+                margin-top: 0.3in;
+                margin-bottom: 0.3in;
+                margin-left: 0.3in;
+                margin-right: 0.3in;
               }
               
               /* Hide any potential browser UI elements */
@@ -1753,17 +1619,17 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                 
                 /* Ensure no margins for browser headers/footers */
                 @page :first {
-                  margin-top: 0.4in;
+                  margin-top: 0.25in;
                 }
                 
                 @page :left {
-                  margin-left: 0.4in;
-                  margin-right: 0.4in;
+                  margin-left: 0.25in;
+                  margin-right: 0.25in;
                 }
                 
                 @page :right {
-                  margin-left: 0.4in;
-                  margin-right: 0.4in;
+                  margin-left: 0.25in;
+                  margin-right: 0.25in;
                 }
               }
               
@@ -1805,7 +1671,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                 style.textContent = \`
                   @media print {
                     @page { 
-                      margin: 0.4in; 
+                      margin: 0.3in; 
                       size: letter;
                     }
                     body { 
@@ -2108,6 +1974,50 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           transition: max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
       `}</style>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={cancelDeleteSession}
+        >
+          <div 
+            className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span className="text-2xl">⚠️</span>
+                Delete Chat Session?
+              </h3>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-6">
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Are you sure you want to delete this chat session? This action cannot be undone and all messages in this conversation will be permanently deleted.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-white/5 rounded-b-2xl flex items-center justify-end gap-3">
+              <button
+                onClick={cancelDeleteSession}
+                className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteSession}
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-200"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 } 

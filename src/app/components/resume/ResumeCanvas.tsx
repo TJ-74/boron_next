@@ -1,6 +1,7 @@
 'use client';
 
 import { FileText, X, Download, Printer } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { ResumeData } from '@/app/resume-generator/page';
 
 interface ResumeCanvasProps {
@@ -22,6 +23,15 @@ export default function ResumeCanvas({
   onDownload,
   onPrint,
 }: ResumeCanvasProps) {
+  const [renderKey, setRenderKey] = useState(0);
+
+  // Force re-render when resumeData changes
+  useEffect(() => {
+    if (resumeData) {
+      setRenderKey(prev => prev + 1);
+    }
+  }, [resumeData]);
+
   if (!isOpen || !resumeData) return null;
 
   return (
@@ -51,7 +61,11 @@ export default function ResumeCanvas({
         <div className="flex-1 relative overflow-hidden">
           <div className="absolute inset-0 overflow-y-auto bg-slate-900/60 p-4 custom-scrollbar">
             <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
-            <div id="chat-resume-wrapper" dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} />
+            <div 
+              key={`resume-${renderKey}`}
+              id="chat-resume-wrapper" 
+              dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} 
+            />
           </div>
         </div>
 

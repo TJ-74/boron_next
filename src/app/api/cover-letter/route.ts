@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192', // Using Llama 3 model from Groq
+        model: 'llama-3.3-70b-versatile', // Using Llama 3.3 70B model from Groq
         messages: apiMessages,
         temperature: 0.7,
         max_tokens: 1500

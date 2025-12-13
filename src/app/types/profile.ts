@@ -62,6 +62,7 @@ export interface Certificate {
 }
 
 export interface UserProfile extends ProfileInfo {
+  uid?: string;  // User ID for database lookups
   about: string;
   experiences: Experience[];
   education: Education[];

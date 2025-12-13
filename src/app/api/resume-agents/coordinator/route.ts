@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { UserProfile, Education, Certificate } from '@/app/types/profile';
+import { MODEL_CONFIG, makeApiCall, getApiEndpoint, getApiKey } from '../../config/models';
 
 /**
  * AGENTIC AI RESUME GENERATOR - COORDINATOR
@@ -233,12 +234,7 @@ export async function POST(request: NextRequest) {
 
 // NEW AGENT: Project Optimizer - Selects best projects and writes compelling descriptions
 async function callProjectOptimizer(profile: UserProfile, jobAnalysis: any, matchAnalysis: any) {
-  const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = process.env.OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
+  const model = MODEL_CONFIG.projectOptimizer;
 
   // Only include projects marked for resume
   const includedProjects = profile.projects?.filter(proj => proj.includeInResume !== false) || [];
@@ -303,19 +299,7 @@ Return in JSON format:
 
 CRITICAL: Only select projects that are marked as includeInResume. Preserve all original metadata (dates, URLs, technologies).`;
 
-  const response = await fetch(apiEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: `Select and optimize the best projects for this job:
+  const userContent = `Select and optimize the best projects for this job:
 
 AVAILABLE PROJECTS (marked for resume):
 ${JSON.stringify(includedProjects, null, 2)}
@@ -326,37 +310,23 @@ ${JSON.stringify(jobAnalysis, null, 2)}
 MATCHING INSIGHTS:
 ${JSON.stringify(matchAnalysis, null, 2)}
 
-Select the best 3-4 projects and write compelling descriptions that will make the candidate stand out.`
-        }
-      ],
+Select the best 3-4 projects and write compelling descriptions that will make the candidate stand out.`;
+
+  return await makeApiCall(
+    model,
+    systemPrompt,
+    userContent,
+    {
       temperature: 0.4,
-      max_tokens: 4000,
-      response_format: { type: "json_object" }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Project optimizer agent failed');
-  }
-
-  const data = await response.json();
-  
-  if (!data.choices?.[0]?.message?.content) {
-    console.error('Invalid response from project optimizer:', data);
-    throw new Error('Invalid response from project optimizer agent');
-  }
-  
-  return JSON.parse(data.choices[0].message.content);
+      maxTokens: 4000,
+      responseFormat: 'json_object'
+    }
+  );
 }
 
 // NEW AGENT: Skills Enhancement - Adds missing critical skills and organizes existing ones
 async function enhanceSkills(profile: UserProfile, jobAnalysis: any, matchAnalysis: any) {
-  const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = process.env.OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
+  const model = MODEL_CONFIG.skillsEnhancer;
 
   // Only include skills marked for resume
   const includedSkills = profile.skills?.filter(skill => skill.includeInResume !== false) || [];
@@ -402,19 +372,7 @@ Return in JSON format:
 
 CRITICAL: Include ALL existing skills that are marked for resume. Only add skills that are truly critical and the candidate likely possesses.`;
 
-  const response = await fetch(apiEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: `Enhance the skills section for this profile:
+  const userContent = `Enhance the skills section for this profile:
 
 EXISTING SKILLS (marked for resume):
 ${JSON.stringify(includedSkills, null, 2)}
@@ -429,27 +387,18 @@ ${JSON.stringify(jobAnalysis, null, 2)}
 GAPS IDENTIFIED:
 ${JSON.stringify(matchAnalysis.gaps, null, 2)}
 
-Create the perfect skills section by including existing skills and adding only critical missing skills the candidate likely has.`
-        }
-      ],
+Create the perfect skills section by including existing skills and adding only critical missing skills the candidate likely has.`;
+
+  return await makeApiCall(
+    model,
+    systemPrompt,
+    userContent,
+    {
       temperature: 0.3,
-      max_tokens: 3000,
-      response_format: { type: "json_object" }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Skills enhancement agent failed');
-  }
-
-  const data = await response.json();
-  
-  if (!data.choices?.[0]?.message?.content) {
-    console.error('Invalid response from skills enhancement:', data);
-    throw new Error('Invalid response from skills enhancement agent');
-  }
-  
-  return JSON.parse(data.choices[0].message.content);
+      maxTokens: 3000,
+      responseFormat: 'json_object'
+    }
+  );
 }
 
 // NEW AGENT: Perfect Summary Generator
@@ -461,11 +410,12 @@ async function generatePerfectSummary(
   projectOptimization: any,
   skillsEnhancement: any
 ) {
-  const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = process.env.OPENAI_API_KEY;
+  const model = MODEL_CONFIG.summaryGenerator;
+  const apiEndpoint = getApiEndpoint(model);
+  const apiKey = getApiKey(model);
   
   if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
+    throw new Error('API key not configured');
   }
 
   const systemPrompt = `You are a Professional Summary Generation Agent. Your mission is to create a PERFECT, compelling professional summary that will grab attention and pass ATS.
@@ -517,7 +467,7 @@ Return in JSON format:
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: MODEL_CONFIG.summaryGenerator,
       messages: [
         { role: 'system', content: systemPrompt },
         {
@@ -652,12 +602,7 @@ function assembleResume(
 
 // Helper function to call analyzer directly
 async function callAnalyzer(jobDescription: string) {
-  const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
+  const model = MODEL_CONFIG.jobAnalyzer;
 
   const systemPrompt = `You are a Job Description Analyzer Agent. Your specialized task is to thoroughly analyze job descriptions and extract all relevant information that will be used by other agents to optimize resumes.
 
@@ -711,52 +656,23 @@ Return your analysis in the following JSON format:
 
 Be thorough and extract every relevant detail. This analysis will be used by other specialized agents to create the perfect resume.`;
 
-  const response = await fetch(apiEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: `Analyze this job description thoroughly:\n\n${jobDescription}`
-        }
-      ],
+  const userContent = `Analyze this job description thoroughly:\n\n${jobDescription}`;
+
+  return await makeApiCall(
+    model,
+    systemPrompt,
+    userContent,
+    {
       temperature: 0.3,
-      max_tokens: 4000,
-      response_format: { type: "json_object" }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Analyzer agent failed');
-  }
-
-  const data = await response.json();
-  
-  if (!data.choices?.[0]?.message?.content) {
-    console.error('Invalid response from analyzer agent:', data);
-    throw new Error('Invalid response from analyzer agent');
-  }
-  
-  return JSON.parse(data.choices[0].message.content);
+      maxTokens: 4000,
+      responseFormat: 'json_object'
+    }
+  );
 }
 
 // Helper function to call matcher directly
 async function callMatcher(profile: UserProfile, jobAnalysis: any) {
-  const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = process.env.OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
+  const model = MODEL_CONFIG.profileMatcher;
 
   // Format user profile for analysis
   const formattedProfile = {
@@ -836,22 +752,7 @@ Return your analysis in the following JSON format:
 
 Be thorough and strategic in your matching analysis.`;
 
-  const response = await fetch(apiEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: `Analyze this profile against the job requirements:
+  const userContent = `Analyze this profile against the job requirements:
 
 USER PROFILE:
 ${JSON.stringify(formattedProfile, null, 2)}
@@ -859,37 +760,23 @@ ${JSON.stringify(formattedProfile, null, 2)}
 JOB ANALYSIS:
 ${JSON.stringify(jobAnalysis, null, 2)}
 
-Provide a comprehensive matching analysis.`
-        }
-      ],
+Provide a comprehensive matching analysis.`;
+
+  return await makeApiCall(
+    model,
+    systemPrompt,
+    userContent,
+    {
       temperature: 0.3,
-      max_tokens: 4000,
-      response_format: { type: "json_object" }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Matcher agent failed');
-  }
-
-  const data = await response.json();
-  
-  if (!data.choices?.[0]?.message?.content) {
-    console.error('Invalid response from matcher agent:', data);
-    throw new Error('Invalid response from matcher agent');
-  }
-  
-  return JSON.parse(data.choices[0].message.content);
+      maxTokens: 4000,
+      responseFormat: 'json_object'
+    }
+  );
 }
 
 // Helper function to call experience optimizer directly
 async function callExperienceOptimizer(profile: UserProfile, jobAnalysis: any, matchAnalysis: any) {
-  const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = process.env.OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
+  const model = MODEL_CONFIG.experienceOptimizer;
 
   // Only include experiences marked for resume
   const includedExperiences = profile.experiences?.filter(exp => exp.includeInResume !== false) || [];
@@ -965,22 +852,7 @@ Return optimized experience in this JSON format:
 
 CRITICAL: Only process experiences marked as includeInResume. Preserve all original metadata (title, company, location, dates). Optimize ALL included experiences.`;
 
-  const response = await fetch(apiEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: `Optimize the work experience for this profile:
+  const userContent = `Optimize the work experience for this profile:
 
 EXPERIENCES TO OPTIMIZE (marked for resume):
 ${JSON.stringify(includedExperiences, null, 2)}
@@ -991,25 +863,16 @@ ${JSON.stringify(jobAnalysis, null, 2)}
 MATCHING INSIGHTS:
 ${JSON.stringify(matchAnalysis, null, 2)}
 
-Rewrite all experience entries to maximize relevance and impact for this specific job. Use the job requirements to add relevant keywords and frame achievements in terms that match the target role.`
-        }
-      ],
+Rewrite all experience entries to maximize relevance and impact for this specific job. Use the job requirements to add relevant keywords and frame achievements in terms that match the target role.`;
+
+  return await makeApiCall(
+    model,
+    systemPrompt,
+    userContent,
+    {
       temperature: 0.4,
-      max_tokens: 6000,
-      response_format: { type: "json_object" }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Experience agent failed');
-  }
-
-  const data = await response.json();
-  
-  if (!data.choices?.[0]?.message?.content) {
-    console.error('Invalid response from experience agent:', data);
-    throw new Error('Invalid response from experience agent');
-  }
-  
-  return JSON.parse(data.choices[0].message.content);
+      maxTokens: 6000,
+      responseFormat: 'json_object'
+    }
+  );
 } 
