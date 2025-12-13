@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MODEL_CONFIG, makeApiCall, getApiEndpoint, getApiKey } from '../config/models';
 
+// Increase timeout for complex operations like JD optimization
+export const maxDuration = 60; // 60 seconds (Vercel Pro plan)
+export const dynamic = 'force-dynamic'; // Disable caching
+
 /**
  * Build a resume from user's profile data
  */
@@ -184,10 +188,36 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in chat handler:', error);
+    
+    // Check if it's a timeout error
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+      return NextResponse.json({
+        type: 'general_answer',
+        message: `⏱️ **Request Timeout**
+
+The operation took too long and exceeded the server limit. This can happen with complex resume optimizations.
+
+**Quick Fixes:**
+
+1️⃣ **Break it down** - Instead of full resume optimization, try:
+   • "Update my summary for [job title]"
+   • "Optimize my experience section"
+   • "Update project highlights"
+
+2️⃣ **Simplify the request** - Paste just key requirements instead of the entire job description
+
+3️⃣ **Try smaller edits** - Make incremental changes instead of one large update
+
+Would you like to try a smaller, focused update instead?`,
+        requiresAction: false
+      });
+    }
+    
     return NextResponse.json(
       { 
         error: 'Failed to process chat message', 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: errorMessage
       },
       { status: 500 }
     );
@@ -1366,13 +1396,36 @@ REMEMBER:
         }
       ],
       temperature: 0.3,
-      max_tokens: 4000,
+      max_tokens: 3000, // Reduced from 4000 for faster generation
       response_format: { type: "json_object" }
     })
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Check if it's a timeout error
+    if (response.status === 504 || errorData.error?.code === 'timeout') {
+      return NextResponse.json({
+        type: 'general_answer',
+        message: `⏱️ The optimization is taking longer than expected. This usually happens with complex job descriptions or large resumes.
+
+**Here's what you can do:**
+
+1. **Try breaking it down**: Instead of optimizing the whole resume, ask me to:
+   • "Update my summary for this JD: [paste JD]"
+   • "Optimize my experience section for: [paste JD]"
+   • "Update my projects for: [paste JD]"
+
+2. **Simplify the JD**: Paste just the key requirements instead of the full job posting
+
+3. **Try again**: Sometimes it's just a temporary issue
+
+Would you like to try one of these approaches?`,
+        requiresAction: false
+      });
+    }
+    
     throw new Error(`API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
   }
 

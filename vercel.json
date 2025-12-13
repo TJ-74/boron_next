@@ -5,6 +5,9 @@
     },
     "src/app/api/resume-parser/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/resume-chat-handler/route.ts": {
+      "maxDuration": 60
     }
   }
 }
