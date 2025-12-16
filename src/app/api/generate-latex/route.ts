@@ -203,14 +203,12 @@ ${resumeData.education.map(edu => {
 \\header{Projects}
 ${resumeData.projects.map(proj => {
   const dateRange = formatDateRangeForLatex(proj.startDate, proj.endDate);
-  const technologies = proj.technologies ? `\\textit{${convertToLatex(proj.technologies)}}` : '';
   const highlights = proj.highlights.filter(h => h && h.trim()).map(h => 
     `  \\item ${convertToLatex(h.replace(/^[•\-*]\s*/, ''))}`
   ).join('\n');
   
   return `
 \\project{${convertToLatex(proj.title)}}{}{${dateRange}}{
-${technologies}
 \\begin{bullet-list-minor}
 ${highlights}
 \\end{bullet-list-minor}
@@ -398,13 +396,11 @@ ${resumeData.education.map(edu => {
 \\heading{Project}
 ${resumeData.projects.map(proj => {
   const dateRange = formatDateRangeForLatex(proj.startDate, proj.endDate);
-  const technologies = proj.technologies ? `\\textit{Technologies: ${convertToLatex(proj.technologies)}}` : '';
   const highlights = proj.highlights.filter(h => h && h.trim()).map(h => 
     `  \\item ${convertToLatex(h.replace(/^[•\-*]\s*/, ''))}`
   ).join('\n');
   
   return `\\textbf{${convertToLatex(proj.title)}} \\hfill \\textbf{${dateRange}}
-${technologies}
 \\begin{itemize}[leftmargin=*]
 ${highlights}
 \\end{itemize}`;

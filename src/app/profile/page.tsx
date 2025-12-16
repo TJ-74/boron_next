@@ -299,18 +299,40 @@ export default function Profile() {
     setShowTemplateModal(true);
   };
 
-  const handleOpenOverleafWithTemplate = (template: 'classic' | 'modern') => {
+  const handleOpenOverleafWithTemplate = async (template: 'classic' | 'modern') => {
     // This function generates a LaTeX document based on the user's profile
     // and opens it in Overleaf with the selected template
     
     if (!profile || !user?.uid) return;
     
     try {
-      // Use the server API endpoint that generates the LaTeX with .tex extension
-      // Add template as query parameter
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}.tex?template=${template}`;
+      // First, fetch the LaTeX content with the selected template
+      const response = await fetch(`/api/latex-resume/${user.uid}?template=${template}`);
       
-      // Create a data URI with the API URL
+      if (!response.ok) {
+        throw new Error('Failed to generate LaTeX');
+      }
+      
+      const latexContent = await response.text();
+      
+      // Create a unique session ID for this preview
+      const sessionId = `profile_${user.uid}_${Date.now()}`;
+      
+      // Store the LaTeX content in the session endpoint
+      const storeResponse = await fetch(`/api/profile-latex/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ latexContent }),
+      });
+      
+      if (!storeResponse.ok) {
+        throw new Error('Failed to store LaTeX content');
+      }
+      
+      // Create the Overleaf URL using the session endpoint
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/profile-latex/${sessionId}.tex`;
       const encodedUri = encodeURIComponent(apiUrl);
       const overleafUrl = `https://www.overleaf.com/docs?snip_uri=${encodedUri}`;
       

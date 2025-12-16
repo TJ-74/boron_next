@@ -217,7 +217,6 @@ ${includedEducations.map(edu => {
 \\heading{Projects}
 ${includedProjects.map(proj => {
   const dateRange = formatDateRangeForLatex(proj.startDate, proj.endDate);
-  const technologies = proj.technologies ? `\\textit{Technologies: ${convertToLatex(proj.technologies)}}` : '';
   const descriptionBulletPoints = proj.description
     .split('\n')
     .filter(line => line.trim().length > 0)
@@ -232,7 +231,6 @@ ${includedProjects.map(proj => {
     : '';
   
   return `\\textbf{${projectTitle}${githubLink}} \\hfill \\textbf{${dateRange}}
-${technologies}
 \\begin{itemize}[leftmargin=*]
 ${descriptionBulletPoints}
 \\end{itemize}`;
