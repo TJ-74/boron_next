@@ -109,6 +109,10 @@ export async function GET(
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
     
+    // Get template from query parameter (default to 'classic')
+    const { searchParams } = new URL(request.url);
+    const template = (searchParams.get('template') as 'classic' | 'modern') || 'classic';
+    
     const client = await clientPromise;
     const db = client.db();
     const collection = db.collection('userProfiles');
@@ -119,8 +123,8 @@ export async function GET(
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Generate LaTeX content
-    const latexContent = generateLatexResume(profile as unknown as UserProfile);
+    // Generate LaTeX content with selected template
+    const latexContent = generateLatexResume(profile as unknown as UserProfile, template);
     
     // Return the LaTeX content with appropriate headers
     return new NextResponse(latexContent, {
@@ -136,7 +140,195 @@ export async function GET(
 }
 
 // Function to generate a LaTeX resume from the user's profile data
-const generateLatexResume = (profile: UserProfile): string => {
+const generateLatexResume = (profile: UserProfile, template: 'classic' | 'modern' = 'classic'): string => {
+  if (template === 'modern') {
+    return generateModernLatexResume(profile);
+  }
+  return generateClassicLatexResume(profile);
+};
+
+const generateModernLatexResume = (profile: UserProfile): string => {
+  // Filter items that should be included in the resume
+  const includedExperiences = profile.experiences.filter(exp => exp.includeInResume !== false);
+  const includedEducations = profile.education.filter(edu => edu.includeInResume !== false);
+  const includedSkills = profile.skills.filter(skill => skill.includeInResume !== false);
+  const includedProjects = profile.projects.filter(project => project.includeInResume !== false);
+  const includedCertificates = profile.certificates?.filter(cert => cert.includeInResume !== false) || [];
+  
+  // Group skills by domain
+  const skillsByDomain: Record<string, string[]> = {};
+  includedSkills.forEach(skill => {
+    if (!skillsByDomain[skill.domain]) {
+      skillsByDomain[skill.domain] = [];
+    }
+    skillsByDomain[skill.domain].push(skill.name);
+  });
+  
+  // Extract usernames
+  const linkedinUsername = profile.linkedinUrl ? getLastPathSegment(profile.linkedinUrl) : '';
+  const githubUsername = profile.githubUrl ? getLastPathSegment(profile.githubUrl) : '';
+
+  // Create summary section
+  const summarySection = profile.about ? `
+\\heading{Summary}
+\\vspace{-1pt}${convertToLatex(profile.about)}
+` : '';
+
+  // Create skills section
+  const skillSection = Object.keys(skillsByDomain).length > 0 ? `
+\\heading{Technical Skills}
+${Object.entries(skillsByDomain).map(([domain, skills]) => {
+  return `\\textbf{${convertToLatex(domain)}:} ${skills.map(s => convertToLatex(s)).join(', ')} \\\\`;
+}).join('\n')}
+` : '';
+
+  // Create experience section
+  const experienceSection = includedExperiences.length > 0 ? `
+\\heading{Professional Experience}
+${includedExperiences.map(exp => {
+  const dateRange = formatDateRangeForLatex(exp.startDate, exp.endDate);
+  const descriptionBulletPoints = exp.description
+    .split('\n')
+    .filter(line => line.trim().length > 0)
+    .map(line => `  \\item ${convertToLatex(line.trim().replace(/^[•\-*]\s*/, ''))}`)
+    .join('\n');
+  
+  return `\\textbf{${convertToLatex(exp.company)}}, {\\textbf{${convertToLatex(exp.position)}}} \\hfill \\textbf{${dateRange}}
+\\begin{itemize}[leftmargin=*]
+${descriptionBulletPoints}
+\\end{itemize}
+\\vspace{2pt}`;
+}).join('\n')}
+` : '';
+
+  // Create education section
+  const educationSection = includedEducations.length > 0 ? `
+\\heading{Education}
+${includedEducations.map(edu => {
+  const showDates = edu.showDatesInResume !== false;
+  const gpaText = edu.cgpa ? ` $\\vert$ GPA: ${convertToLatex(edu.cgpa)}` : '';
+  
+  return `\\textbf{${convertToLatex(edu.degree)}} $\\vert$ ${convertToLatex(edu.school)}${gpaText} \\\\`;
+}).join('\n')}
+` : '';
+
+  // Create projects section
+  const projectSection = includedProjects.length > 0 ? `
+\\heading{Projects}
+${includedProjects.map(proj => {
+  const dateRange = formatDateRangeForLatex(proj.startDate, proj.endDate);
+  const technologies = proj.technologies ? `\\textit{Technologies: ${convertToLatex(proj.technologies)}}` : '';
+  const descriptionBulletPoints = proj.description
+    .split('\n')
+    .filter(line => line.trim().length > 0)
+    .map(line => `  \\item ${convertToLatex(line.trim().replace(/^[•\-*]\s*/, ''))}`)
+    .join('\n');
+  
+  const projectTitle = proj.projectUrl 
+    ? `\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(proj.projectUrl))}}{${convertToLatex(proj.title)}}` 
+    : convertToLatex(proj.title);
+  const githubLink = proj.githubUrl 
+    ? ` \\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(proj.githubUrl))}}{\\faGithub}` 
+    : '';
+  
+  return `\\textbf{${projectTitle}${githubLink}} \\hfill \\textbf{${dateRange}}
+${technologies}
+\\begin{itemize}[leftmargin=*]
+${descriptionBulletPoints}
+\\end{itemize}`;
+}).join('\n\n')}
+` : '';
+
+  // Create certificates section
+  const certificatesSection = includedCertificates.length > 0 ? `
+\\heading{Certifications}
+${includedCertificates.map(cert => {
+  const issueDate = formatDateForLatex(cert.issueDate);
+  const certTitle = cert.credentialUrl 
+    ? `\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(cert.credentialUrl))}}{${convertToLatex(cert.name)}}` 
+    : convertToLatex(cert.name);
+  return `\\textbf{${certTitle}} $\\vert$ ${convertToLatex(cert.issuer)}, ${issueDate} \\\\`;
+}).join('\n')}
+` : '';
+
+  // Build contact line
+  const contactParts = [];
+  if (profile.location) contactParts.push(convertToLatex(profile.location));
+  if (profile.phone) contactParts.push(convertToLatex(profile.phone));
+  if (profile.email) contactParts.push(`\\href{mailto:${profile.email}}{${convertToLatex(profile.email)}}`);
+  const contactLine = contactParts.join(' $\\vert$ ');
+
+  const linkedinLine = profile.linkedinUrl ? 
+    `\\href{${formatUrlForLatex(ensureFullUrl(profile.linkedinUrl))}}{\\underline{${formatUrlForLatex(ensureFullUrl(profile.linkedinUrl))}}}` : '';
+
+  // Generate full LaTeX document
+  const latexCode = `\\documentclass[letterpaper,10pt]{article}
+
+\\usepackage[empty]{fullpage}
+\\usepackage{titlesec}
+\\usepackage{xcolor}
+\\usepackage{enumitem}
+\\usepackage[hidelinks]{hyperref}
+\\usepackage{fancyhdr}
+\\usepackage{fontawesome5}
+\\usepackage{multicol}
+\\usepackage{bookmark}
+\\usepackage{lastpage}
+\\usepackage{CormorantGaramond}
+\\usepackage{charter}
+\\usepackage[left=0.3in, right=0.25in, top=0.3in, bottom=0.3in]{geometry}
+
+% Accent Colours
+\\definecolor{accentTitle}{HTML}{0e6e55}
+\\definecolor{accentText}{HTML}{0e6e55}
+\\definecolor{accentLine}{HTML}{0e6e55}
+
+% Page Geometry & Fonts
+\\pagestyle{fancy}
+\\fancyhf{}
+\\renewcommand{\\headrulewidth}{0pt}
+\\renewcommand{\\footrulewidth}{0pt}
+\\urlstyle{same}
+
+% Sections formatting - COMPACT SPACING
+\\titleformat{\\section}{\\color{accentTitle}\\bfseries\\normalsize\\noindent\\MakeUppercase}{}{0em}{}[\\titlerule]
+\\titlespacing{\\section}{0pt}{5pt}{3pt}
+
+% Itemize spacing - more compact
+\\setlist[itemize]{noitemsep, topsep=1pt, partopsep=0pt, parsep=0pt, left=0pt, label=\\textbullet}
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0pt}
+\\setlength{\\parskip}{1pt}
+
+\\begin{document}
+
+\\begin{center}
+    {\\Large \\textbf{${convertToLatex(profile.name)}}} ${profile.title ? `{\\Large\\textbf{$\\vert$}} {\\normalsize \\textbf{${convertToLatex(profile.title)}}}` : ''} \\\\
+    \\vspace{1pt}
+    {\\small ${contactLine}} \\\\
+    {\\small ${linkedinLine}}
+\\end{center}
+
+% --- Section format with colored line ---
+\\newcommand{\\heading}[1]{
+  \\vspace{4pt}
+  \\textcolor{accentTitle}{\\normalsize\\bfseries\\MakeUppercase{#1}} \\\\[-2pt]
+  \\textcolor{accentLine}{\\rule{\\linewidth}{1pt}} \\vspace{1pt}
+}
+
+${summarySection}
+${skillSection}
+${experienceSection}
+${educationSection}
+${projectSection}
+${certificatesSection}
+
+\\end{document}`;
+
+  return latexCode;
+};
+
+const generateClassicLatexResume = (profile: UserProfile): string => {
   // Filter items that should be included in the resume
   const includedExperiences = profile.experiences.filter(exp => exp.includeInResume !== false);
   const includedEducations = profile.education.filter(edu => edu.includeInResume !== false);
@@ -360,7 +552,7 @@ ${includedCertificates.map(certificate => {
 \\smallskip
 \\vspace*{-44pt}
 \\begin{center}
-  {\\LARGE \\textbf{${convertToLatex(profile.name)}}}\\\\
+  {\\LARGE \\textbf{${convertToLatex(profile.name)}}} ${profile.title ? `{\\LARGE\\textbf{$\\vert$}} {\\large \\textbf{${convertToLatex(profile.title)}}}` : ''}\\\\
   \\vspace{3pt}
   ${profile.location ? `\\faMapMarker\\ ${convertToLatex(profile.location)} \\quad` : ''}
   \\faPhone\\ ${profile.phone ? convertToLatex(profile.phone) : 'N/A'} \\quad

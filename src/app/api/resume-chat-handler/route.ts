@@ -1276,19 +1276,28 @@ Return JSON:
       "portfolio": "https://portfolio.com"
     }
   },
+  "fieldsToRemove": ["field1", "field2"], // List fields user wants to remove (e.g., ["portfolio", "github"])
   "changes": ["Change 1", "Change 2"],
   "explanation": "What you changed and why"
 }
 
 IMPORTANT:
 - Preserve existing values for fields not being changed
+- If user wants to REMOVE a field (e.g., "remove portfolio", "delete github", "clear linkedin"), add it to "fieldsToRemove" array
+- For removal requests, use field names: "portfolio", "github", "linkedin", "phone", "location", "title"
 - For LinkedIn, accept formats: "username", "linkedin.com/in/username", or full URL → normalize to full URL
 - For GitHub, accept formats: "username", "github.com/username", or full URL → normalize to full URL
 - For portfolio, ensure it's a valid URL format (add https:// if missing)
-- For email, validate it looks like a proper email format
+- For email, validate it looks like a proper email format (email is required, cannot be removed)
 - For phone, accept various formats but keep it readable
 - For location, accept "City, State", "City, Country", or just "City" format
-- NEVER use em dashes (—). Use hyphens (-), commas, or parentheses instead`;
+- NEVER use em dashes (—). Use hyphens (-), commas, or parentheses instead
+
+REMOVAL EXAMPLES:
+- "Remove my portfolio" → fieldsToRemove: ["portfolio"]
+- "Delete github link" → fieldsToRemove: ["github"]
+- "Remove linkedin and portfolio" → fieldsToRemove: ["linkedin", "portfolio"]
+- "Clear my phone number" → fieldsToRemove: ["phone"]`;
 
   const response = await fetch(apiEndpoint, {
     method: 'POST',
@@ -1349,18 +1358,26 @@ IMPORTANT:
     return `https://${cleaned}`;
   };
 
-  // Merge with existing header, preserving unchanged fields
+  // Get list of fields to remove
+  const fieldsToRemove = result.fieldsToRemove || [];
+  
+  // Helper to check if a field should be removed
+  const shouldRemove = (fieldName: string) => fieldsToRemove.includes(fieldName);
+  
+  // Merge with existing header, preserving unchanged fields or removing specified fields
   const existingHeader = currentResume?.header || {};
+  const existingContact = existingHeader.contact || {};
+  
   const updatedHeader = {
-    name: result.updatedHeader?.name || existingHeader.name || '',
-    title: result.updatedHeader?.title || existingHeader.title || '',
-    location: result.updatedHeader?.location || existingHeader.location || '',
+    name: result.updatedHeader?.name !== undefined ? result.updatedHeader.name : (existingHeader.name || ''),
+    title: shouldRemove('title') ? '' : (result.updatedHeader?.title !== undefined ? result.updatedHeader.title : (existingHeader.title || '')),
+    location: shouldRemove('location') ? '' : (result.updatedHeader?.location !== undefined ? result.updatedHeader.location : (existingHeader.location || '')),
     contact: {
-      email: result.updatedHeader?.contact?.email || existingHeader.contact?.email || '',
-      phone: result.updatedHeader?.contact?.phone || existingHeader.contact?.phone || '',
-      linkedin: normalizeLinkedIn(result.updatedHeader?.contact?.linkedin || existingHeader.contact?.linkedin || ''),
-      github: normalizeGitHub(result.updatedHeader?.contact?.github || existingHeader.contact?.github || ''),
-      portfolio: normalizePortfolio(result.updatedHeader?.contact?.portfolio || existingHeader.contact?.portfolio || '')
+      email: result.updatedHeader?.contact?.email !== undefined ? result.updatedHeader.contact.email : (existingContact.email || ''),
+      phone: shouldRemove('phone') ? '' : (result.updatedHeader?.contact?.phone !== undefined ? result.updatedHeader.contact.phone : (existingContact.phone || '')),
+      linkedin: shouldRemove('linkedin') ? '' : normalizeLinkedIn(result.updatedHeader?.contact?.linkedin !== undefined ? result.updatedHeader.contact.linkedin : (existingContact.linkedin || '')),
+      github: shouldRemove('github') ? '' : normalizeGitHub(result.updatedHeader?.contact?.github !== undefined ? result.updatedHeader.contact.github : (existingContact.github || '')),
+      portfolio: shouldRemove('portfolio') ? '' : normalizePortfolio(result.updatedHeader?.contact?.portfolio !== undefined ? result.updatedHeader.contact.portfolio : (existingContact.portfolio || ''))
     }
   };
 

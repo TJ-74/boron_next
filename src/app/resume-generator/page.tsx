@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import Navbar from '../components/ui/navbar';
@@ -237,115 +237,334 @@ export default function ResumeGenerator() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<'classic' | 'modern'>('classic');
   
-  // Chat interface states
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [apiMessages, setApiMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+  // Function to get resume styles based on selected template
+  const getResumeStyles = (template: 'classic' | 'modern') => {
+    if (template === 'modern') {
+      return `
+  <style>
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
     }
-  ]);
-  const [showResumeCanvas, setShowResumeCanvas] = useState(false);
-  const [showChatHistory, setShowChatHistory] = useState(false);
-  const [chatSessions, setChatSessions] = useState<Array<{
-    id: string;
-    title: string;
-    timestamp: Date;
-    messages: Message[];
-    apiMessages: ChatMessage[];
-    resumeData: ResumeData | null;
-  }>>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Auto-resize textarea function
-  const adjustTextareaHeight = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    }
-  };
-
-  // Load chat sessions from localStorage on mount
-  useEffect(() => {
-    if (user?.uid) {
-      const savedSessions = localStorage.getItem(`chat-sessions-${user.uid}`);
-      if (savedSessions) {
-        try {
-          const parsed = JSON.parse(savedSessions);
-          const sessions = parsed.map((s: any) => ({
-            ...s,
-            timestamp: new Date(s.timestamp),
-            messages: s.messages.map((m: any) => ({
-              ...m,
-              timestamp: new Date(m.timestamp)
-            }))
-          }));
-          setChatSessions(sessions);
-          // Set current session to the most recent one
-          if (sessions.length > 0) {
-            const latest = sessions[sessions.length - 1];
-            setCurrentSessionId(latest.id);
-            setMessages(latest.messages);
-            setApiMessages(latest.apiMessages);
-            setResumeData(latest.resumeData);
-          }
-        } catch (error) {
-          console.error('Error loading chat sessions:', error);
-        }
-      } else {
-        // Create initial session
-        const initialSessionId = `session-${Date.now()}`;
-        setCurrentSessionId(initialSessionId);
+    
+      .resume-preview-container {
+        background: white;
+        height: 100%;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: center;
       }
-    }
-  }, [user?.uid]);
 
-  // Save current session to localStorage
-  useEffect(() => {
-    if (user?.uid && currentSessionId && messages.length > 1) {
-      const session = {
-        id: currentSessionId,
-        title: messages.find(m => m.sender === 'user')?.text.slice(0, 50) || 'New Chat',
-        timestamp: new Date(),
-        messages,
-        apiMessages,
-        resumeData
-      };
+      .resume-preview-container .resume-container {
+        width: 100%;
+      max-width: 8.5in;
+      margin: 0 auto;
+        padding: 0.3in 0.25in;
+        background-color: white;
+        font-family: 'Georgia', 'Garamond', serif;
+        line-height: 1.2;
+        color: #222;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      }
       
-      setChatSessions(prev => {
-        const updated = prev.filter(s => s.id !== currentSessionId);
-        updated.push(session);
-        localStorage.setItem(`chat-sessions-${user.uid}`, JSON.stringify(updated));
-        return updated;
-      });
+      /* Multi-page specific styles */
+      .resume-preview-container .resume-container {
+        overflow: visible;
+        height: auto;
+        width: 100%;
+        max-width: 8.5in;
+        margin: 0 auto;
+        padding: 0.3in 0.25in;
+        background-color: white;
+        font-family: 'Georgia', 'Garamond', serif;
+        line-height: 1.2;
+        color: #222;
+      }
+      
+      /* Each section should have proper spacing for multi-page layout */
+      .resume-preview-container .section {
+        margin-bottom: 0.45rem;
+        padding-bottom: 0.1rem;
+        width: 100%;
+        break-inside: avoid;
+      }
+      
+      .resume-preview-container h1 {
+        font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+        margin-bottom: 0.3rem;
+        color: #000;
+        letter-spacing: 0.3px;
+      }
+      
+      .resume-preview-container .title-separator {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        margin: 0 0.4rem;
+      }
+      
+      .resume-preview-container .header-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #000;
+      }
+      
+      .resume-preview-container h2 {
+        font-weight: bold;
+        font-size: 0.95rem;
+        color: #0e6e55;
+        margin-bottom: 0.15rem;
+        margin-top: 0.4rem;
+        padding-bottom: 0.15rem;
+        border-bottom: 1.5px solid #0e6e55;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      
+      .resume-preview-container .header {
+      text-align: center;
+        margin-bottom: 0.6rem;
+        width: 100%;
+        border-bottom: none;
     }
-  }, [messages, apiMessages, resumeData, currentSessionId, user?.uid]);
+    
+      .resume-preview-container .contact-info {
+      display: flex;
+      justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+        font-size: 0.75rem;
+        color: #555;
+        margin-bottom: 0.6rem;
+        width: 100%;
+      }
+      
+      .resume-preview-container .contact-item {
+      display: flex;
+      align-items: center;
+        gap: 0.25rem;
+    }
+    
+      .resume-preview-container .section-title {
+      font-weight: bold;
+        font-size: 0.95rem;
+        color: #0e6e55;
+        margin-bottom: 0.15rem;
+        margin-top: 0.4rem;
+        padding-bottom: 0.15rem;
+        border-bottom: 1.5px solid #0e6e55;
+        width: 100%;
+      text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      
+      .resume-preview-container .section-divider {
+        display: none;
+      }
+      
+      .resume-preview-container .content-indent {
+        margin-left: 0.2rem;
+        font-size: 0.8rem;
+        line-height: 1.2;
+        margin-bottom: 0.15rem;
+        color: #000;
+        width: 100%;
+        break-inside: avoid;
+      }
+      
+      .resume-preview-container .date-text {
+        float: right;
+        font-size: 0.75rem;
+        color: #000;
+        font-weight: 600;
+      }
+      
+      .resume-preview-container .bullet-list {
+        padding-left: 1.2rem;
+        list-style-type: disc;
+        margin-top: 0.1rem;
+        margin-bottom: 0.15rem;
+        line-height: 1.2;
+        font-size: 0.8rem;
+        width: 100%;
+      }
+      
+      .resume-preview-container .entry-title {
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 0.1rem;
+        font-size: 0.8rem;
+        color: #000;
+        width: 70%;
+      }
+      
+      .resume-preview-container .skill-item {
+        font-size: 0.75rem;
+        margin-bottom: 0.1rem;
+        color: #000;
+        line-height: 1.3;
+      }
+      
+      .resume-preview-container .icon {
+        font-size: 0.7rem;
+        margin-right: 0.2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+      }
+      
+      .resume-preview-container .icon svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
+      }
+      
+      .resume-preview-container a {
+        color: #0e6e55;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      
+      .resume-preview-container a:hover {
+        text-decoration: underline;
+    }
+    
+    @media print {
+      @page {
+        size: letter;
+          margin: 0.3in 0.25in;
+          /* Hide default browser headers and footers */
+          @top-left { content: none; }
+          @top-center { content: none; }
+          @top-right { content: none; }
+          @bottom-left { content: none; }
+          @bottom-center { content: none; }
+          @bottom-right { content: none; }
+        }
 
-  useEffect(() => {
-    // Scroll to bottom when messages change
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          max-width: 8.5in !important;
+          height: auto !important;
+          min-height: 0 !important;
+        }
 
-  useEffect(() => {
-    // Adjust textarea height when input value changes
-    adjustTextareaHeight();
-  }, [inputValue]);
+        #print-wrapper {
+          visibility: visible;
+          position: relative !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          max-width: 8.5in !important;
+          padding: 0 !important;
+          margin: 0 auto !important;
+          height: auto !important;
+          min-height: 0 !important;
+        }
 
-  const resumeStyles = `
+        .resume-preview-container {
+          padding: 0 !important;
+          margin: 0 !important;
+          width: 100% !important;
+          max-width: 8.5in !important;
+          height: auto !important;
+          min-height: 0 !important;
+        }
+
+        .resume-container {
+          box-shadow: none !important;
+          padding: 0 0.08in !important;
+          margin: 0 !important;
+          width: 100% !important;
+          max-width: 7.9in !important;
+          height: auto !important;
+          min-height: 0 !important;
+        }
+
+        .section {
+          page-break-inside: auto !important;
+          break-inside: auto !important;
+          margin-bottom: 0.35rem !important;
+          padding-bottom: 0.1rem !important;
+        }
+
+        .content-indent {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          margin-bottom: 0.15rem !important;
+        }
+
+        .bullet-list {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          margin-bottom: 0.15rem !important;
+        }
+
+        .header {
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+          margin-bottom: 0.35rem !important;
+        }
+
+        h2, .section-title {
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+          page-break-before: auto !important;
+          break-before: auto !important;
+        }
+
+        /* Optimize spacing between sections */
+        .section + .section {
+          margin-top: 0.2rem !important;
+        }
+
+        /* Ensure content flows naturally */
+        .resume-container > * {
+          page-break-inside: auto !important;
+          break-inside: auto !important;
+        }
+
+        /* Keep related content together */
+        .entry-title, .date-text {
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+        }
+
+        /* Optimize list spacing */
+        .bullet-list li {
+          margin-bottom: 0.1rem !important;
+        }
+
+        /* Remove any fixed heights */
+        * {
+          height: auto !important;
+          min-height: 0 !important;
+        }
+
+        /* Ensure proper content flow */
+        .resume-container {
+          display: block !important;
+          float: none !important;
+          position: static !important;
+          overflow: visible !important;
+        }
+      }
+    </style>`;
+    }
+    
+    // Classic template
+    return `
     <style>
       * {
         margin: 0;
@@ -401,6 +620,19 @@ export default function ResumeGenerator() {
         font-weight: bold;
         text-align: center;
         margin-bottom: 0.35rem;
+        color: #000;
+      }
+      
+      .resume-preview-container .title-separator {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        margin: 0 0.4rem;
+      }
+      
+      .resume-preview-container .header-title {
+        font-size: 1rem;
+        font-weight: 600;
         color: #000;
       }
       
@@ -646,6 +878,117 @@ export default function ResumeGenerator() {
       }
     </style>
   `;
+  };
+  
+  // Memoize resume styles to avoid recalculating on every render
+  const resumeStyles = useMemo(() => getResumeStyles(selectedTemplate), [selectedTemplate]);
+  
+  // Chat interface states
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+      sender: 'bot',
+      timestamp: new Date(),
+    },
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [apiMessages, setApiMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+    }
+  ]);
+  const [showResumeCanvas, setShowResumeCanvas] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatSessions, setChatSessions] = useState<Array<{
+    id: string;
+    title: string;
+    timestamp: Date;
+    messages: Message[];
+    apiMessages: ChatMessage[];
+    resumeData: ResumeData | null;
+  }>>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea function
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+  };
+
+  // Load chat sessions from localStorage on mount
+  useEffect(() => {
+    if (user?.uid) {
+      const savedSessions = localStorage.getItem(`chat-sessions-${user.uid}`);
+      if (savedSessions) {
+        try {
+          const parsed = JSON.parse(savedSessions);
+          const sessions = parsed.map((s: any) => ({
+            ...s,
+            timestamp: new Date(s.timestamp),
+            messages: s.messages.map((m: any) => ({
+              ...m,
+              timestamp: new Date(m.timestamp)
+            }))
+          }));
+          setChatSessions(sessions);
+          // Set current session to the most recent one
+          if (sessions.length > 0) {
+            const latest = sessions[sessions.length - 1];
+            setCurrentSessionId(latest.id);
+            setMessages(latest.messages);
+            setApiMessages(latest.apiMessages);
+            setResumeData(latest.resumeData);
+          }
+        } catch (error) {
+          console.error('Error loading chat sessions:', error);
+        }
+      } else {
+        // Create initial session
+        const initialSessionId = `session-${Date.now()}`;
+        setCurrentSessionId(initialSessionId);
+      }
+    }
+  }, [user?.uid]);
+
+  // Save current session to localStorage
+  useEffect(() => {
+    if (user?.uid && currentSessionId && messages.length > 1) {
+      const session = {
+        id: currentSessionId,
+        title: messages.find(m => m.sender === 'user')?.text.slice(0, 50) || 'New Chat',
+        timestamp: new Date(),
+        messages,
+        apiMessages,
+        resumeData
+      };
+      
+      setChatSessions(prev => {
+        const updated = prev.filter(s => s.id !== currentSessionId);
+        updated.push(session);
+        localStorage.setItem(`chat-sessions-${user.uid}`, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [messages, apiMessages, resumeData, currentSessionId, user?.uid]);
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    // Adjust textarea height when input value changes
+    adjustTextareaHeight();
+  }, [inputValue]);
 
   const formatResumeContent = (content: string) => {
     // Convert the raw content into properly structured HTML
@@ -1390,7 +1733,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
       <div class="resume-preview-container">
         <div class="resume-container">
           <div class="header">
-            <h1>${data.header.name}</h1>
+            <h1>${data.header.name}${data.header.title ? ` <span class="title-separator">|</span> <span class="header-title">${data.header.title}</span>` : ''}</h1>
             <div class="contact-info">
               ${data.header.location ? `
                 <div class="contact-item">
@@ -1433,9 +1776,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                       <circle cx="4" cy="4" r="2"></circle>
                     </svg>
                   </span>
-                  <a href="${data.header.contact.linkedin}" target="_blank" rel="noopener noreferrer">
-                    ${data.header.contact.linkedin.replace('https://www.linkedin.com/in/', 'linkedin.com/in/')}
-                  </a>
+                  <a href="${data.header.contact.linkedin}" target="_blank" rel="noopener noreferrer">LinkedIn</a>
                 </div>
               ` : ''}
               ${data.header.contact.github ? `
@@ -1445,9 +1786,7 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                       <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
                     </svg>
                   </span>
-                  <a href="${data.header.contact.github}" target="_blank" rel="noopener noreferrer">
-                    ${data.header.contact.github.replace('https://github.com/', 'github.com/')}
-                  </a>
+                  <a href="${data.header.contact.github}" target="_blank" rel="noopener noreferrer">GitHub</a>
                 </div>
               ` : ''}
               ${data.header.contact.portfolio ? `
@@ -1736,6 +2075,62 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
     }
   };
 
+  // Handle Overleaf preview
+  const handlePreviewOverleaf = async () => {
+    if (!resumeData) return;
+    
+    try {
+      // Generate LaTeX from resume data with selected template
+      const latexResponse = await fetch('/api/generate-latex', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resumeData,
+          template: selectedTemplate
+        }),
+      });
+
+      if (!latexResponse.ok) {
+        throw new Error('Failed to generate LaTeX');
+      }
+
+      const { latex } = await latexResponse.json();
+
+      // Generate a unique session ID
+      const sessionId = `chat-resume-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Store the LaTeX in the session endpoint
+      const storeResponse = await fetch(`/api/chat-resume-latex/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ latex }),
+      });
+
+      if (!storeResponse.ok) {
+        throw new Error('Failed to store LaTeX');
+      }
+
+      // Create the API URL that Overleaf will fetch from
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/chat-resume-latex/${sessionId}.tex`;
+      
+      // Encode the URL and create Overleaf link
+      const encodedUri = encodeURIComponent(apiUrl);
+      const overleafUrl = `https://www.overleaf.com/docs?snip_uri=${encodedUri}`;
+      
+      // Open Overleaf in new window
+      window.open(overleafUrl, '_blank');
+      
+      console.log('Opening resume in Overleaf');
+    } catch (error) {
+      console.error('Error generating Overleaf preview:', error);
+      alert('Failed to generate Overleaf preview. Please try again.');
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
@@ -1931,6 +2326,9 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
               }
             }}
             onPrint={handlePrint}
+            onPreviewOverleaf={handlePreviewOverleaf}
+            selectedTemplate={selectedTemplate}
+            onTemplateChange={setSelectedTemplate}
           />
             </div>
           </div>

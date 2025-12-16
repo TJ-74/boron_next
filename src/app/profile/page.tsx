@@ -61,6 +61,8 @@ export default function Profile() {
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isChatBotOpen, setIsChatBotOpen] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<'classic' | 'modern'>('classic');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -292,14 +294,21 @@ export default function Profile() {
   };
 
   const handlePreviewInOverleaf = async () => {
+    // Show template selection modal
+    if (!profile || !user?.uid) return;
+    setShowTemplateModal(true);
+  };
+
+  const handleOpenOverleafWithTemplate = (template: 'classic' | 'modern') => {
     // This function generates a LaTeX document based on the user's profile
-    // and opens it in Overleaf
+    // and opens it in Overleaf with the selected template
     
     if (!profile || !user?.uid) return;
     
     try {
       // Use the server API endpoint that generates the LaTeX with .tex extension
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}.tex`;
+      // Add template as query parameter
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || window.location.origin}/api/latex-resume/${user.uid}.tex?template=${template}`;
       
       // Create a data URI with the API URL
       const encodedUri = encodeURIComponent(apiUrl);
@@ -308,7 +317,10 @@ export default function Profile() {
       // Open the Overleaf link in a new window
       window.open(overleafUrl, '_blank');
       
-      console.log('Opening LaTeX resume in Overleaf');
+      // Close the modal
+      setShowTemplateModal(false);
+      
+      console.log('Opening LaTeX resume in Overleaf with template:', template);
     } catch (error) {
       console.error('Error generating LaTeX resume:', error);
     }
@@ -1608,6 +1620,66 @@ ${projectSection}
             onClose={() => setIsChatBotOpen(false)}
             profile={profile as unknown as ProfileType}
           />
+        )}
+
+        {/* Template Selection Modal */}
+        {showTemplateModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
+                <h3 className="text-xl font-bold text-white">Select Template</h3>
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-slate-400 mb-6">
+                  Choose a template for your Overleaf preview
+                </p>
+
+                {/* Template Options */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Classic Template */}
+                  <button
+                    onClick={() => handleOpenOverleafWithTemplate('classic')}
+                    className="group relative p-6 border-2 border-slate-700 hover:border-blue-500 rounded-xl transition-all duration-200 bg-slate-800/50 hover:bg-slate-800"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                        <FileText className="h-8 w-8 text-blue-400" />
+                      </div>
+                      <div className="text-center">
+                        <h4 className="font-semibold text-white mb-1">Classic</h4>
+                        <p className="text-xs text-slate-400">Professional & Clean</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Modern Template */}
+                  <button
+                    onClick={() => handleOpenOverleafWithTemplate('modern')}
+                    className="group relative p-6 border-2 border-slate-700 hover:border-teal-500 rounded-xl transition-all duration-200 bg-slate-800/50 hover:bg-slate-800"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-lg bg-teal-500/20 flex items-center justify-center group-hover:bg-teal-500/30 transition-colors">
+                        <Zap className="h-8 w-8 text-teal-400" />
+                      </div>
+                      <div className="text-center">
+                        <h4 className="font-semibold text-white mb-1">Modern</h4>
+                        <p className="text-xs text-slate-400">Elegant & Stylish</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </ProtectedRoute>
