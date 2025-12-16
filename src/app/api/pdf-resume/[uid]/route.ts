@@ -37,6 +37,7 @@ interface Education {
   endDate: string;
   cgpa: string;
   includeInResume?: boolean;
+  showDatesInResume?: boolean; // Optional: control whether dates are shown in resume
 }
 
 interface Skill {
@@ -148,13 +149,19 @@ const generateHtmlResume = (profile: UserProfile): string => {
     ? `<div class="section">
         <h2 class="section-title">Education</h2>
         <div class="section-divider"></div>
-        ${includedEducations.map((education: Education) => `
+        ${includedEducations.map((education: Education) => {
+          // Check if dates should be shown (defaults to true if not specified)
+          const showDates = education.showDatesInResume !== false;
+          const dateDisplay = showDates ? `<span class="date-text">${formatDateForDisplay(education.endDate)}</span>` : '';
+          
+          return `
           <p class="content-indent">
             <strong>${education.school}</strong> • ${education.degree}
-            <span class="date-text">${formatDateForDisplay(education.endDate)}</span><br>
+            ${dateDisplay}<br>
             GPA: ${education.cgpa}
           </p>
-        `).join('')}
+        `;
+        }).join('')}
       </div>`
     : '';
 
@@ -684,11 +691,14 @@ const generateLatexResume = (profile: UserProfile): string => {
   const educationSection = includedEducations.length > 0 ? `
 \\header{Education}
 ${includedEducations.map((education: Education) => {
-  const endDateStr = formatDateForLatex(education.endDate);
+  // Check if dates should be shown (defaults to true if not specified)
+  const showDates = education.showDatesInResume !== false;
+  const endDateStr = showDates ? formatDateForLatex(education.endDate) : '';
+  const graduationText = showDates ? `Graduation: ${endDateStr}` : '';
   
   return `
     \\school{${convertToLatex(education.school)}}{${convertToLatex(education.degree)}}{
-      Graduation: ${endDateStr}
+      ${graduationText}
     }{\\textit{${education.degree} \\labelitemi GPA: ${education.cgpa}}}
   `;
 }).join("\n")}

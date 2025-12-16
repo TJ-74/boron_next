@@ -44,6 +44,7 @@ export interface ResumeData {
     startDate: string;
     endDate: string;
     gpa?: string;
+    showDatesInResume?: boolean; // Optional: control whether dates are shown
   }>;
   projects: Array<{
     title: string;
@@ -363,7 +364,7 @@ export default function ResumeGenerator() {
         width: 100%;
         max-width: 8.5in;
         margin: 0 auto;
-        padding: 0.3in;
+        padding: 0.3in 0.2in;
         background-color: white;
         font-family: 'Times New Roman', Times, serif;
         line-height: 1.15;
@@ -378,7 +379,7 @@ export default function ResumeGenerator() {
         width: 100%;
         max-width: 8.5in;
         margin: 0 auto;
-        padding: 0.3in;
+        padding: 0.3in 0.2in;
         background-color: white;
         font-family: 'Times New Roman', Times, serif;
         line-height: 1.15;
@@ -518,7 +519,7 @@ export default function ResumeGenerator() {
       @media print {
         @page {
           size: letter;
-          margin: 0.3in;
+          margin: 0.3in 0.2in;
           /* Hide default browser headers and footers */
           @top-left { content: none; }
           @top-center { content: none; }
@@ -561,7 +562,7 @@ export default function ResumeGenerator() {
 
         .resume-container {
           box-shadow: none !important;
-          padding: 0 0.08in !important;
+          padding: 0 0.05in !important;
           margin: 0 !important;
           width: 100% !important;
           max-width: 7.9in !important;
@@ -1333,13 +1334,19 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
         <div class="section-divider"></div>
         ${data.education
           .filter(edu => edu && (edu.school || edu.degree)) // Filter out null/empty entries
-          .map(edu => `
+          .map(edu => {
+            // Check if dates should be shown (defaults to true if not specified)
+            const showDates = edu.showDatesInResume !== false;
+            const dateDisplay = showDates ? `<span class="date-text">${formatResumeDate(edu.startDate)} — ${formatResumeDate(edu.endDate)}</span>` : '';
+            
+            return `
           <p class="content-indent">
             <strong>${edu.school || 'School'}</strong> • ${edu.degree || 'Degree'}
-            <span class="date-text">${formatResumeDate(edu.startDate)} — ${formatResumeDate(edu.endDate)}</span><br>
+            ${dateDisplay}<br>
             ${edu.gpa ? `GPA: ${edu.gpa}` : ''}
           </p>
-        `).join('')}
+        `;
+          }).join('')}
       </div>
     ` : '';
 

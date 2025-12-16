@@ -12,6 +12,7 @@ interface Education {
   endDate: string;
   cgpa: string;
   includeInResume?: boolean;
+  showDatesInResume?: boolean; // Optional: control whether dates are shown in resume
 }
 
 interface EducationSectionProps {
@@ -37,7 +38,8 @@ export default function EducationSection({
     startDate: '',
     endDate: '',
     cgpa: '',
-    includeInResume: true
+    includeInResume: true,
+    showDatesInResume: true  // Default to showing dates
   });
   
   const [editEducation, setEditEducation] = useState<Education | null>(null);
@@ -53,7 +55,8 @@ export default function EducationSection({
         startDate: '',
         endDate: '',
         cgpa: '',
-        includeInResume: true
+        includeInResume: true,
+        showDatesInResume: true
       });
     } catch (error) {
       console.error('Failed to add education:', error);
@@ -248,18 +251,34 @@ export default function EducationSection({
               />
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="newIncludeInResume"
-                checked={newEducation.includeInResume !== false}
-                onChange={(e) => setNewEducation({...newEducation, includeInResume: e.target.checked})}
-                className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
-                disabled={isLoading}
-              />
-              <label htmlFor="newIncludeInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
-                Include in Resume
-              </label>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="newIncludeInResume"
+                  checked={newEducation.includeInResume !== false}
+                  onChange={(e) => setNewEducation({...newEducation, includeInResume: e.target.checked})}
+                  className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
+                  disabled={isLoading}
+                />
+                <label htmlFor="newIncludeInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
+                  Include in Resume
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="newShowDatesInResume"
+                  checked={newEducation.showDatesInResume !== false}
+                  onChange={(e) => setNewEducation({...newEducation, showDatesInResume: e.target.checked})}
+                  className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
+                  disabled={isLoading}
+                />
+                <label htmlFor="newShowDatesInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
+                  Show dates in resume
+                </label>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">
@@ -386,18 +405,34 @@ export default function EducationSection({
                       />
                     </div>
 
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="editIncludeInResume"
-                        checked={editEducation.includeInResume !== false}
-                        onChange={(e) => setEditEducation({...editEducation, includeInResume: e.target.checked})}
-                        className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
-                        disabled={isLoading}
-                      />
-                      <label htmlFor="editIncludeInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
-                        Include in Resume
-                      </label>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="editIncludeInResume"
+                          checked={editEducation.includeInResume !== false}
+                          onChange={(e) => setEditEducation({...editEducation, includeInResume: e.target.checked})}
+                          className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
+                          disabled={isLoading}
+                        />
+                        <label htmlFor="editIncludeInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
+                          Include in Resume
+                        </label>
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="editShowDatesInResume"
+                          checked={editEducation.showDatesInResume !== false}
+                          onChange={(e) => setEditEducation({...editEducation, showDatesInResume: e.target.checked})}
+                          className="h-4 w-4 rounded border-2 border-white/20 text-purple-400 focus:ring-purple-500 bg-white/5 backdrop-blur-xl flex-shrink-0"
+                          disabled={isLoading}
+                        />
+                        <label htmlFor="editShowDatesInResume" className="ml-3 block text-xs sm:text-sm font-semibold text-gray-300">
+                          Show dates in resume
+                        </label>
+                      </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-white/10">

@@ -30,6 +30,7 @@ export interface Education {
   endDate: string;
   cgpa: string;
   includeInResume?: boolean;
+  showDatesInResume?: boolean; // Optional: control whether dates are shown in resume
 }
 
 export interface Skill {

@@ -24,6 +24,7 @@ interface Education {
   endDate: string;
   cgpa: string;
   includeInResume?: boolean;
+  showDatesInResume?: boolean; // Optional: control whether dates are shown in resume
 }
 
 interface Skill {
@@ -156,7 +157,9 @@ const generateLatexResume = (profile: UserProfile): string => {
   const educationSection = includedEducations.length > 0 ? `
 \\header{Education}
 ${includedEducations.map(education => {
-  const endDateStr = formatDateForLatex(education.endDate);
+  // Check if dates should be shown (defaults to true if not specified)
+  const showDates = education.showDatesInResume !== false;
+  const endDateStr = showDates ? formatDateForLatex(education.endDate) : '';
   const cgpaText = education.cgpa ? `\\labelitemi GPA: ${convertToLatex(education.cgpa)}` : '';
   
   return `
@@ -266,7 +269,7 @@ ${includedCertificates.map(certificate => {
 \\usepackage{geometry}
 \\usepackage{lipsum}
 % Set margins for the first page
-\\newgeometry{top=0.5in, bottom=1in, left=1in, right=1in}
+\\newgeometry{top=0.5in, bottom=0.5in, left=0.5in, right=0.5in}
 \\usepackage{enumitem}
 \\setlist{nosep}
 \\usepackage[hidelinks,pdfnewwindow=true]{hyperref}
