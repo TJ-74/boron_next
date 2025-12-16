@@ -23,6 +23,7 @@ export const MODEL_CONFIG = {
   
   // High-tier tasks (complex generation requiring reasoning)
   // Using Gemini API for better reasoning capabilities (with Groq fallback)
+  resumeParser: 'gemini-2.0-flash-exp', // Fast, accurate PDF parsing with large context
   editExperience: 'gemini-2.0-flash-exp',
   editProject: 'gemini-2.0-flash-exp',
   jobAnalyzer: 'gemini-2.0-flash-exp',

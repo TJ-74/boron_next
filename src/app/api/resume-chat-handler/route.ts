@@ -15,10 +15,10 @@ function buildResumeFromProfile(profile: any) {
   const header = {
     name: profile.name || 'Your Name',
     title: profile.title || '',
+    location: profile.location || '', // Location at header level
     contact: {
       email: profile.email || '',
       phone: profile.phone || '',
-      location: profile.location || '',
       linkedin: profile.linkedinUrl || '',
       github: profile.githubUrl || '',
       portfolio: profile.portfolioUrl || ''
@@ -73,7 +73,8 @@ function buildResumeFromProfile(profile: any) {
       degree: edu.degree || '',
       startDate: edu.startDate || '',
       endDate: edu.endDate || '',
-      gpa: edu.cgpa || ''
+      gpa: edu.cgpa || '',
+      showDatesInResume: edu.showDatesInResume !== false // Preserve date visibility setting
     }));
 
   // Build certificates from profile certificates
@@ -179,6 +180,9 @@ export async function POST(request: NextRequest) {
       case 'edit_education':
         return handleEditEducation(message, profile, resumeData, intent);
       
+      case 'edit_header':
+        return handleEditHeader(message, profile, resumeData, intent);
+      
       case 'generate_new_resume':
         return handleGenerateNewResume(message, profile, resumeData, intent);
       
@@ -243,6 +247,7 @@ INTENT TYPES:
   * Their current resume content (e.g., "What projects do I have?", "What's my experience?", "Tell me about my skills")
   * General resume tips, ATS, formatting, career advice
   * Questions that don't require editing the resume
+- "edit_header": User wants to change contact/profile information (name, email, phone, location, LinkedIn, GitHub, portfolio)
 - "edit_summary": User wants to change the professional summary
 - "edit_experience": User wants to modify a specific experience entry
 - "edit_project": User wants to modify a specific project
@@ -255,9 +260,11 @@ ANALYSIS RULES:
 - If user says "change", "update", "modify", "edit", "rewrite", "add", "remove", "reorganize" → appropriate edit intent
 - If user asks "what", "tell me", "show me", "list", "do I have" about their resume → general_question
 - If user asks "how to", "what is", "why" about general topics → general_question
+- If user mentions "email", "phone", "location", "address", "linkedin", "github", "portfolio", "contact", "profile" with edit intent → edit_header
 - If user mentions specific company/role in experience with edit intent → edit_experience
 - If user mentions specific project name with edit intent → edit_project
 - If user mentions "education", "degree", "university", "college", "school" with edit intent → edit_education
+- If user mentions "hide dates", "remove dates", "show dates", "graduation date" for education → edit_education
 - Default to general_question if unclear or if it's a question about resume content
 
 AUTONOMOUS REQUEST DETECTION:
@@ -1123,6 +1130,11 @@ ${(intent?.todoList || []).map((item: string, i: number) => `${i + 1}. ${item}`)
 
 Identify which education entry to modify and make the requested changes.
 
+SPECIAL INSTRUCTIONS FOR DATE VISIBILITY:
+- If user requests to "hide dates", "remove dates", "don't show dates" → set "showDatesInResume": false
+- If user requests to "show dates", "display dates", "include dates" → set "showDatesInResume": true
+- Otherwise, preserve the existing "showDatesInResume" value from the current education entry
+
 Return JSON:
 {
   "targetEducationIndex": 0,
@@ -1135,6 +1147,7 @@ Return JSON:
     "startDate": "...",
     "endDate": "...",
     "gpa": "...",
+    "showDatesInResume": true or false,
     "honors": ["...", "..."]
   },
   "changes": ["Change 1", "Change 2"],
@@ -1146,6 +1159,7 @@ IMPORTANT:
 - If user wants to UPDATE an education entry, set "action": "update" and provide "updatedEducation"
 - Always preserve existing values for fields not being changed (don't set them to null)
 - Ensure "school" and "degree" are always provided (never null)
+- The "showDatesInResume" field controls whether graduation dates are displayed (preserve existing value unless user explicitly asks to show/hide dates)
 - NEVER use em dashes (—). Use hyphens (-), commas, or parentheses instead
 - Keep punctuation simple and professional`;
 
@@ -1201,6 +1215,10 @@ IMPORTANT:
       degree: result.updatedEducation?.degree || existingEducation?.degree || '',
       startDate: result.updatedEducation?.startDate || existingEducation?.startDate || '',
       endDate: result.updatedEducation?.endDate || existingEducation?.endDate || 'Present',
+      // Preserve showDatesInResume setting unless explicitly changed
+      showDatesInResume: result.updatedEducation?.showDatesInResume !== undefined 
+        ? result.updatedEducation.showDatesInResume 
+        : (existingEducation?.showDatesInResume !== false)
     };
 
     updatedEducation[result.targetEducationIndex] = mergedEducation;
@@ -1218,6 +1236,143 @@ IMPORTANT:
       education: validEducation
     },
     message: `✅ Education updated!\n\n${result.explanation || ''}\n\nChanges made:\n${(result.changes || []).map((c: string) => `• ${c}`).join('\n')}`,
+    requiresAction: true
+  });
+}
+
+async function handleEditHeader(
+  message: string,
+  profile: any,
+  currentResume: any,
+  intent: any
+) {
+  const model = MODEL_CONFIG.editSummary; // Reuse summary model for header edits
+  const apiEndpoint = getApiEndpoint(model);
+  const apiKey = getApiKey(model);
+
+  const systemPrompt = `You are a Profile/Header Editing Agent. The user wants to modify their contact information or profile details.
+
+CURRENT HEADER:
+${JSON.stringify(currentResume?.header || {}, null, 2)}
+
+USER REQUEST: "${message}"
+
+TODO LIST:
+${(intent?.todoList || []).map((item: string, i: number) => `${i + 1}. ${item}`).join('\n')}
+
+Update the header fields based on the user's request. Only change the fields the user specifically mentions.
+
+Return JSON:
+{
+  "updatedHeader": {
+    "name": "Full Name",
+    "title": "Professional Title/Job Title",
+    "location": "City, State or City, Country",
+    "contact": {
+      "email": "email@example.com",
+      "phone": "+1-234-567-8900",
+      "linkedin": "https://linkedin.com/in/username",
+      "github": "https://github.com/username",
+      "portfolio": "https://portfolio.com"
+    }
+  },
+  "changes": ["Change 1", "Change 2"],
+  "explanation": "What you changed and why"
+}
+
+IMPORTANT:
+- Preserve existing values for fields not being changed
+- For LinkedIn, accept formats: "username", "linkedin.com/in/username", or full URL → normalize to full URL
+- For GitHub, accept formats: "username", "github.com/username", or full URL → normalize to full URL
+- For portfolio, ensure it's a valid URL format (add https:// if missing)
+- For email, validate it looks like a proper email format
+- For phone, accept various formats but keep it readable
+- For location, accept "City, State", "City, Country", or just "City" format
+- NEVER use em dashes (—). Use hyphens (-), commas, or parentheses instead`;
+
+  const response = await fetch(apiEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: MODEL_CONFIG.editSummary,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: message
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 800,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
+  }
+
+  const data = await response.json();
+  
+  if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+    throw new Error('Invalid response format from API');
+  }
+
+  const result = JSON.parse(data.choices[0].message.content);
+
+  // Helper function to normalize URLs
+  const normalizeLinkedIn = (input: string): string => {
+    if (!input) return '';
+    const cleaned = input.trim();
+    if (cleaned.startsWith('http')) return cleaned;
+    if (cleaned.startsWith('linkedin.com/')) return `https://${cleaned}`;
+    if (cleaned.includes('linkedin.com/in/')) return `https://${cleaned}`;
+    return `https://linkedin.com/in/${cleaned.replace(/^@/, '')}`;
+  };
+
+  const normalizeGitHub = (input: string): string => {
+    if (!input) return '';
+    const cleaned = input.trim();
+    if (cleaned.startsWith('http')) return cleaned;
+    if (cleaned.startsWith('github.com/')) return `https://${cleaned}`;
+    return `https://github.com/${cleaned.replace(/^@/, '')}`;
+  };
+
+  const normalizePortfolio = (input: string): string => {
+    if (!input) return '';
+    const cleaned = input.trim();
+    if (cleaned.startsWith('http')) return cleaned;
+    return `https://${cleaned}`;
+  };
+
+  // Merge with existing header, preserving unchanged fields
+  const existingHeader = currentResume?.header || {};
+  const updatedHeader = {
+    name: result.updatedHeader?.name || existingHeader.name || '',
+    title: result.updatedHeader?.title || existingHeader.title || '',
+    location: result.updatedHeader?.location || existingHeader.location || '',
+    contact: {
+      email: result.updatedHeader?.contact?.email || existingHeader.contact?.email || '',
+      phone: result.updatedHeader?.contact?.phone || existingHeader.contact?.phone || '',
+      linkedin: normalizeLinkedIn(result.updatedHeader?.contact?.linkedin || existingHeader.contact?.linkedin || ''),
+      github: normalizeGitHub(result.updatedHeader?.contact?.github || existingHeader.contact?.github || ''),
+      portfolio: normalizePortfolio(result.updatedHeader?.contact?.portfolio || existingHeader.contact?.portfolio || '')
+    }
+  };
+
+  return NextResponse.json({
+    type: 'edit_header',
+    todoList: intent.todoList,
+    result: result,
+    updatedResume: {
+      ...currentResume,
+      header: updatedHeader
+    },
+    message: `✅ Profile information updated!\n\n${result.explanation || ''}\n\nChanges made:\n${(result.changes || []).map((c: string) => `• ${c}`).join('\n')}`,
     requiresAction: true
   });
 }
@@ -1332,7 +1487,7 @@ CRITICAL INSTRUCTIONS:
    - Experience: Modify existing entries only, enhance with JD keywords, remove irrelevant points
    - Projects: Modify existing entries only, enhance with JD keywords, remove irrelevant points
    - Skills: Update to include JD-relevant skills (only if they exist in candidate's background)
-   - Education: Keep as-is unless specifically mentioned in JD requirements
+   - Education: Keep as-is unless specifically mentioned in JD requirements. Preserve the "showDatesInResume" field from the current resume (controls whether graduation dates are displayed)
 
 Return JSON:
 {
@@ -1366,7 +1521,14 @@ Return JSON:
     }
   ],
   "education": [
-    // Keep education entries as-is from current resume
+    {
+      "school": "school name (unchanged)",
+      "degree": "degree (unchanged)",
+      "startDate": "date (unchanged)",
+      "endDate": "date (unchanged)",
+      "gpa": "gpa (unchanged)",
+      "showDatesInResume": true // or false - preserve from current resume
+    }
   ],
   "changes": ["Change 1", "Change 2"],
   "explanation": "Brief explanation of optimizations made for ATS matching"

@@ -18,11 +18,13 @@ export interface ResumeData {
   header: {
     name: string;
     title: string;
+    location?: string; // User's location
     contact: {
       email: string;
       phone: string;
       linkedin: string;
       github: string;
+      portfolio?: string; // Portfolio URL
     };
   };
   summary: string;
@@ -1390,6 +1392,17 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
           <div class="header">
             <h1>${data.header.name}</h1>
             <div class="contact-info">
+              ${data.header.location ? `
+                <div class="contact-item">
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                  </span>
+                  <span>${data.header.location}</span>
+                </div>
+              ` : ''}
               ${data.header.contact.phone ? `
                 <div class="contact-item">
                   <span class="icon">
@@ -1435,6 +1448,18 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
                   <a href="${data.header.contact.github}" target="_blank" rel="noopener noreferrer">
                     ${data.header.contact.github.replace('https://github.com/', 'github.com/')}
                   </a>
+                </div>
+              ` : ''}
+              ${data.header.contact.portfolio ? `
+                <div class="contact-item">
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                  </span>
+                  <a href="${data.header.contact.portfolio}" target="_blank" rel="noopener noreferrer">Portfolio</a>
                 </div>
               ` : ''}
             </div>

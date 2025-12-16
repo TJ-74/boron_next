@@ -362,6 +362,7 @@ ${includedCertificates.map(certificate => {
 \\begin{center}
   {\\LARGE \\textbf{${convertToLatex(profile.name)}}}\\\\
   \\vspace{3pt}
+  ${profile.location ? `\\faMapMarker\\ ${convertToLatex(profile.location)} \\quad` : ''}
   \\faPhone\\ ${profile.phone ? convertToLatex(profile.phone) : 'N/A'} \\quad
   \\faEnvelope\\ \\href[pdfnewwindow=true]{mailto:${profile.email}}{${convertToLatex(profile.email)}} \\quad
   ${profile.linkedinUrl ? `\\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(profile.linkedinUrl))}}{\\faLinkedin\\ ${convertToLatex(linkedinUsername)}}` : ''}
@@ -369,9 +370,9 @@ ${includedCertificates.map(certificate => {
   ${profile.portfolioUrl ? `\\quad \\href[pdfnewwindow=true]{${formatUrlForLatex(ensureFullUrl(profile.portfolioUrl))}}{\\faGlobe\\ Portfolio}` : ''}
 \\end{center}
 ${summarySection}
-${educationSection}
-${experienceSection}
 ${skillSection}
+${experienceSection}
+${educationSection}
 ${projectSection}
 ${certificatesSection}
 \\end{document}`;

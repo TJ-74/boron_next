@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import PDFParser from "pdf2json";
+import { MODEL_CONFIG, isGeminiModel, getApiKey, getApiEndpoint, parseGeminiResponse } from '../config/models';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // 60 seconds for Vercel Pro plan
 
 /**
  * Parse extracted text with LLM to get structured JSON
  * Has a timeout to prevent hanging requests
+ * Uses Gemini 2.0 Flash for fast, accurate parsing with large context window
  */
-async function parseWithLLM(text: string, timeoutMs: number = 25000): Promise<any> {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function parseWithLLM(text: string, timeoutMs: number = 30000): Promise<any> {
+  // Use Gemini model from config for resume parsing
+  const model = MODEL_CONFIG.resumeParser;
+  const apiKey = getApiKey(model);
+  const apiEndpoint = getApiEndpoint(model, apiKey);
+  const isGemini = isGeminiModel(model);
   
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
+    const provider = isGemini ? 'GEMINI' : 'OPENAI';
+    throw new Error(`${provider}_API_KEY is not configured`);
   }
 
-  // Limit text to avoid token limits (approximately 15000 characters = ~3750 tokens)
+  // Limit text to avoid token limits (Gemini can handle larger inputs)
+  // Approximately 30000 characters = ~7500 tokens (Gemini has 1M token context)
   let contentToSend = text;
-  if (contentToSend.length > 15000) {
-    contentToSend = contentToSend.substring(0, 15000);
+  if (contentToSend.length > 30000) {
+    contentToSend = contentToSend.substring(0, 30000);
   }
 
   const prompt = `You are a comprehensive resume parser. Extract ALL information from the resume text provided below and return it as a valid JSON object.
@@ -105,24 +114,42 @@ IMPORTANT: Carefully read through the entire resume text and extract ALL informa
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+    // Prepare request body for Gemini API
+    const requestBody = isGemini ? {
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }],
+      generationConfig: {
         temperature: 0.1,
-        response_format: { type: "json_object" },
-        max_tokens: 4000
-      }),
+        maxOutputTokens: 8000,
+        responseMimeType: 'application/json'
+      }
+    } : {
+      model: 'gpt-4o',
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      max_tokens: 4000
+    };
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // For non-Gemini models, add Authorization header
+    if (!isGemini) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
 
@@ -130,12 +157,19 @@ IMPORTANT: Carefully read through the entire resume text and extract ALL informa
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('OpenAI API Error:', errorData);
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      console.error('LLM API Error:', errorData);
+      throw new Error(`LLM API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const responseContent = data.choices[0]?.message?.content || '';
+    
+    // Parse response based on API type
+    let responseContent: string;
+    if (isGemini) {
+      responseContent = parseGeminiResponse(data);
+    } else {
+      responseContent = data.choices[0]?.message?.content || '';
+    }
     
     if (!responseContent) {
       throw new Error("LLM did not return any content");
@@ -332,10 +366,10 @@ export async function POST(request: NextRequest) {
             // Step 8: Final trim
             .trim();
 
-          // Parse with LLM to get structured JSON (with 25 second timeout)
-          // This gives LLM enough time while staying under Vercel's 60s limit (Pro plan)
-          // For Hobby plan (10s), this will timeout but text extraction will still work
-          parseWithLLM(cleanedText, 25000)
+          // Parse with Gemini to get structured JSON (with 30 second timeout)
+          // Gemini 2.0 Flash is very fast - typically completes in 5-10 seconds
+          // This gives enough time while staying under Vercel's 60s limit (Pro plan)
+          parseWithLLM(cleanedText, 30000)
             .then((parsedData) => {
               resolve(NextResponse.json({
                 text: cleanedText,
@@ -343,14 +377,14 @@ export async function POST(request: NextRequest) {
               }));
             })
             .catch((error) => {
-              // If LLM parsing fails or times out, still return the text
-              console.error('LLM parsing error:', error);
+              // If Gemini parsing fails or times out, still return the text
+              console.error('Gemini parsing error:', error);
               resolve(NextResponse.json({
                 text: cleanedText,
                 data: null,
                 error: error.message === 'LLM parsing timeout' 
-                  ? 'LLM parsing timed out, but text extraction succeeded'
-                  : 'Failed to parse with LLM, but text extraction succeeded',
+                  ? 'Gemini parsing timed out, but text extraction succeeded'
+                  : 'Failed to parse with Gemini, but text extraction succeeded',
               }));
             });
         } catch (error) {
