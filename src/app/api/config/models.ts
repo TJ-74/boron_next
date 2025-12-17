@@ -23,14 +23,14 @@ export const MODEL_CONFIG = {
   
   // High-tier tasks (complex generation requiring reasoning)
   // Using Gemini API for better reasoning capabilities (with Groq fallback)
-  resumeParser: 'gemini-2.0-flash-exp', // Fast, accurate PDF parsing with large context
-  editExperience: 'gemini-2.0-flash-exp',
-  editProject: 'gemini-2.0-flash-exp',
-  jobAnalyzer: 'gemini-2.0-flash-exp',
-  profileMatcher: 'gemini-2.0-flash-exp',
-  experienceOptimizer: 'gemini-2.0-flash-exp',
-  projectOptimizer: 'gemini-2.0-flash-exp',
-  skillsEnhancer: 'gemini-2.0-flash-exp',
+  resumeParser: 'gemini-3-flash-preview', // Fast, accurate PDF parsing with large context
+  editExperience: 'gemini-3-flash-preview',
+  editProject: 'gemini-3-flash-preview',
+  jobAnalyzer: 'gemini-3-flash-preview',
+  profileMatcher: 'gemini-3-flash-preview',
+  experienceOptimizer: 'gemini-3-flash-preview',
+  projectOptimizer: 'gemini-3-flash-preview',
+  skillsEnhancer: 'gemini-3-flash-preview',
   
   // Fallback models for high-tier tasks (used when Gemini quota is exceeded)
   editExperienceFallback: 'llama-3.3-70b-versatile',
@@ -211,7 +211,7 @@ export async function makeApiCall(
     if (response.status === 429 && isGemini && model.includes('gemini')) {
       // Map Gemini models to their fallback Groq models
       const fallbackMap: Record<string, string> = {
-        'gemini-2.0-flash-exp': MODEL_CONFIG.editExperienceFallback,
+        'gemini-3-flash-preview': MODEL_CONFIG.editExperienceFallback,
       };
       
       // Use the fallback model for this Gemini model, or default to editExperienceFallback

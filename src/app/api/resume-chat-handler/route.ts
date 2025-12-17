@@ -29,9 +29,29 @@ function buildResumeFromProfile(profile: any) {
   const summary = profile.about || '';
 
   // Build experience from profile experiences
+  // Sort by most recent first (endDate desc, then startDate desc)
   const experience = (profile.experiences || [])
     .filter((exp: any) => exp.includeInResume !== false)
-    .sort((a: any, b: any) => (b.order || 0) - (a.order || 0))
+    .sort((a: any, b: any) => {
+      // Parse dates for comparison (handle "Present" as current date)
+      const parseDate = (dateStr: string) => {
+        if (!dateStr || dateStr.toLowerCase() === 'present') return new Date();
+        return new Date(dateStr);
+      };
+      
+      const aEnd = parseDate(a.endDate);
+      const bEnd = parseDate(b.endDate);
+      
+      // Sort by end date descending (most recent first)
+      if (bEnd.getTime() !== aEnd.getTime()) {
+        return bEnd.getTime() - aEnd.getTime();
+      }
+      
+      // If end dates are equal, sort by start date descending
+      const aStart = parseDate(a.startDate);
+      const bStart = parseDate(b.startDate);
+      return bStart.getTime() - aStart.getTime();
+    })
     .map((exp: any) => ({
       title: exp.position || '',
       company: exp.company || '',
@@ -1408,36 +1428,15 @@ async function handleGenerateNewResume(
   // The message should contain the JD, possibly with some user text before/after
   const jobDescription = message;
 
-  if (!currentResume) {
-    // No saved resume - build one from user's profile data
-    const generatedResume = buildResumeFromProfile(profile);
-    
-    if (generatedResume) {
-      // Successfully built resume from profile
-      return NextResponse.json({
-        type: 'generate_new_resume',
-        updatedResume: generatedResume,
-        message: `✅ I've created a resume from your profile data!
-
-Your resume includes:
-${generatedResume.experience?.length > 0 ? `• ${generatedResume.experience.length} work experience(s)` : ''}
-${generatedResume.projects?.length > 0 ? `• ${generatedResume.projects.length} project(s)` : ''}
-${generatedResume.education?.length > 0 ? `• ${generatedResume.education.length} education entry(ies)` : ''}
-${generatedResume.skills ? `• Skills organized by category` : ''}
-
-Now you can:
-📝 Ask me to edit any section (e.g., "update my summary", "add a project")
-🎯 Paste a job description to optimize for ATS
-✨ Add more details with "generate random details"
-
-The resume canvas is now open - check it out! What would you like to do next?`,
-        requiresAction: true
-      });
-    } else {
-      // No profile data available - guide them
-      return NextResponse.json({
-        type: 'general_answer',
-        message: `👋 Welcome! I don't have enough information to create your resume yet.
+  // ALWAYS build fresh resume from profile data to get latest changes
+  // This ensures we're using current profile data, not old resume data from previous chats
+  const freshResume = buildResumeFromProfile(profile);
+  
+  if (!freshResume) {
+    // No profile data available - guide them
+    return NextResponse.json({
+      type: 'general_answer',
+      message: `👋 Welcome! I don't have enough information to create your resume yet.
 
 Please set up your profile first by visiting your profile page, or you can start by telling me:
 • "Add my experience as [Job Title] at [Company] with random details"
@@ -1447,49 +1446,89 @@ Please set up your profile first by visiting your profile page, or you can start
 I can generate realistic professional details for you - just use keywords like "random details", "generate", or "make up"!
 
 What would you like to add first?`,
-        requiresAction: false
-      });
-    }
+      requiresAction: false
+    });
   }
 
-  const systemPrompt = `You are a resume generation expert specializing in ATS optimization. Your task is to optimize an existing resume to match a job description while maintaining authenticity and keeping it concise.
+  // Use the fresh resume built from current profile data
+  const resumeToOptimize = freshResume;
+
+  const systemPrompt = `You are a resume generation expert specializing in ATS optimization. Your task is to optimize an existing resume to match a job description while maintaining authenticity and ensuring comprehensive skill coverage.
 
 CURRENT RESUME:
-${JSON.stringify(currentResume, null, 2)}
+${JSON.stringify(resumeToOptimize, null, 2)}
 
 JOB DESCRIPTION:
 ${jobDescription}
 
 CRITICAL INSTRUCTIONS:
 
-1. ATS OPTIMIZATION (Target: 90+ ATS Score):
-   - Extract ALL keywords, skills, technologies, and terminology from the job description
-   - Incorporate missing keywords ORGANICALLY into existing experience and project descriptions
-   - Use exact terminology as it appears in the job description
-   - Match required skills and experience levels mentioned in JD
-   - Ensure all JD requirements (experience, skills) are reflected in the resume
+1. COMPREHENSIVE SKILL EXTRACTION & COVERAGE:
+   STEP 1 - Extract ALL skills from JD:
+   - Technical skills (programming languages, frameworks, tools, platforms)
+   - Soft skills (leadership, communication, problem-solving)
+   - Domain knowledge (industry-specific terms, methodologies)
+   - Certifications and qualifications
+   - Required experience levels and responsibilities
+   
+   STEP 2 - Ensure 100% skill coverage:
+   - EVERY skill from the JD MUST appear somewhere in the resume
+   - Add missing skills to the Skills section first
+   - Then strategically weave them into descriptions
+   
+   STEP 3 - Strategic skill distribution:
+   - **Skills Section**: Include ALL required technical skills, organized by category
+   - **Summary**: Mention 3-5 most critical skills/technologies from JD
+   - **Experience**: Each experience should showcase 2-4 relevant skills in action
+   - **Projects**: Each project should demonstrate 2-4 relevant skills with results
+   
+   STEP 4 - Create skill intersections (IMPORTANT):
+   - Important skills should appear in MULTIPLE sections for emphasis
+   - Example: "React" in Skills + mentioned in 2 experiences + 1 project
+   - This creates natural repetition that ATS systems favor
+   - DO NOT concentrate all skills in one section or one bullet point
+   - Distribute skills evenly across all sections
 
-2. MODIFICATION RULES:
+2. SKILL INTEGRATION STRATEGY:
+   - **Primary skills** (most important): Appear in Skills + Summary + 2+ experiences/projects
+   - **Secondary skills**: Appear in Skills + 1-2 experiences/projects
+   - **Supporting skills**: Appear in Skills section + briefly mentioned once
+   - Use exact terminology from JD (case-sensitive when possible)
+   - Integrate skills naturally into achievement descriptions, not as lists
+
+3. MODIFICATION RULES:
    - ONLY modify existing experience and project sections - DO NOT add new ones
    - DO NOT create new experience entries or project entries
-   - Modify existing bullet points to incorporate JD keywords naturally
-   - Remove bullet points that are NOT relevant to the job description
-   - Keep only the most relevant and impactful points
+   - Rewrite bullet points to naturally incorporate JD skills and keywords
+   - Keep existing bullet points and enhance them with JD skills where applicable
+   - Only remove bullet points that are truly irrelevant or cannot be tied to JD requirements
+   - Prioritize comprehensive coverage over brevity
+   - Each bullet should ideally mention 1-2 skills from JD in context
 
-3. AUTHENTICITY REQUIREMENTS:
-   - Stay TRUE to the candidate's actual experience - DO NOT bluff or fabricate
+4. AUTHENTICITY & ORGANIC DESCRIPTIONS (CRITICAL):
+   - Stay TRUE to the candidate's actual experience - DO NOT bluff or fabricate ANY skills
    - Only enhance and reframe existing achievements to match JD requirements
-   - Maintain genuine descriptions that recruiters will find credible
-   - If a skill/technology from JD doesn't exist in the resume, don't add it unless it can be reasonably inferred from existing work
+   - Create ORGANIC, company-specific descriptions tied to the actual domain/industry
+   - DO NOT write vague or generic descriptions - make them specific to that company's work
+   - Examples of organic, domain-specific descriptions:
+     * Fintech: "Implemented **PCI-DSS compliant** payment processing", "Built **fraud detection** system"
+     * Healthcare: "Developed **HIPAA-compliant** patient portal", "Integrated with **HL7/FHIR** systems"
+     * E-commerce: "Optimized **checkout flow** reducing cart abandonment", "Built **recommendation engine**"
+   - When adding a JD skill to descriptions, ensure it's contextually appropriate for that specific company
+   - If a skill from JD cannot be organically integrated into any experience, ONLY add it to Skills section
+   - Every bullet should reflect work that's believable for that specific role at that specific company
+   - Maintain genuine, credible descriptions that pass recruiter scrutiny
 
-4. CONCISENESS:
-   - Keep the resume SHORT and focused
-   - Recruiters have limited time - prioritize quality over quantity
-   - Remove redundant or less impactful bullet points
-   - Aim for 3-5 bullet points per experience/project (maximum)
+5. EXPERIENCE DESCRIPTION GUIDELINES (NO LIMITS):
+   - Include as many bullet points as needed - there is NO maximum limit
+   - Prioritize comprehensive coverage of ALL relevant skills from JD
+   - Each bullet point should be impactful, specific, and demonstrate concrete skills/achievements
+   - More recent experiences can have more detailed descriptions
+   - Only remove truly irrelevant or redundant points that don't relate to JD
+   - Focus on thorough skill demonstration rather than artificial brevity
    - Keep summary to 3-4 sentences
 
-5. FORMATTING:
+6. FORMATTING:
    - Bold important words using markdown (**text**) such as:
      * Technologies, tools, and frameworks from JD
      * Quantifiable metrics (numbers, percentages, dollar amounts)
@@ -1499,18 +1538,38 @@ CRITICAL INSTRUCTIONS:
    - NEVER use em dashes (—). Use hyphens (-), commas, or parentheses instead
    - Keep punctuation simple and professional
 
-6. SECTION-SPECIFIC GUIDELINES:
-   - Summary: Rewrite to incorporate JD keywords and requirements organically
-   - Experience: Modify existing entries only, enhance with JD keywords, remove irrelevant points
-   - Projects: Modify existing entries only, enhance with JD keywords, remove irrelevant points
-   - Skills: Update to include JD-relevant skills (only if they exist in candidate's background)
-   - Education: Keep as-is unless specifically mentioned in JD requirements. Preserve the "showDatesInResume" field from the current resume (controls whether graduation dates are displayed)
+7. SECTION-SPECIFIC GUIDELINES:
+   - **Summary**: Rewrite to mention 3-5 critical skills from JD, showcase years of experience with key technologies
+   - **Skills**: Include ALL technical skills from JD, organized by category. Add new skills ONLY if they can be reasonably inferred from candidate's background
+   - **Experience** (MOST IMPORTANT):
+     * Experiences are already sorted by MOST RECENT FIRST - maintain this order
+     * Include as many organic, company-specific description points as needed (NO LIMIT)
+     * Each bullet should be specific to that company's domain/industry (not generic)
+     * Naturally integrate JD skills into contextually appropriate descriptions
+     * More recent roles can have more detailed descriptions
+     * DO NOT fabricate skills - only enhance what's already there
+   - **Projects**: Each project should showcase JD skills with specific implementations and outcomes
+   - **Education**: Keep as-is unless specifically mentioned in JD requirements. Preserve the "showDatesInResume" field from the current resume (controls whether graduation dates are displayed)
+
+8. ATS OPTIMIZATION CHECKLIST:
+   - ✓ All required skills from JD present in Skills section
+   - ✓ Top 5 skills appear in multiple sections (intersection strategy)
+   - ✓ Each experience/project mentions relevant JD skills
+   - ✓ Summary includes core JD requirements
+   - ✓ Use exact terminology from JD
+   - ✓ Skills distributed evenly, not concentrated in one place
+   - ✓ Natural integration, not forced keyword stuffing
 
 Return JSON:
 {
-  "summary": "Optimized summary with JD keywords, 3-4 sentences with **bolded** important terms",
+  "summary": "Optimized 3-4 sentence summary mentioning 3-5 critical JD skills with **bolded** important terms and years of experience",
   "skills": {
-    "category": ["skill1", "skill2"]
+    "Programming Languages": ["All relevant programming languages from JD + existing"],
+    "Frameworks & Libraries": ["All relevant frameworks from JD + existing"],
+    "Tools & Technologies": ["All relevant tools from JD + existing"],
+    "Cloud & DevOps": ["All relevant cloud/devops skills from JD + existing"],
+    "Databases": ["All relevant database skills from JD + existing"],
+    "Other Skills": ["Any other categories needed to capture ALL JD skills"]
   },
   "experience": [
     {
@@ -1520,8 +1579,13 @@ Return JSON:
       "startDate": "date (unchanged)",
       "endDate": "date (unchanged)",
       "highlights": [
-        "Modified bullet point with **bolded** JD keywords and metrics",
-        "Only include relevant points that match JD requirements"
+        "ORGANIC bullet specific to company domain showing **skill1** and **skill2** with metrics (e.g., for fintech: 'Implemented **PCI-DSS compliant** payment gateway processing $2M+ daily transactions')",
+        "DOMAIN-SPECIFIC bullet demonstrating **skill3** with quantifiable impact (not generic)",
+        "Company-contextual bullet highlighting **skill4** and **skill5** in realistic achievement",
+        "Additional ORGANIC bullets as needed - NO LIMIT on number of bullets",
+        "Each bullet must be company/domain-specific, NOT generic or vague",
+        "Only include skills that naturally fit this specific role/company",
+        "More bullets for recent roles, fewer for older roles as appropriate"
       ]
     }
   ],
@@ -1530,10 +1594,13 @@ Return JSON:
       "title": "project name (unchanged)",
       "startDate": "date (unchanged)",
       "endDate": "date (unchanged)",
-      "technologies": "technologies (may be updated to include JD terms)",
+      "technologies": "technologies (updated to include relevant JD terms)",
       "highlights": [
-        "Modified bullet point with **bolded** JD keywords and metrics",
-        "Only include relevant points that match JD requirements"
+        "Bullet showcasing **skill1** and **skill2** from JD with specific implementation",
+        "Bullet demonstrating **skill3** with measurable outcomes",
+        "Additional bullets as needed to showcase more JD skills and project impact",
+        "Each bullet should naturally mention 1-2 JD skills with results",
+        "Include as many bullets as necessary to demonstrate comprehensive skill usage"
       ]
     }
   ],
@@ -1547,16 +1614,32 @@ Return JSON:
       "showDatesInResume": true // or false - preserve from current resume
     }
   ],
-  "changes": ["Change 1", "Change 2"],
-  "explanation": "Brief explanation of optimizations made for ATS matching"
+  "changes": ["Added skill X to Skills section", "Incorporated Y and Z into Experience 1", "Wove A and B into Project 2", etc.],
+  "explanation": "Brief explanation of how ALL JD skills were covered and distributed across sections for optimal ATS matching",
+  "skillDistribution": {
+    "totalJDSkills": 15,
+    "inSkillsSection": 15,
+    "inSummary": 5,
+    "inExperience": 10,
+    "inProjects": 8,
+    "note": "Skills with intersections for emphasis: React (Skills+Summary+2 Experiences+1 Project), AWS (Skills+Summary+1 Experience+2 Projects), etc."
+  }
 }
 
-REMEMBER:
+CRITICAL REMINDERS:
+- Experiences are ALREADY sorted by most recent first - MAINTAIN THIS ORDER
+- NO LIMIT on number of description points for experiences
+- EVERY skill from JD must appear in Skills section
+- Distribute skills across ALL sections (Summary, Experience, Projects)
+- Create intersections: important skills appear in multiple places
 - DO NOT add new experience or project entries
-- DO NOT fabricate skills or experiences
-- Only modify existing entries
-- Remove irrelevant bullet points
-- Keep it concise and authentic
+- DO NOT fabricate ANY skills - only enhance existing ones
+- Only modify existing entries with ORGANIC, company-specific descriptions
+- Each bullet MUST be domain-specific to that company, NOT generic or vague
+- Example: Fintech → payment processing, fraud detection; Healthcare → HIPAA, patient data
+- Only add JD skills where they naturally fit the company's work
+- Include as many description points as needed for comprehensive coverage
+- Prioritize authenticity and organic descriptions over keyword stuffing
 - Target ATS score: 90+`;
 
   const response = await fetch(apiEndpoint, {
@@ -1571,11 +1654,25 @@ REMEMBER:
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `Optimize this resume for the job description above. Ensure ATS score of 90+ while maintaining authenticity and keeping it concise.`
+          content: `Optimize this resume for the job description above. 
+
+CRITICAL REQUIREMENTS:
+1. Extract and include EVERY skill mentioned in the JD
+2. Add all missing skills to the Skills section (only if they can be reasonably inferred)
+3. Maintain experience order (already sorted most recent first)
+4. Create ORGANIC, company-specific descriptions - NOT generic or vague
+5. Each bullet must be domain-specific to that company's industry/work
+6. DO NOT fabricate skills - only enhance existing ones where they naturally fit
+7. Include as many description points as needed (NO LIMIT) - prioritize comprehensive coverage
+8. Distribute skills strategically across Summary, Experience, and Projects
+9. Create intersections - important skills appear in multiple sections
+10. Maintain authenticity while achieving 90+ ATS score
+
+Make sure no required skill from the JD is left out, and ALL descriptions are organic and company-specific!`
         }
       ],
       temperature: 0.3,
-      max_tokens: 3000, // Reduced from 4000 for faster generation
+      max_tokens: 4000, // Increased for comprehensive skill distribution analysis
       response_format: { type: "json_object" }
     })
   });
@@ -1616,19 +1713,44 @@ Would you like to try one of these approaches?`,
 
   const result = JSON.parse(data.choices[0].message.content);
 
+  // Create skill distribution summary if available
+  const skillDistSummary = result.skillDistribution ? `
+
+📊 **Skill Distribution:**
+• Total JD skills covered: ${result.skillDistribution.totalJDSkills || 'All'}
+• Skills section: ${result.skillDistribution.inSkillsSection || 'All required skills'}
+• Summary: ${result.skillDistribution.inSummary || 'Key skills'} skills
+• Experience: ${result.skillDistribution.inExperience || 'Multiple'} skills woven in
+• Projects: ${result.skillDistribution.inProjects || 'Multiple'} skills demonstrated
+
+🎯 **Strategic Intersections:** Important skills appear in multiple sections for maximum ATS impact!` : '';
+
   return NextResponse.json({
     type: 'generate_new_resume',
     todoList: intent.todoList,
     result: result,
     updatedResume: {
-      ...currentResume,
+      ...resumeToOptimize, // Use fresh resume from profile, not old currentResume
       summary: result.summary,
       skills: result.skills,
       experience: result.experience,
       projects: result.projects,
-      education: result.education || currentResume.education
+      education: result.education || resumeToOptimize.education
     },
-    message: `✅ Resume optimized for ATS (Target: 90+ score)!\n\n${result.explanation || ''}\n\nChanges made:\n${(result.changes || []).map((c: string) => `• ${c}`).join('\n')}\n\nYour resume has been tailored to match the job description while staying authentic and concise.`,
+    message: `✅ **Resume Optimized for ATS (Target: 90+ score)**
+
+${result.explanation || 'Your resume has been comprehensively optimized to match the job description.'}
+
+**Key Changes:**
+${(result.changes || []).map((c: string) => `• ${c}`).join('\n')}
+${skillDistSummary}
+
+✨ Your resume now has:
+• All required skills from the JD strategically distributed
+• Comprehensive description points showcasing your expertise
+• Skills woven naturally into experience and project descriptions
+• Important skills appearing in multiple sections for emphasis
+• Optimized for ATS while maintaining authenticity`,
     requiresAction: true
   });
 }
