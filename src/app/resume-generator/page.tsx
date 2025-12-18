@@ -238,6 +238,8 @@ export default function ResumeGenerator() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<'classic' | 'modern'>('classic');
+  const [viewMode, setViewMode] = useState<'resume' | 'coverLetter'>('resume');
+  const [coverLetterContent, setCoverLetterContent] = useState<string>('');
   
   // Function to get resume styles based on selected template
   const getResumeStyles = (template: 'classic' | 'modern') => {
@@ -886,7 +888,7 @@ export default function ResumeGenerator() {
   // Chat interface states
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. You can also ask me to "generate a cover letter" once your resume is ready!`,
       sender: 'bot',
       timestamp: new Date(),
     },
@@ -896,7 +898,7 @@ export default function ResumeGenerator() {
   const [apiMessages, setApiMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. You can also ask me to "generate a cover letter" once your resume is ready!`,
     }
   ]);
   const [showResumeCanvas, setShowResumeCanvas] = useState(false);
@@ -1132,7 +1134,7 @@ export default function ResumeGenerator() {
           const hasInitialBotMessage = loadedMessages.some(msg => msg.sender === 'bot');
           if (!hasInitialBotMessage) {
             const initialMessage: Message = {
-              text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+              text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. You can also ask me to "generate a cover letter" once your resume is ready!`,
               sender: 'bot',
               timestamp: new Date(),
             };
@@ -1202,6 +1204,62 @@ export default function ResumeGenerator() {
     }
   }, [user]);
 
+  const generateCoverLetter = async (jobDesc: string, currentResumeData: ResumeData) => {
+    try {
+      // Add a message that cover letter is being generated
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: '📝 Generating cover letter based on your resume and job description...',
+          sender: 'bot' as const,
+          timestamp: new Date(),
+        },
+      ]);
+
+      const response = await fetch('/api/cover-letter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobDescription: jobDesc,
+          resumeData: currentResumeData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate cover letter');
+      }
+
+      const result = await response.json();
+      setCoverLetterContent(result.coverLetter);
+      
+      // Auto-switch to cover letter view and open canvas
+      setViewMode('coverLetter');
+      setShowResumeCanvas(true);
+      
+      // Add success message
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: '✅ Cover letter generated! I\'ve opened it in the canvas for you. You can switch between "Resume" and "Cover Letter" tabs to view both.',
+          sender: 'bot' as const,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error) {
+      console.error('Error generating cover letter:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: '❌ Failed to generate cover letter. Please try again.',
+          sender: 'bot' as const,
+          timestamp: new Date(),
+        },
+      ]);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -1229,6 +1287,47 @@ export default function ResumeGenerator() {
     setIsTyping(true);
 
     try {
+      // Check if user is asking for cover letter
+      const coverLetterKeywords = ['cover letter', 'coverletter', 'generate cover letter', 'write cover letter', 'create cover letter', 'write a cover letter'];
+      const isCoverLetterRequest = coverLetterKeywords.some(keyword => 
+        inputValue.toLowerCase().includes(keyword)
+      );
+
+      if (isCoverLetterRequest) {
+        // Handle cover letter generation
+        if (!resumeData) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              text: '❌ Please generate a resume first before requesting a cover letter. Share a job description to get started!',
+              sender: 'bot' as const,
+              timestamp: new Date(),
+            },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+
+        // Check if there's a job description in the message or previous context
+        let jobDesc = inputValue.length > 100 ? inputValue : jobDescription;
+        
+        if (!jobDesc || jobDesc.length < 50) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              text: '📝 Please provide a job description so I can create a tailored cover letter. You can paste the JD in your next message or include it with "generate cover letter for: [job description]"',
+              sender: 'bot' as const,
+              timestamp: new Date(),
+            },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+
+        await generateCoverLetter(jobDesc, resumeData);
+        setIsTyping(false);
+        return;
+      }
       // Use the intelligent chat handler
       const response = await fetch('/api/resume-chat-handler', {
         method: 'POST',
@@ -1376,15 +1475,17 @@ export default function ResumeGenerator() {
     const newSessionId = `session-${Date.now()}`;
     setCurrentSessionId(newSessionId);
     setMessages([{
-      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+      text: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. You can also ask me to "generate a cover letter" once your resume is ready!`,
       sender: 'bot',
       timestamp: new Date(),
     }]);
     setApiMessages([{
       role: 'assistant',
-      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. Just paste the job posting or tell me about the role you're applying for!`,
+      content: `Hi ${user?.displayName || 'there'}! I'm your Resume Assistant. Share a job description with me and I'll create a tailored resume for you. You can also ask me to "generate a cover letter" once your resume is ready!`,
     }]);
     setResumeData(null);
+    setCoverLetterContent('');
+    setViewMode('resume');
     setShowResumeCanvas(false);
   };
 
@@ -1816,6 +1917,156 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
   };
 
   // PDF generation function with selectable text - uses same rendering as UI
+  const generateCoverLetterPDF = async (content: string) => {
+    try {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title></title>
+            <style>
+              @page {
+                size: letter;
+                margin: 0.5in;
+                /* Remove all browser-generated content */
+                @top-left { content: ""; }
+                @top-center { content: ""; }
+                @top-right { content: ""; }
+                @bottom-left { content: ""; }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
+              
+              @media print {
+                body::before,
+                body::after,
+                html::before,
+                html::after {
+                  display: none !important;
+                  content: none !important;
+                }
+                
+                @page {
+                  size: letter;
+                  margin: 0.5in;
+                }
+                
+                /* Hide all potential browser UI elements */
+                header, footer, nav, aside {
+                  display: none !important;
+                }
+                
+                /* Ensure proper page breaks */
+                * {
+                  page-break-inside: avoid;
+                }
+              }
+              
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              
+              html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+              }
+              
+              body {
+                width: 8.5in;
+                max-width: 8.5in;
+                min-height: 11in;
+                margin: 0 auto;
+                padding: 0;
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 11pt;
+                line-height: 1.5;
+                color: #000;
+                background: white;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              
+              .cover-letter-container {
+                width: 100%;
+                max-width: 7.5in;
+                margin: 0 auto;
+                padding: 0.5in;
+                box-sizing: border-box;
+              }
+              
+              .cover-letter-container p {
+                margin-bottom: 0.75em;
+                color: #000 !important;
+                text-align: left;
+                line-height: 1.5;
+                font-size: 11pt;
+              }
+              
+              .cover-letter-container br {
+                display: block;
+                content: "";
+                margin: 0.25em 0;
+              }
+              
+              .cover-letter-container p:last-child {
+                margin-bottom: 0;
+              }
+            </style>
+            <script>
+              window.onload = function() {
+                // Clear document title to prevent it from showing in headers
+                document.title = '';
+                
+                // Hide any potential browser UI elements
+                const style = document.createElement('style');
+                style.textContent = \`
+                  @media print {
+                    @page { 
+                      margin: 0.5in; 
+                      size: letter;
+                    }
+                    body { 
+                      margin: 0 !important;
+                      padding: 0 !important;
+                    }
+                  }
+                \`;
+                document.head.appendChild(style);
+                
+                // Small delay to ensure everything is loaded
+                setTimeout(() => {
+                  window.print();
+                }, 100);
+              };
+            </script>
+          </head>
+          <body>
+            <div class="cover-letter-container">
+              ${content}
+            </div>
+          </body>
+        </html>
+      `;
+      
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+      }
+    } catch (error) {
+      console.error('Failed to generate cover letter PDF:', error);
+      throw error;
+    }
+  };
+
   const generatePDFWithText = async (data: ResumeData) => {
     try {
       const htmlContent = `
@@ -1948,6 +2199,149 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
 
   // Function to handle print
   const handlePrint = () => {
+    if (viewMode === 'coverLetter') {
+      if (!coverLetterContent) return;
+      
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title></title>
+              <style>
+                @page {
+                  size: letter;
+                  margin: 0.5in;
+                  /* Remove all browser-generated content */
+                  @top-left { content: ""; }
+                  @top-center { content: ""; }
+                  @top-right { content: ""; }
+                  @bottom-left { content: ""; }
+                  @bottom-center { content: ""; }
+                  @bottom-right { content: ""; }
+                }
+                
+                @media print {
+                  body::before,
+                  body::after,
+                  html::before,
+                  html::after {
+                    display: none !important;
+                    content: none !important;
+                  }
+                  
+                  @page {
+                    size: letter;
+                    margin: 0.5in;
+                  }
+                  
+                  /* Hide all potential browser UI elements */
+                  header, footer, nav, aside {
+                    display: none !important;
+                  }
+                  
+                  /* Ensure proper page breaks */
+                  * {
+                    page-break-inside: avoid;
+                  }
+                }
+                
+                * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                }
+                
+                html, body {
+                  width: 100%;
+                  height: 100%;
+                  margin: 0;
+                  padding: 0;
+                }
+                
+                body {
+                  width: 8.5in;
+                  max-width: 8.5in;
+                  min-height: 11in;
+                  margin: 0 auto;
+                  padding: 0;
+                  font-family: 'Times New Roman', Times, serif;
+                  font-size: 11pt;
+                  line-height: 1.5;
+                  color: #000;
+                  background: white;
+                  -webkit-print-color-adjust: exact;
+                  color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+                
+                .cover-letter-container {
+                  width: 100%;
+                  max-width: 7.5in;
+                  margin: 0 auto;
+                  padding: 0.5in;
+                  box-sizing: border-box;
+                }
+                
+                .cover-letter-container p {
+                  margin-bottom: 0.75em;
+                  color: #000 !important;
+                  text-align: left;
+                  line-height: 1.5;
+                  font-size: 11pt;
+                }
+                
+                .cover-letter-container br {
+                  display: block;
+                  content: "";
+                  margin: 0.25em 0;
+                }
+                
+                .cover-letter-container p:last-child {
+                  margin-bottom: 0;
+                }
+              </style>
+              <script>
+                // Clear document title to prevent it from showing in headers
+                document.title = '';
+                
+                // Hide any potential browser UI elements
+                const style = document.createElement('style');
+                style.textContent = \`
+                  @media print {
+                    @page { 
+                      margin: 0.5in; 
+                      size: letter;
+                    }
+                    body { 
+                      margin: 0 !important;
+                      padding: 0 !important;
+                    }
+                  }
+                \`;
+                document.head.appendChild(style);
+              </script>
+            </head>
+            <body>
+              <div class="cover-letter-container">
+                ${coverLetterContent}
+              </div>
+            </body>
+          </html>
+        `;
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      }
+      return;
+    }
+    
     if (!resumeData) return;
     
     const printWindow = window.open('', '_blank');
@@ -2317,7 +2711,9 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             onClose={() => setShowResumeCanvas(false)}
             onDownload={async () => {
               try {
-                if (resumeData) {
+                if (viewMode === 'coverLetter' && coverLetterContent) {
+                  await generateCoverLetterPDF(coverLetterContent);
+                } else if (resumeData) {
                   await generatePDFWithText(resumeData);
                 }
               } catch (error) {
@@ -2329,6 +2725,9 @@ You can now view it on the right, print it, or save it as PDF! 💾 Your resume 
             onPreviewOverleaf={handlePreviewOverleaf}
             selectedTemplate={selectedTemplate}
             onTemplateChange={setSelectedTemplate}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            coverLetterContent={coverLetterContent}
           />
             </div>
           </div>

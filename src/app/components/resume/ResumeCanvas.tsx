@@ -15,6 +15,9 @@ interface ResumeCanvasProps {
   onPreviewOverleaf: () => void;
   selectedTemplate: 'classic' | 'modern';
   onTemplateChange: (template: 'classic' | 'modern') => void;
+  viewMode: 'resume' | 'coverLetter';
+  onViewModeChange: (mode: 'resume' | 'coverLetter') => void;
+  coverLetterContent: string;
 }
 
 export default function ResumeCanvas({
@@ -28,17 +31,20 @@ export default function ResumeCanvas({
   onPreviewOverleaf,
   selectedTemplate,
   onTemplateChange,
+  viewMode,
+  onViewModeChange,
+  coverLetterContent,
 }: ResumeCanvasProps) {
   const [renderKey, setRenderKey] = useState(0);
 
-  // Force re-render when resumeData or selectedTemplate changes
+  // Force re-render when resumeData, selectedTemplate, or viewMode changes
   useEffect(() => {
-    if (resumeData) {
+    if (resumeData || coverLetterContent) {
       setRenderKey(prev => prev + 1);
     }
-  }, [resumeData, selectedTemplate]);
+  }, [resumeData, selectedTemplate, viewMode, coverLetterContent]);
 
-  if (!isOpen || !resumeData) return null;
+  if (!isOpen || (!resumeData && !coverLetterContent)) return null;
 
   return (
     <div className="overflow-hidden flex flex-col h-full resume-canvas-enter">
@@ -50,12 +56,39 @@ export default function ResumeCanvas({
               <FileText className="h-4 w-4 text-purple-400" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Resume Canvas</h2>
+              <h2 className="text-sm font-bold text-white">{viewMode === 'resume' ? 'Resume Canvas' : 'Cover Letter'}</h2>
               <p className="text-[10px] text-gray-400">Live preview</p>
             </div>
             
-            {/* Template Selector */}
-            <div className="flex items-center gap-1 ml-4">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 ml-4 border-r border-white/10 pr-4">
+              <button
+                onClick={() => onViewModeChange('resume')}
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-lg transition-all ${
+                  viewMode === 'resume'
+                    ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
+                }`}
+                title="Resume View"
+              >
+                Resume
+              </button>
+              <button
+                onClick={() => onViewModeChange('coverLetter')}
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-lg transition-all ${
+                  viewMode === 'coverLetter'
+                    ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
+                }`}
+                title="Cover Letter View"
+              >
+                Cover Letter
+              </button>
+            </div>
+            
+            {/* Template Selector - Only show for Resume */}
+            {viewMode === 'resume' && (
+              <div className="flex items-center gap-1 ml-4">
               <button
                 onClick={() => onTemplateChange('classic')}
                 className={`px-2.5 py-1 text-[10px] font-medium rounded-lg transition-all ${
@@ -79,6 +112,7 @@ export default function ResumeCanvas({
                 Modern
               </button>
             </div>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -89,15 +123,73 @@ export default function ResumeCanvas({
           </button>
         </div>
 
-        {/* Resume Preview */}
+        {/* Content Preview */}
         <div className="flex-1 relative overflow-hidden">
           <div className="absolute inset-0 overflow-y-auto bg-slate-900/60 p-4 custom-scrollbar">
-            <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
-            <div 
-              key={`resume-${renderKey}`}
-              id="chat-resume-wrapper" 
-              dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} 
-            />
+            {viewMode === 'resume' && resumeData ? (
+              <>
+                <style dangerouslySetInnerHTML={{ __html: resumeStyles }} />
+                <div 
+                  key={`resume-${renderKey}`}
+                  id="chat-resume-wrapper" 
+                  dangerouslySetInnerHTML={{ __html: renderResume(resumeData) }} 
+                />
+              </>
+            ) : (
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-white rounded-lg shadow-2xl" style={{ 
+                  width: '8.5in', 
+                  minHeight: '11in', 
+                  padding: '0.5in',
+                  margin: '0 auto'
+                }}>
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    .cover-letter-content {
+                      color: #111827 !important;
+                      font-family: 'Times New Roman', Times, serif;
+                      font-size: 11pt;
+                      line-height: 1.5;
+                      max-width: 100%;
+                    }
+                    .cover-letter-content p {
+                      color: #111827 !important;
+                      margin-bottom: 0.75em;
+                      text-align: left;
+                      line-height: 1.5;
+                    }
+                    .cover-letter-content * {
+                      color: #111827 !important;
+                    }
+                    .cover-letter-header {
+                      margin-bottom: 1.5em;
+                    }
+                    .cover-letter-date {
+                      margin-bottom: 0.5em;
+                    }
+                    .cover-letter-contact {
+                      margin-bottom: 1.5em;
+                      text-align: left;
+                    }
+                    .cover-letter-body {
+                      margin-bottom: 1em;
+                    }
+                    .cover-letter-closing {
+                      margin-top: 1.5em;
+                    }
+                  ` }} />
+                  {coverLetterContent ? (
+                    <div 
+                      className="cover-letter-content"
+                      dangerouslySetInnerHTML={{ __html: coverLetterContent }} 
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      <p>No cover letter generated yet. Provide a job description to generate one.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
