@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MODEL_CONFIG, makeApiCall, getApiEndpoint, getApiKey } from '../config/models';
+import { 
+  MODEL_CONFIG, 
+  makeApiCall, 
+  getApiEndpoint, 
+  getApiKey,
+  parseJsonResponse,
+  TruncatedResponseError,
+  JsonParseError,
+  ApiError 
+} from '../config/models';
 
 // Increase timeout for complex operations like JD optimization
 export const maxDuration = 60; // 60 seconds (Vercel Pro plan)
@@ -349,7 +358,7 @@ Determine the intent and create a todo list.`
     throw new Error('Invalid response format from API');
   }
 
-  return JSON.parse(data.choices[0].message.content);
+  return parseJsonResponse(data.choices[0].message.content);
 }
 
 async function handleGeneralQuestion(
@@ -508,7 +517,7 @@ Return JSON:
     throw new Error('Invalid response format from API');
   }
 
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = parseJsonResponse(data.choices[0].message.content);
 
   return NextResponse.json({
     type: 'edit_summary',
@@ -650,7 +659,24 @@ IMPORTANT:
 - If multiple experiences need changes, return an array
 - Process deletions in reverse order (highest index first) to avoid index shifting issues`;
 
-  const userContent = `Please analyze the current experiences and user request, then return the updated experience in the specified JSON format.`;
+  const userContent = `User's request: "${message}"
+
+Current experiences (${experiences.length} total):
+${experiences.length > 0 
+  ? experiences.map((exp: any, idx: number) => 
+      `${idx}. ${exp.title || 'Untitled'} at ${exp.company || 'Unknown Company'} (${exp.startDate || '?'} - ${exp.endDate || '?'})`
+    ).join('\n')
+  : 'No experiences yet - this will be a new addition.'
+}
+
+Task: ${intent?.todoList?.join(', ') || 'Update experience based on user request'}
+
+Based on the user's request above, determine:
+1. Which experience to modify (use index from list above, or null for new)
+2. What changes to make
+3. Whether to add, update, or delete
+
+Return the response in the exact JSON format specified in the system prompt.`;
 
   let result;
   try {
@@ -660,12 +686,43 @@ IMPORTANT:
       userContent,
       {
         temperature: 0.4,
-        maxTokens: 1000,
+        maxTokens: 2000, // Increased to prevent truncation of complex experience updates
         responseFormat: 'json_object'
       }
     );
   } catch (error) {
     console.error('❌ Error calling API:', error);
+    
+    // Handle specific error types with better messages
+    if (error instanceof TruncatedResponseError) {
+      return NextResponse.json({
+        type: 'general_answer',
+        message: `⚠️ **Response Truncated**
+
+The AI response was cut off before completion. This can happen with complex requests.
+
+**What you can try:**
+1. Break your request into smaller parts
+2. Be more specific about what you want to change
+3. Try again - the system will automatically retry
+
+Your request: "${message}"`,
+        requiresAction: false
+      });
+    }
+    
+    if (error instanceof JsonParseError || error instanceof ApiError) {
+      return NextResponse.json({
+        type: 'general_answer',
+        message: `❌ **Error Processing Request**
+
+${error.message}
+
+Please try rephrasing your request or breaking it into smaller parts.`,
+        requiresAction: false
+      });
+    }
+    
     throw new Error(`Failed to call API: ${error instanceof Error ? error.message : String(error)}`);
   }
 
@@ -746,12 +803,37 @@ IMPORTANT:
     // Determine action - check explicit action field or infer from explanation
     let action = update.action;
     if (!action) {
-      // Infer action from explanation if available
-      const explanation = (update.explanation || '').toLowerCase();
-      if (explanation.includes('removed') || explanation.includes('deleted') || explanation.includes('remove') || explanation.includes('delete')) {
-        // If explanation says removed/deleted, treat as deletion even if updatedExperience is provided
-        action = 'delete';
+      // Only infer deletion if:
+      // 1. No updatedExperience is provided, OR
+      // 2. Explanation explicitly says the entire experience was removed/deleted
+      // If updatedExperience is provided, it's always an update (even if removing highlights)
+      if (update.updatedExperience === undefined || update.updatedExperience === null) {
+        // No updated experience provided - check if it's a deletion
+        const explanation = (update.explanation || '').toLowerCase();
+        const changesText = (update.changes || []).join(' ').toLowerCase();
+        const combinedText = `${explanation} ${changesText}`;
+        
+        // Only treat as deletion if it explicitly mentions removing/deleting the entire experience
+        // Keywords that indicate entire experience deletion (not just highlights)
+        const deletionKeywords = [
+          'removed the experience',
+          'deleted the experience',
+          'remove the experience',
+          'delete the experience',
+          'removed this experience',
+          'deleted this experience',
+          'removed experience',
+          'deleted experience'
+        ];
+        
+        if (deletionKeywords.some(keyword => combinedText.includes(keyword))) {
+          action = 'delete';
+        } else {
+          // If no updatedExperience and not clearly a deletion, it's an error
+          throw new Error(`Invalid response: no updatedExperience provided and action is unclear. Explanation: ${update.explanation}`);
+        }
       } else {
+        // updatedExperience is provided - always treat as update
         action = 'update';
       }
     }
@@ -927,7 +1009,24 @@ If you need MORE information, return JSON:
   "question": "I'd be happy to add a new project! Could you please provide:\n- The project title\n- Start and end dates\n- Technologies used\n- Key highlights or achievements\n\nOr, I can generate realistic sample details if you'd like - just say 'generate random details'!"
 }`;
 
-  const userContent = `Please analyze the current projects and user request, then return the updated project in the specified JSON format.`;
+  const userContent = `User's request: "${message}"
+
+Current projects (${projects.length} total):
+${projects.length > 0 
+  ? projects.map((proj: any, idx: number) => 
+      `${idx}. "${proj.title || 'Untitled'}" (${proj.startDate || '?'} - ${proj.endDate || '?'}) - ${proj.technologies || 'No tech listed'}`
+    ).join('\n')
+  : 'No projects yet - this will be a new addition.'
+}
+
+Task: ${intent?.todoList?.join(', ') || 'Update project based on user request'}
+
+Based on the user's request above, determine:
+1. Which project to modify (use index from list above, or null for new)
+2. What changes to make
+3. Whether to add, update, or delete
+
+Return the response in the exact JSON format specified in the system prompt.`;
 
   let result;
   try {
@@ -937,12 +1036,43 @@ If you need MORE information, return JSON:
       userContent,
       {
         temperature: 0.4,
-        maxTokens: 1000,
+        maxTokens: 2000, // Increased to prevent truncation of complex project updates
         responseFormat: 'json_object'
       }
     );
   } catch (error) {
     console.error('❌ Error calling API:', error);
+    
+    // Handle specific error types with better messages
+    if (error instanceof TruncatedResponseError) {
+      return NextResponse.json({
+        type: 'general_answer',
+        message: `⚠️ **Response Truncated**
+
+The AI response was cut off before completion. This can happen with complex requests.
+
+**What you can try:**
+1. Break your request into smaller parts
+2. Be more specific about what you want to change
+3. Try again - the system will automatically retry
+
+Your request: "${message}"`,
+        requiresAction: false
+      });
+    }
+    
+    if (error instanceof JsonParseError || error instanceof ApiError) {
+      return NextResponse.json({
+        type: 'general_answer',
+        message: `❌ **Error Processing Request**
+
+${error.message}
+
+Please try rephrasing your request or breaking it into smaller parts.`,
+        requiresAction: false
+      });
+    }
+    
     throw new Error(`Failed to call API: ${error instanceof Error ? error.message : String(error)}`);
   }
 
@@ -1113,7 +1243,7 @@ Return JSON:
     throw new Error('Invalid response format from API');
   }
 
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = parseJsonResponse(data.choices[0].message.content);
 
   return NextResponse.json({
     type: 'edit_skills',
@@ -1211,7 +1341,7 @@ IMPORTANT:
     throw new Error('Invalid response format from Groq API');
   }
 
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = parseJsonResponse(data.choices[0].message.content);
 
   // Handle education update or deletion
   const updatedEducation = [...(currentResume?.education || [])];
@@ -1351,7 +1481,7 @@ REMOVAL EXAMPLES:
     throw new Error('Invalid response format from API');
   }
 
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = parseJsonResponse(data.choices[0].message.content);
 
   // Helper function to normalize URLs
   const normalizeLinkedIn = (input: string): string => {
@@ -1711,7 +1841,7 @@ Would you like to try one of these approaches?`,
     throw new Error('Invalid response format from API');
   }
 
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = parseJsonResponse(data.choices[0].message.content);
 
   // Create skill distribution summary if available
   const skillDistSummary = result.skillDistribution ? `
